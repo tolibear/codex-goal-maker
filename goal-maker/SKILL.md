@@ -285,6 +285,30 @@ A task's `assignee` determines the agent. The task card is the order. The receip
 
 Only the main `/goal` PM may choose the active task, update the board, mark tasks done, or mark the goal complete.
 
+## PM Thinking Policy
+
+The main `/goal` thread is the PM. It owns board truth, chooses active tasks, decides when Scout/Judge/Worker receipts are sufficient, and records completion.
+
+Recommended PM thinking:
+
+| Goal mode | PM thinking |
+|---|---:|
+| specific, bounded | medium |
+| open-ended | high |
+| recovery | high |
+| audit | high |
+| high-risk or multi-day final audit | xhigh optional |
+
+Do not use `xhigh` by default. Use it only when a wrong board, scope, or completion decision would be materially more expensive than latency and cost.
+
+Tasks may include an optional `reasoning_hint` field:
+
+```yaml
+reasoning_hint: default # default | low | medium | high | xhigh
+```
+
+Treat `reasoning_hint` as PM guidance. It does not override task scope, write permissions, stop conditions, or the one-active-task rule.
+
 ## Completion
 
 Never complete because work looks substantial.

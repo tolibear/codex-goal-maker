@@ -43,6 +43,8 @@ Scout, Judge, and Worker are installed by default:
 - **Judge** resolves ambiguity, scope, risk, and completion claims.
 - **Worker** performs one bounded implementation or recovery task.
 
+The main `/goal` thread is the PM. Use medium thinking for specific bounded goals, high for open-ended/recovery/audit goals, and reserve xhigh for exceptional high-risk or multi-day final audits.
+
 ## Goal Folder
 
 For each goal, `$goal-maker` prepares:

@@ -8,6 +8,22 @@ Use three generic agents. The main `/goal` thread remains PM and owns the board.
 | goal_worker | low | workspace-write | One bounded implementation/recovery task |
 | goal_judge | high | read-only | Strategic review, escalation, completion skepticism |
 
+## PM Thinking Policy
+
+The main `/goal` thread is the PM. It owns board truth, chooses active tasks, and decides when receipts are sufficient.
+
+| Goal mode | PM thinking |
+|---|---:|
+| specific, bounded | medium |
+| open-ended | high |
+| recovery | high |
+| audit | high |
+| high-risk or multi-day final audit | xhigh optional |
+
+Do not use `xhigh` by default. Use it only when a wrong board, scope, or completion decision would be materially more expensive than latency and cost.
+
+Tasks may include optional `reasoning_hint: default | low | medium | high | xhigh`. Treat it as PM guidance, not permission to widen scope.
+
 Recommended project config:
 
 ```toml

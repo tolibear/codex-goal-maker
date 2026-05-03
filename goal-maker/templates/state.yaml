@@ -29,6 +29,7 @@ tasks:
     type: scout
     assignee: Scout
     status: active
+    reasoning_hint: default # default | low | medium | high | xhigh
     objective: "Map repo purpose, architecture, verification commands, health signals, and improvement candidates."
     inputs:
       - README.md
@@ -49,6 +50,7 @@ tasks:
     type: judge
     assignee: Judge
     status: queued
+    reasoning_hint: default
     objective: "Review Scout findings and choose the first safe implementation tranche."
     inputs:
       - "T001 receipt"
@@ -64,6 +66,7 @@ tasks:
     type: worker
     assignee: Worker
     status: queued
+    reasoning_hint: default
     objective: "Reserved for the first implementation task after Judge selection."
     allowed_files: []
     verify: []
