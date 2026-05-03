@@ -12,6 +12,11 @@ const excludedSkillDirs = new Set([
   join(skillSource, "bin"),
   join(skillSource, "test"),
 ]);
+const requiredAgentFiles = [
+  "goal_judge.toml",
+  "goal_scout.toml",
+  "goal_worker.toml",
+];
 
 const args = process.argv.slice(2);
 const command = args.includes("--help") || args.includes("-h")
@@ -106,15 +111,17 @@ function doctor() {
   const agents = existsSync(agentsPath)
     ? readdirSync(agentsPath).filter((file) => file.startsWith("goal_") && file.endsWith(".toml"))
     : [];
+  const missingAgents = requiredAgentFiles.filter((file) => !agents.includes(file));
 
   console.log(JSON.stringify({
     codex_home: codexHome(),
     skill_installed: installed,
     skill_path: skillPath,
     installed_agents: agents,
+    missing_agents: missingAgents,
   }, null, 2));
 
-  process.exit(installed ? 0 : 1);
+  process.exit(installed && missingAgents.length === 0 ? 0 : 1);
 }
 
 switch (command) {
