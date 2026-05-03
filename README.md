@@ -1,6 +1,6 @@
 # goal-maker
 
-A Codex skill for long-running goals: turn vague work into a rolling task board with Scout, Judge, Worker, and PM receipts.
+Turn vague, long-running Codex work into a rolling task board with Scout, Judge, Worker, and receipts.
 
 ```bash
 npx goal-maker
@@ -12,76 +12,40 @@ Then invoke the skill inside Codex:
 $goal-maker
 ```
 
-`$goal-maker` prepares a goal charter and task board, then prints the `/goal` command to run next. It does not start the long-running `/goal` loop automatically.
+`$goal-maker` creates a goal charter and task board, then prints the `/goal` command to run next. It does not start `/goal` automatically.
 
-`goal-maker` installs a Codex skill plus three agent roles:
+![A simple hand-drawn diagram showing a vague goal becoming a Goal Maker board with Scout, Judge, Worker, and a receipt.](assets/goal-maker-flow.png)
 
-- **Scout** maps repo/source/spec evidence before work starts.
-- **Worker** executes one bounded implementation or recovery task.
-- **Judge** reviews ambiguity, risky scope, blockers, and completion claims.
+## What It Solves
 
-The main Codex thread remains the PM. It owns the board, chooses the active task, and records receipts.
+Long Codex goals drift. The work starts vague, verification gets stale, and the agent can start implementing before it has actually discovered the right task.
 
-![A before-and-after infographic showing messy long-running Codex goals becoming a structured board and verified progress with Goal Maker.](assets/problem-solved.png)
-
-## Why
-
-Long Codex goals drift: scope stays vague, stale proof looks green, and broad work becomes hard to review. `goal-maker` gives the PM thread a compact loop:
+Goal Maker gives Codex a small operating loop:
 
 ```text
 vague goal -> discovery -> task board -> one active task -> receipt -> board update -> repeat
 ```
 
-```text
-Charter bounds the tranche.
-Board is machine truth.
-Task is the only work.
-Receipt proves progress.
-Agents are assignees.
-```
+The main Codex thread is the PM. It owns the board, chooses the active task, delegates when useful, and records receipts.
 
-## What It Provides
+## The Model
 
-- An `npx` installer package named `goal-maker`
-- A self-contained Codex skill in `goal-maker/`
-- Bundled Scout, Worker, and Judge agent definitions in `goal-maker/agents/`
-- Goal charter and board templates in `goal-maker/templates/`
-- A v2 board checker: `goal-maker/scripts/check-goal-state.mjs`
+Goal Maker uses four primitives:
 
-## Commands
+- **Charter**: `goal.md` states the objective, constraints, current tranche, and stop rule.
+- **Board**: `state.yaml` is machine truth for tasks, status, receipts, and verification freshness.
+- **Task**: exactly one active task is worked at a time.
+- **Receipt**: every completed, blocked, or escalated task leaves compact proof of what happened.
 
-Install or update the skill and bundled agents:
+Scout, Judge, and Worker are installed by default:
 
-```bash
-npx goal-maker
-npx goal-maker update
-```
+- **Scout** maps repo/source/spec evidence and candidate tasks.
+- **Judge** resolves ambiguity, scope, risk, and completion claims.
+- **Worker** performs one bounded implementation or recovery task.
 
-Repair only the agent definitions:
+## Goal Folder
 
-```bash
-npx goal-maker agents
-```
-
-Check what is installed:
-
-```bash
-npx goal-maker doctor
-```
-
-Use a non-default Codex home:
-
-```bash
-npx goal-maker install --codex-home /path/to/.codex
-```
-
-## How It Works
-
-Each goal starts with a human-editable `goal.md` charter that points to `state.yaml`.
-
-`goal.md` defines the objective, goal kind, current tranche, constraints, and stop rule. `state.yaml` remains machine truth for the rolling task board, active task, receipts, verification freshness, and completion.
-
-Create one folder per goal:
+For each goal, `$goal-maker` prepares:
 
 ```text
 docs/goals/<slug>/
@@ -90,9 +54,9 @@ docs/goals/<slug>/
   notes/
 ```
 
-Most task results live inline as receipts on the task board. Only create `notes/<task-id>-<slug>.md` when a Scout, Judge, or PM result is too large for the task card.
+Most task results live inline as receipts in `state.yaml`. Use `notes/<task-id>-<slug>.md` only when a Scout, Judge, or PM result is too large for the task card.
 
-For a broad goal like “Improve my project,” the seed board should start with discovery:
+For a broad prompt like “Improve my project,” the first task should usually be Scout, not Worker:
 
 ```yaml
 tasks:
@@ -121,7 +85,34 @@ tasks:
     receipt: null
 ```
 
-## Use
+## Commands
+
+Install or update the skill and bundled agents:
+
+```bash
+npx goal-maker
+npx goal-maker update
+```
+
+Repair only the agent definitions:
+
+```bash
+npx goal-maker agents
+```
+
+Check what is installed:
+
+```bash
+npx goal-maker doctor
+```
+
+Use a non-default Codex home:
+
+```bash
+npx goal-maker install --codex-home /path/to/.codex
+```
+
+## Running A Goal
 
 After `$goal-maker` creates or repairs the board, start `/goal` with the printed command:
 
@@ -129,31 +120,22 @@ After `$goal-maker` creates or repairs the board, start `/goal` with the printed
 /goal Follow docs/goals/<slug>/goal.md
 ```
 
-Check state:
+Check board health:
 
 ```bash
 node ~/.codex/skills/goal-maker/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
 ```
 
-## Repository Layout
+## Package Contents
 
-```text
-.
-  README.md
-  CONTRIBUTING.md
-  assets/
-  package.json
-  goal-maker/
-    bin/
-    SKILL.md
-    agents/
-    scripts/
-    templates/
-    test/
-```
-
-`goal-maker/` contains the skill plus package support. The installer copies only the skill runtime files into Codex; `goal-maker/bin/` is the npm CLI and `goal-maker/test/` is local verification.
+- `goal-maker/SKILL.md`: the Codex skill
+- `goal-maker/agents/`: Scout, Judge, and Worker definitions
+- `goal-maker/templates/`: `goal.md`, `state.yaml`, and `note.md`
+- `goal-maker/scripts/check-goal-state.mjs`: v2 board checker
+- `goal-maker/bin/goal-maker.mjs`: npm installer CLI
 
 ## Status
 
-Early open-source project. Do not treat this as a replacement for repo-specific `AGENTS.md`, tests, or CI checks. Use it to structure autonomous task generation and receipts; let repo scripts enforce repo facts.
+`0.2.x` is the v2 board/receipt model. It intentionally rejects old v1 `gate`, `units`, `artifacts`, and `evidence.jsonl` goal folders instead of auto-migrating them.
+
+Use this to structure autonomous Codex work. Keep relying on repo-specific `AGENTS.md`, tests, and CI for repo facts.
