@@ -6,10 +6,16 @@ A finite-state PM loop for Codex `/goal` efforts: install the skill, install the
 npx goal-maker
 ```
 
+Then invoke the skill inside Codex:
+
+```text
+$goal-maker
+```
+
 `goal-maker` installs a Codex skill plus three agent roles:
 
 - **Scout** maps source/spec evidence before work starts.
-- **Worker** performs one bounded implementation or recovery unit.
+- **Worker** executes one bounded implementation or recovery order, limited to the files and stop conditions the PM gives it.
 - **Judge** reviews ambiguity, risky scope, blockers, and completion claims.
 
 The main Codex thread remains the PM. Agents help gather evidence, patch bounded work, and challenge completion, but they do not own goal state.
