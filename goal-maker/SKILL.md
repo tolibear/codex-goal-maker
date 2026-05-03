@@ -194,14 +194,14 @@ Do not end a continuation with `active_unit` pointing at a completed unit while 
 Run the guard script when available:
 
 ```bash
-node <skill-path>/goal-maker/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
+node <skill-path>/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
 ```
 
 For an older goal with root-level artifact sprawl, classify the files before continuing:
 
 ```bash
-node <skill-path>/goal-maker/scripts/organize-goal-artifacts.mjs docs/goals/<slug>/state.yaml
-node <skill-path>/goal-maker/scripts/organize-goal-artifacts.mjs docs/goals/<slug>/state.yaml --write
+node <skill-path>/scripts/organize-goal-artifacts.mjs docs/goals/<slug>/state.yaml
+node <skill-path>/scripts/organize-goal-artifacts.mjs docs/goals/<slug>/state.yaml --write
 ```
 
 If the script and your judgment disagree, choose the more conservative state.

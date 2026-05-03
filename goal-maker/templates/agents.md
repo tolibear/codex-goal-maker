@@ -21,7 +21,7 @@ Install:
 
 ```bash
 mkdir -p .codex/agents
-cp .agents/skills/goal-maker/assets/codex-agents/*.toml .codex/agents/
+cp .codex/skills/goal-maker/assets/codex-agents/*.toml .codex/agents/
 ```
 
 Rules:

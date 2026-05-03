@@ -4,7 +4,7 @@ Codex Goal Maker is a Codex skill for running large `/goal` efforts as a finite-
 
 It is built for goals that are too broad, stale, risky, or ambiguous to handle as a linear task list. The skill makes Codex keep explicit state, gate every continuation, execute one bounded unit at a time, record evidence, route around scoped blockers, and audit completion before calling the work done.
 
-![A hand-drawn loop showing Observe, Gate, Unit, and Verify.](assets/readme/goal-loop.png)
+![A hand-drawn loop showing Observe, Gate, Unit, and Verify.](assets/goal-loop.png)
 
 ```text
 State is truth.
@@ -16,12 +16,30 @@ Agents are tools.
 
 ## What It Provides
 
-- A self-contained Codex skill: `SKILL.md`
-- Goal control templates in `templates/`
-- A state checker script: `scripts/check-goal-state.mjs`
-- An artifact organizer for older flat goal folders: `scripts/organize-goal-artifacts.mjs`
-- Optional custom Codex agent definitions in `assets/codex-agents/`
-- OpenAI skill metadata in `agents/openai.yaml`
+- A self-contained Codex skill in `goal-maker/`
+- Goal control templates in `goal-maker/templates/`
+- A state checker script: `goal-maker/scripts/check-goal-state.mjs`
+- An artifact organizer for older flat goal folders: `goal-maker/scripts/organize-goal-artifacts.mjs`
+- Optional custom Codex agent definitions in `goal-maker/assets/codex-agents/`
+- README images in `assets/`
+
+## Repository Layout
+
+```text
+.
+  README.md
+  assets/
+  goal-maker/
+    SKILL.md
+    VERSION
+    agents/
+    assets/codex-agents/
+    references/
+    scripts/
+    templates/
+```
+
+`goal-maker/` is the installable skill. Everything outside it is repo-level documentation and README artwork.
 
 ## How It Works
 
@@ -33,7 +51,7 @@ observe -> gate -> choose one unit -> act or delegate -> verify -> record -> rep
 
 The loop advances only when a state transition is verified. If verification is red, Codex works on recovery. If a blocker exists, Codex records the blocked scope and keeps doing safe local work outside that scope.
 
-![A hand-drawn state.yaml file feeding a gate and the next unit.](assets/readme/state-gate.png)
+![A hand-drawn state.yaml file feeding a gate and the next unit.](assets/state-gate.png)
 
 The root control file is `state.yaml`. Narrative plans, matrices, audits, and reports are supporting evidence unless they match the current state and verification.
 
@@ -62,7 +80,7 @@ docs/goals/<slug>/
     archive/
 ```
 
-![A hand-drawn folder tree showing units, artifacts, and evidence.jsonl.](assets/readme/artifacts-tree.png)
+![A hand-drawn folder tree showing units, artifacts, and evidence.jsonl.](assets/artifacts-tree.png)
 
 Keep the goal root as the control plane. Root files are limited to `README.md`, `state.yaml`, `evidence.jsonl`, `review-bundles.md`, `decisions.md`, `blockers.md`, and directories.
 
@@ -74,14 +92,14 @@ Personal install:
 
 ```bash
 mkdir -p ~/.codex/skills
-cp -R /path/to/goal-maker ~/.codex/skills/goal-maker
+cp -R /path/to/codex-goal-maker/goal-maker ~/.codex/skills/goal-maker
 ```
 
 Project-scoped install:
 
 ```bash
 mkdir -p .codex/skills
-cp -R /path/to/goal-maker .codex/skills/goal-maker
+cp -R /path/to/codex-goal-maker/goal-maker .codex/skills/goal-maker
 ```
 
 Optional custom agents:
