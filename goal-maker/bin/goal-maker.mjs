@@ -5,9 +5,13 @@ import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const packageRoot = resolve(__dirname, "..");
+const packageRoot = resolve(__dirname, "../..");
 const skillSource = join(packageRoot, "goal-maker");
 const defaultCodexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
+const excludedSkillDirs = new Set([
+  join(skillSource, "bin"),
+  join(skillSource, "test"),
+]);
 
 const args = process.argv.slice(2);
 const command = args.includes("--help") || args.includes("-h")
@@ -65,7 +69,10 @@ function installSkill({ force = true } = {}) {
     rmSync(target, { recursive: true, force: true });
   }
 
-  cpSync(skillSource, target, { recursive: true });
+  cpSync(skillSource, target, {
+    recursive: true,
+    filter: (source) => !excludedSkillDirs.has(source),
+  });
   console.log(`Installed Codex Goal Maker skill to ${target}`);
 }
 

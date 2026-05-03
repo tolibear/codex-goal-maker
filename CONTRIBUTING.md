@@ -18,8 +18,8 @@ Use a temporary Codex home so local testing does not overwrite your real install
 
 ```bash
 tmp=$(mktemp -d)
-node bin/goal-maker.mjs install --codex-home "$tmp"
-node bin/goal-maker.mjs doctor --codex-home "$tmp"
+node goal-maker/bin/goal-maker.mjs install --codex-home "$tmp"
+node goal-maker/bin/goal-maker.mjs doctor --codex-home "$tmp"
 rm -rf "$tmp"
 ```
 
@@ -31,7 +31,7 @@ Before opening a PR, verify the npm package contents:
 npm pack --dry-run
 ```
 
-The package should include `README.md`, `assets/`, `bin/`, `package.json`, and the installable `goal-maker/` skill directory.
+The package should include `README.md`, `assets/`, `package.json`, and the installable `goal-maker/` skill directory.
 
 ## Contribution Guidelines
 

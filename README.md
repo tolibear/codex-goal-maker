@@ -22,7 +22,7 @@ $goal-maker
 
 The main Codex thread remains the PM. Agents help gather evidence, patch bounded work, and challenge completion, but they do not own goal state.
 
-![A hand-drawn setup flow: run goal-maker, review goal.md, then start slash goal with a command that follows goal.md.](assets/setup-flow.svg)
+![A simple hand-drawn flow: terminal to goal folder to run button.](assets/setup-flow.png)
 
 ## Why
 
@@ -82,7 +82,7 @@ Each goal starts with a user-editable `goal.md` brief that points to `state.yaml
 
 `goal.md` is where the user and Codex can refine the objective, assumptions, and handoff command. `state.yaml` remains machine truth for execution permission, active unit, gate status, verification status, and completion.
 
-![A hand-drawn control diagram: goal.md is editable, state.yaml is machine truth, the gate permits one active unit, and evidence records proof.](assets/state-gate.svg)
+![A simple hand-drawn flow: editable page to checked state page to one task card.](assets/state-gate.png)
 
 Create one folder per goal:
 
@@ -107,7 +107,7 @@ docs/goals/<slug>/
     archive/
 ```
 
-![A hand-drawn folder tree showing root control files, units, and routed artifacts subfolders.](assets/artifacts-tree.svg)
+![A simple hand-drawn flow: loose reports routed into a folder.](assets/artifacts-tree.png)
 
 Keep the goal root as the control plane. Root files are limited to `goal.md`, `state.yaml`, `evidence.jsonl`, `review-bundles.md`, `decisions.md`, `blockers.md`, legacy `README.md`, and directories.
 
@@ -141,16 +141,17 @@ node ~/.codex/skills/goal-maker/scripts/organize-goal-artifacts.mjs docs/goals/<
   README.md
   CONTRIBUTING.md
   assets/
-  bin/
   package.json
   goal-maker/
+    bin/
     SKILL.md
     agents/
     scripts/
     templates/
+    test/
 ```
 
-`goal-maker/` is the installable skill. Everything outside it is repo-level documentation and README artwork.
+`goal-maker/` contains the skill plus package support. The installer copies only the skill runtime files into Codex; `goal-maker/bin/` is the npm CLI and `goal-maker/test/` is local verification.
 
 ## Core Rule
 
