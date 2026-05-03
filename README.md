@@ -1,10 +1,28 @@
-# Codex Goal Maker
+# goal-maker
 
-Codex Goal Maker is a Codex skill for running large `/goal` efforts as a finite-state project-management loop.
+A finite-state PM loop for Codex `/goal` efforts: install the skill, install the agent roles, and keep long-running work honest with gates, units, and evidence.
 
-It is built for goals that are too broad, stale, risky, or ambiguous to handle as a linear task list. The skill makes Codex keep explicit state, gate every continuation, execute one bounded unit at a time, record evidence, route around scoped blockers, and audit completion before calling the work done.
+```bash
+npx goal-maker
+```
+
+`goal-maker` installs a Codex skill plus three agent roles:
+
+- **Scout** maps source/spec evidence before work starts.
+- **Worker** performs one bounded implementation or recovery unit.
+- **Judge** reviews ambiguity, risky scope, blockers, and completion claims.
+
+The main Codex thread remains the PM. Agents help gather evidence, patch bounded work, and challenge completion, but they do not own goal state.
 
 ![A hand-drawn loop showing Observe, Gate, Unit, and Verify.](assets/goal-loop.png)
+
+## Why
+
+Long Codex goals tend to drift: assumptions get treated as truth, stale verification looks green, and broad work becomes hard to review. `goal-maker` turns a goal into a state machine:
+
+```text
+observe -> gate -> choose one unit -> act or delegate -> verify -> record -> repeat
+```
 
 ```text
 State is truth.
@@ -18,44 +36,43 @@ Agents are tools.
 
 - An `npx` installer package named `goal-maker`
 - A self-contained Codex skill in `goal-maker/`
+- Bundled Scout, Worker, and Judge agent definitions in `goal-maker/agents/`
 - Goal control templates in `goal-maker/templates/`
 - A state checker script: `goal-maker/scripts/check-goal-state.mjs`
 - An artifact organizer for older flat goal folders: `goal-maker/scripts/organize-goal-artifacts.mjs`
-- Codex metadata and optional agent definitions in `goal-maker/agents/`
-- README images in `assets/`
 
-## Repository Layout
+## Commands
 
-```text
-.
-  README.md
-  assets/
-  bin/
-  package.json
-  goal-maker/
-    SKILL.md
-    agents/
-    scripts/
-    templates/
+Install or update the skill and bundled agents:
+
+```bash
+npx goal-maker
+npx goal-maker update
 ```
 
-`goal-maker/` is the installable skill. Everything outside it is repo-level documentation and README artwork.
+Repair only the agent definitions:
+
+```bash
+npx goal-maker agents
+```
+
+Check what is installed:
+
+```bash
+npx goal-maker doctor
+```
+
+Use a non-default Codex home:
+
+```bash
+npx goal-maker install --codex-home /path/to/.codex
+```
 
 ## How It Works
 
-Each goal is operated as a state machine:
-
-```text
-observe -> gate -> choose one unit -> act or delegate -> verify -> record -> repeat
-```
-
-The loop advances only when a state transition is verified. If verification is red, Codex works on recovery. If a blocker exists, Codex records the blocked scope and keeps doing safe local work outside that scope.
-
-![A hand-drawn state.yaml file feeding a gate and the next unit.](assets/state-gate.png)
-
 The root control file is `state.yaml`. Narrative plans, matrices, audits, and reports are supporting evidence unless they match the current state and verification.
 
-## Goal Folder Shape
+![A hand-drawn state.yaml file feeding a gate and the next unit.](assets/state-gate.png)
 
 Create one folder per goal:
 
@@ -86,59 +103,6 @@ Keep the goal root as the control plane. Root files are limited to `README.md`, 
 
 Generated Scout reports, Judge reviews, audits, owner packets, staging slices, verification notes, and completion tables belong under `artifacts/<kind>/` and should be referenced from `state.yaml`, unit files, or `evidence.jsonl`.
 
-## Install
-
-Install the skill and bundled agent definitions:
-
-```bash
-npx goal-maker
-```
-
-Before the npm package is published, install from GitHub:
-
-```bash
-npx github:tolibear/codex-goal-maker
-```
-
-Install or refresh explicitly:
-
-```bash
-npx goal-maker install
-npx goal-maker update
-```
-
-Repair or reinstall only the Scout, Worker, and Judge agent definitions:
-
-```bash
-npx goal-maker agents
-```
-
-Check what is installed:
-
-```bash
-npx goal-maker doctor
-```
-
-Use a non-default Codex home:
-
-```bash
-npx goal-maker install --codex-home /path/to/.codex
-```
-
-Manual personal install:
-
-```bash
-mkdir -p ~/.codex/skills
-cp -R /path/to/codex-goal-maker/goal-maker ~/.codex/skills/goal-maker
-```
-
-Project-scoped install:
-
-```bash
-mkdir -p .codex/skills
-cp -R /path/to/codex-goal-maker/goal-maker .codex/skills/goal-maker
-```
-
 ## Use
 
 Start `/goal` with an objective that points to the state machine:
@@ -159,6 +123,24 @@ Classify old flat artifact files:
 node ~/.codex/skills/goal-maker/scripts/organize-goal-artifacts.mjs docs/goals/<slug>/state.yaml
 node ~/.codex/skills/goal-maker/scripts/organize-goal-artifacts.mjs docs/goals/<slug>/state.yaml --write
 ```
+
+## Repository Layout
+
+```text
+.
+  README.md
+  CONTRIBUTING.md
+  assets/
+  bin/
+  package.json
+  goal-maker/
+    SKILL.md
+    agents/
+    scripts/
+    templates/
+```
+
+`goal-maker/` is the installable skill. Everything outside it is repo-level documentation and README artwork.
 
 ## Core Rule
 
