@@ -4,7 +4,7 @@
   "description": "Install the Codex Goal Maker skill for state-machine goal execution.",
   "type": "module",
   "bin": {
-    "goal-maker": "./bin/goal-maker.mjs"
+    "goal-maker": "bin/goal-maker.mjs"
   },
   "files": [
     "README.md",
