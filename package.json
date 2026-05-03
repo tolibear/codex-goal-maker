@@ -1,7 +1,7 @@
 {
   "name": "goal-maker",
-  "version": "0.1.5",
-  "description": "Run large Codex /goal efforts as a finite-state PM loop with agents, gates, evidence, and recovery.",
+  "version": "0.2.0",
+  "description": "Run long Codex goals as a rolling Scout/Judge/Worker task board with receipts.",
   "type": "module",
   "bin": {
     "goal-maker": "goal-maker/bin/goal-maker.mjs"
@@ -30,7 +30,8 @@
     "codex-skill",
     "openai-codex",
     "goal",
-    "state-machine",
+    "task-board",
+    "receipts",
     "project-management",
     "automation",
     "cli",

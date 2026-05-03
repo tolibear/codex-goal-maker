@@ -2,15 +2,31 @@
 
 ## Objective
 
-<User-editable goal objective.>
+<User-editable objective. Keep this bounded to the current tranche, not an infinite mission.>
 
-## Canonical State
+## Goal Kind
+
+`specific | open_ended | recovery | audit`
+
+## Current Tranche
+
+<What is enough for this run before stopping, auditing, or asking the owner whether to continue?>
+
+## Non-Negotiable Constraints
+
+- <Constraint, safety rule, compatibility rule, or owner preference.>
+
+## Stop Rule
+
+Stop when the tranche audit passes, all safe local work is blocked, or continuing would require owner input, credentials, destructive operations, or strategy the board cannot decide.
+
+## Canonical Board
 
 Machine truth lives at:
 
 `docs/goals/<slug>/state.yaml`
 
-If this file and `state.yaml` disagree, `state.yaml` wins for execution permission, active unit, gate status, verification status, and completion truth.
+If this charter and `state.yaml` disagree, `state.yaml` wins for task status, active task, receipts, verification freshness, and completion truth.
 
 ## Run Command
 
@@ -18,24 +34,14 @@ If this file and `state.yaml` disagree, `state.yaml` wins for execution permissi
 /goal Follow docs/goals/<slug>/goal.md
 ```
 
-## Loop Contract
+## PM Loop
 
 On every `/goal` continuation:
 
-1. Read this brief.
+1. Read this charter.
 2. Read `state.yaml`.
-3. Observe repo and control state.
-4. Update the gate.
-5. Execute or delegate at most one active unit.
-6. Verify.
-7. Append evidence.
-8. Update state.
-9. Stop only when completion audit passes or `blocked_scope` includes `all_local_work`.
-
-## Assumptions And Open Questions
-
-- <Assumption or question.>
-
-## Completion Criteria
-
-- <Criterion that must map to evidence and command truth.>
+3. Work only on the active board task.
+4. Assign Scout, Judge, Worker, or PM according to the task.
+5. Write a compact task receipt.
+6. Update the board.
+7. Select the next active task or finish with a Judge/PM audit receipt.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 const statePath = process.argv[2];
 
@@ -18,35 +18,19 @@ const root = dirname(statePath);
 const text = readFileSync(statePath, "utf8");
 const errors = [];
 const warnings = [];
-const rootAllowlist = new Set([
-  "goal.md",
-  "README.md",
-  "state.yaml",
-  "evidence.jsonl",
-  "review-bundles.md",
-  "decisions.md",
-  "blockers.md",
-]);
-const expectedArtifactDirs = [
-  "artifacts",
-  "artifacts/scouts",
-  "artifacts/judges",
-  "artifacts/audits",
-  "artifacts/owner-packets",
-  "artifacts/staging-slices",
-  "artifacts/commit-slices",
-  "artifacts/verification",
-  "artifacts/completion",
-  "artifacts/archive",
-];
 
 function clean(value) {
+  if (value === undefined || value === null) return null;
   const cleaned = value.replace(/#.*/, "").trim().replace(/^[\'\"]|[\'\"]$/g, "");
-  return cleaned === "null" ? null : cleaned;
+  if (cleaned === "" || cleaned === "null") return null;
+  if (cleaned === "true") return true;
+  if (cleaned === "false") return false;
+  if (/^\d+$/.test(cleaned)) return Number(cleaned);
+  return cleaned;
 }
 
 function topScalar(key) {
-  const match = text.match(new RegExp(`^${key}:\\s*(.+?)\\s*$`, "m"));
+  const match = text.match(new RegExp(`^${key}:\\s*(.*?)\\s*$`, "m"));
   return match ? clean(match[1]) : null;
 }
 
@@ -60,158 +44,234 @@ function nestedScalar(section, key) {
     }
     if (inSection && /^\S/.test(line)) break;
     if (inSection) {
-      const match = line.match(new RegExp(`^\\s{2}${key}:\\s*(.+?)\\s*$`));
+      const match = line.match(new RegExp(`^\\s{2}${key}:\\s*(.*?)\\s*$`));
       if (match) return clean(match[1]);
     }
   }
   return null;
 }
 
-const activeUnit = topScalar("active_unit");
-const activeUnitStatus = topScalar("active_unit_status");
-const gateStatus = nestedScalar("gate", "status");
-const featureAllowed = nestedScalar("gate", "feature_work_allowed");
-const blockedScopeLine = nestedScalar("gate", "blocked_scope");
-const dirtyInside = nestedScalar("dirty", "inside_active_scope");
-const dirtyPartitioned = nestedScalar("dirty", "partitioned");
-const status = topScalar("status");
-const gateStatuses = ["green", "red", "blocked"];
-
-function blockedScopes() {
-  if (!blockedScopeLine) return [];
-  return blockedScopeLine
-    .replace(/^\[/, "")
-    .replace(/\]$/, "")
-    .split(",")
-    .map((item) => item.trim().replace(/^[\'\"]|[\'\"]$/g, ""))
-    .filter(Boolean);
+function sectionText(section) {
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((line) => new RegExp(`^${section}:\\s*$`).test(line));
+  if (start === -1) return "";
+  const collected = [];
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (/^\S/.test(lines[i])) break;
+    collected.push(lines[i]);
+  }
+  return collected.join("\n");
 }
 
-const scopes = blockedScopes();
+function parseTasks() {
+  const body = sectionText("tasks");
+  if (!body) return [];
+  const lines = body.split(/\r?\n/);
+  const tasks = [];
+  let current = null;
+  let currentLines = [];
 
-function walkMarkdownFiles(dir) {
-  const results = [];
-  if (!existsSync(dir)) return results;
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry);
+  function finish() {
+    if (!current) return;
+    current.raw = currentLines.join("\n");
+    tasks.push(current);
+  }
+
+  for (const line of lines) {
+    const idMatch = line.match(/^\s{2}-\s+id:\s*(.+?)\s*$/);
+    if (idMatch) {
+      finish();
+      current = { id: clean(idMatch[1]) };
+      currentLines = [line];
+      continue;
+    }
+    if (current) currentLines.push(line);
+  }
+  finish();
+  return tasks.map((task) => ({
+    ...task,
+    type: taskScalar(task, "type"),
+    assignee: taskScalar(task, "assignee"),
+    status: taskScalar(task, "status"),
+    objective: taskScalar(task, "objective"),
+    allowedFiles: taskList(task, "allowed_files"),
+    verify: taskList(task, "verify"),
+    stopIf: taskList(task, "stop_if"),
+    receipt: taskReceipt(task),
+  }));
+}
+
+function taskScalar(task, key) {
+  const match = task.raw.match(new RegExp(`^\\s{4}${key}:\\s*(.*?)\\s*$`, "m"));
+  return match ? clean(match[1]) : null;
+}
+
+function taskList(task, key) {
+  const lines = task.raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => new RegExp(`^\\s{4}${key}:\\s*$`).test(line));
+  if (start === -1) return [];
+  const values = [];
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (/^\s{4}\S/.test(lines[i])) break;
+    const item = lines[i].match(/^\s{6}-\s*(.+?)\s*$/);
+    if (item) values.push(clean(item[1]));
+  }
+  return values.filter((value) => value !== null);
+}
+
+function taskReceipt(task) {
+  const lines = task.raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^\s{4}receipt:\s*/.test(line));
+  if (start === -1) return { present: false, value: null, raw: "" };
+
+  const inline = clean(lines[start].replace(/^\s{4}receipt:\s*/, ""));
+  if (inline === null && !/^(\s{6}|\s{8})/.test(lines[start + 1] || "")) {
+    return { present: true, value: null, raw: "" };
+  }
+
+  const receiptLines = [];
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (/^\s{4}\S/.test(lines[i])) break;
+    receiptLines.push(lines[i]);
+  }
+  const raw = receiptLines.join("\n");
+  return {
+    present: true,
+    value: inline || "object",
+    raw,
+    has: (key) => new RegExp(`^\\s{6}${key}:`, "m").test(raw),
+    scalar: (key) => {
+      const match = raw.match(new RegExp(`^\\s{6}${key}:\\s*(.*?)\\s*$`, "m"));
+      return match ? clean(match[1]) : null;
+    },
+  };
+}
+
+function rootEntryErrors() {
+  const allowed = new Set(["goal.md", "state.yaml", "notes"]);
+  const unexpected = [];
+  for (const entry of readdirSync(root).filter((item) => item !== ".DS_Store")) {
+    const path = join(root, entry);
     const stats = statSync(path);
-    if (stats.isDirectory()) {
-      results.push(...walkMarkdownFiles(path));
-    } else if (entry.endsWith(".md")) {
-      results.push(path);
+    if (!allowed.has(entry)) {
+      unexpected.push(entry);
+    } else if (entry === "notes" && !stats.isDirectory()) {
+      unexpected.push("notes (must be a directory)");
+    } else if (entry !== "notes" && !stats.isFile()) {
+      unexpected.push(`${entry} (must be a file)`);
     }
   }
-  return results;
+  return unexpected;
 }
 
-const rootEntries = readdirSync(root).filter((entry) => entry !== ".DS_Store");
-const rootMarkdownArtifacts = [];
-for (const entry of rootEntries) {
-  const path = join(root, entry);
-  const stats = statSync(path);
-  if (stats.isFile() && entry.endsWith(".md") && !rootAllowlist.has(entry)) {
-    rootMarkdownArtifacts.push(entry);
-  }
-}
-if (rootMarkdownArtifacts.length > 0) {
-  errors.push(`unexpected root markdown artifacts; move under artifacts/<kind>/: ${rootMarkdownArtifacts.join(", ")}`);
-}
+const version = topScalar("version");
+const goalStatus = nestedScalar("goal", "status");
+const activeTask = topScalar("active_task");
+const legacySignals = [
+  /^gate:\s*$/m,
+  /^artifact_policy:\s*$/m,
+  /^active_unit:/m,
+  /^evidence\.jsonl/m,
+].some((pattern) => pattern.test(text)) || ["units", "artifacts", "evidence.jsonl"].some((entry) => existsSync(join(root, entry)));
 
-for (const artifactDir of expectedArtifactDirs) {
-  if (!existsSync(join(root, artifactDir))) {
-    warnings.push(`artifact directory not found: ${artifactDir}`);
-  }
-}
-
-const artifactRoot = join(root, "artifacts");
-for (const artifactPath of walkMarkdownFiles(artifactRoot)) {
-  const artifactText = readFileSync(artifactPath, "utf8");
-  const rel = relative(root, artifactPath);
-  if (!/^---\s*\n[\s\S]*?\n---\s*\n/.test(artifactText)) {
-    warnings.push(`${rel} missing artifact frontmatter`);
-    continue;
-  }
-  for (const key of ["unit", "kind", "status", "created_at", "source_evidence"]) {
-    if (!new RegExp(`^${key}:`, "m").test(artifactText)) {
-      warnings.push(`${rel} artifact frontmatter missing ${key}`);
-    }
-  }
-}
-
-if (!activeUnit && status !== "done") errors.push("missing top-level active_unit");
-if (activeUnitStatus === "completed" && !scopes.includes("all_local_work") && status !== "done") {
-  errors.push("active_unit_status is completed while local productive work remains; set the next active unit or add all_local_work with an exhaustion table");
-}
-if (!gateStatus) errors.push("missing gate.status");
-if (gateStatus && !gateStatuses.includes(gateStatus)) {
-  errors.push(`gate.status must be one of ${gateStatuses.join(", ")}; got ${gateStatus}`);
-}
-if (featureAllowed === null) errors.push("missing gate.feature_work_allowed");
-if (["red", "blocked"].includes(gateStatus) && featureAllowed === "true") {
-  errors.push("feature_work_allowed must be false when gate.status is red or blocked");
-}
-if (gateStatus === "green" && featureAllowed === "false") {
-  warnings.push("gate.status is green but feature_work_allowed is false");
-}
-if (gateStatus === "blocked" && scopes.length === 0) {
-  errors.push("gate.status blocked requires gate.blocked_scope");
-}
-if (gateStatus !== "blocked" && scopes.length > 0) {
-  warnings.push("gate.blocked_scope is set while gate.status is not blocked");
-}
-if (gateStatus === "blocked" && scopes.includes("all_local_work")) {
-  const hasExhaustion = /exhaustion(_|\s|-)?table:/i.test(text) || /##\s+Exhaustion Table/im.test(text);
-  if (!hasExhaustion) {
-    errors.push("blocked_scope includes all_local_work, so an exhaustion table is required");
-  }
-}
-if (gateStatus === "blocked" && !scopes.includes("all_local_work")) {
-  warnings.push("gate is blocked but not globally blocked; continue with local productive work outside blocked_scope");
-}
-if (gateStatus === "green" && dirtyInside === "false" && dirtyPartitioned !== "true") {
-  errors.push("gate.status cannot be green when dirty.inside_active_scope is false unless dirty.partitioned is true");
-}
-if (gateStatus === "green" && /status:\s*(fail|unknown|stale|blocked)\b/.test(text)) {
-  errors.push("gate.status cannot be green while any verification status is fail, unknown, stale, or blocked");
-}
-
-const unitsDir = join(root, "units");
-if (activeUnit && existsSync(unitsDir)) {
-  const files = walkMarkdownFiles(unitsDir);
-  const activeFiles = [];
-  for (const file of files) {
-    const unitText = readFileSync(file, "utf8");
-    if (/^Status:\s*(active|running)\b/im.test(unitText)) activeFiles.push(relative(unitsDir, file));
-  }
-  if (activeFiles.length > 1) errors.push(`more than one active/running unit: ${activeFiles.join(", ")}`);
-
-  const expectedFlat = join(unitsDir, `${activeUnit}.md`);
-  const expectedActive = join(unitsDir, "active", `${activeUnit}.md`);
-  const expected = existsSync(expectedFlat) ? expectedFlat : expectedActive;
-  if (!existsSync(expected)) {
-    warnings.push(`active unit file not found at ${expectedFlat} or ${expectedActive}`);
+if (version !== 2) {
+  if (legacySignals) {
+    errors.push("legacy v1 goal state detected; Goal Maker v2 requires version: 2 with a task board. Create a new v2 goal or migrate manually.");
   } else {
-    const unitText = readFileSync(expected, "utf8");
-    const requiredHeadings = ["Objective", "Evidence", "Allowed files", "Commands", "Stop if", "Done when"];
-    for (const heading of requiredHeadings) {
-      if (!new RegExp(`^##\\s+${heading}\\b`, "im").test(unitText)) {
-        errors.push(`${activeUnit}.md missing heading: ## ${heading}`);
-      }
+    errors.push("state.yaml must declare version: 2");
+  }
+}
+
+if (!existsSync(join(root, "goal.md"))) errors.push("missing goal.md");
+if (!existsSync(join(root, "notes")) || !statSync(join(root, "notes")).isDirectory()) {
+  errors.push("missing notes/ directory");
+}
+
+const unexpected = rootEntryErrors();
+if (unexpected.length > 0) {
+  errors.push(`unexpected root entries; v2 goal roots may contain only goal.md, state.yaml, and notes/: ${unexpected.join(", ")}`);
+}
+
+const tasks = parseTasks();
+const ids = new Set();
+for (const task of tasks) {
+  if (!task.id || !/^T\d{3}$/.test(task.id)) errors.push(`task id must use T### format; got ${task.id || "<missing>"}`);
+  if (ids.has(task.id)) errors.push(`duplicate task id: ${task.id}`);
+  ids.add(task.id);
+  if (!["scout", "judge", "worker", "pm"].includes(task.type)) {
+    errors.push(`task ${task.id} type must be scout, judge, worker, or pm`);
+  }
+  if (!["Scout", "Judge", "Worker", "PM"].includes(task.assignee)) {
+    errors.push(`task ${task.id} assignee must be Scout, Judge, Worker, or PM`);
+  }
+  if (!["queued", "active", "blocked", "done"].includes(task.status)) {
+    errors.push(`task ${task.id} status must be queued, active, blocked, or done`);
+  }
+  if (!task.objective) errors.push(`task ${task.id} missing objective`);
+}
+
+if (tasks.length === 0) errors.push("tasks must contain at least one task");
+
+const activeTasks = tasks.filter((task) => task.status === "active");
+if (goalStatus === "done") {
+  if (activeTasks.length !== 0) errors.push("done goals must not have an active task");
+  if (activeTask !== null) errors.push("done goals must set active_task: null");
+} else if (goalStatus === "blocked") {
+  if (activeTasks.length > 1) errors.push("blocked goals may have at most one active task");
+} else if (activeTasks.length !== 1) {
+  errors.push(`exactly one active task is required while goal.status is active; found ${activeTasks.length}`);
+}
+
+if (activeTasks.length === 1 && activeTask !== activeTasks[0].id) {
+  errors.push(`active_task must point to active task ${activeTasks[0].id}; got ${activeTask || "null"}`);
+}
+if (activeTask && !ids.has(activeTask)) errors.push(`active_task points to unknown task: ${activeTask}`);
+
+for (const task of tasks) {
+  const hasReceipt = task.receipt.present && task.receipt.value !== null;
+  if (task.status === "done" && !hasReceipt) {
+    errors.push(`done task ${task.id} missing receipt`);
+  }
+  if (task.type === "worker" && task.status === "active") {
+    if (task.allowedFiles.length === 0) errors.push(`active Worker task ${task.id} must include allowed_files`);
+    if (task.verify.length === 0) errors.push(`active Worker task ${task.id} must include verify`);
+    if (task.stopIf.length === 0) errors.push(`active Worker task ${task.id} must include stop_if`);
+  }
+  if (task.type === "worker" && task.status === "done" && hasReceipt) {
+    for (const key of ["changed_files", "commands", "summary"]) {
+      if (!task.receipt.has(key)) errors.push(`Worker receipt for ${task.id} missing ${key}`);
     }
   }
-} else if (activeUnit) {
-  warnings.push(`units directory not found: ${unitsDir}`);
+  if (task.type === "scout" && task.status === "done" && hasReceipt) {
+    if (!task.receipt.has("summary")) errors.push(`Scout receipt for ${task.id} missing summary`);
+    if (!task.receipt.has("evidence") && !task.receipt.has("note")) {
+      errors.push(`Scout receipt for ${task.id} must include evidence or note`);
+    }
+  }
+  if (task.type === "judge" && task.status === "done" && hasReceipt && !task.receipt.has("decision")) {
+    errors.push(`Judge receipt for ${task.id} missing decision`);
+  }
+}
+
+if (goalStatus === "done") {
+  const finalAudit = tasks.some((task) => {
+    if (!["judge", "pm"].includes(task.type) || task.status !== "done") return false;
+    if (!task.receipt.present || task.receipt.value === null) return false;
+    const decision = task.receipt.scalar("decision");
+    return decision === "complete" || decision === "done";
+  });
+  if (!finalAudit) {
+    errors.push("completion requires a final done Judge or PM audit receipt with decision: complete");
+  }
 }
 
 const result = {
   ok: errors.length === 0,
+  version,
   state_path: statePath,
-  status,
-  active_unit: activeUnit,
-  active_unit_status: activeUnitStatus,
-  gate_status: gateStatus,
-  blocked_scope: scopes,
-  feature_work_allowed: featureAllowed,
+  goal_status: goalStatus,
+  active_task: activeTask,
+  task_count: tasks.length,
   errors,
   warnings,
 };

@@ -7,39 +7,15 @@ import assert from "node:assert/strict";
 
 const checker = resolve("goal-maker/scripts/check-goal-state.mjs");
 
-function writeGoal(root, rootFile) {
-  mkdirSync(join(root, "artifacts"), { recursive: true });
-  writeFileSync(join(root, rootFile), "# Goal\n");
-  writeFileSync(join(root, "evidence.jsonl"), "");
-  writeFileSync(join(root, "state.yaml"), `
-goal: "Sample"
-slug: "sample"
-status: done
-active_unit: null
-active_unit_status: none
-wip_limit: 1
+function makeRoot() {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-test-"));
+  mkdirSync(join(root, "notes"), { recursive: true });
+  writeFileSync(join(root, "goal.md"), "# Sample Goal\n");
+  return root;
+}
 
-gate:
-  status: green
-  feature_work_allowed: false
-  completion_allowed: true
-  blocked_scope: []
-  reason: "complete"
-  next_action: "none"
-  updated_at: "2026-05-03T00:00:00Z"
-
-dirty:
-  fingerprint: "clean"
-  inside_active_scope: true
-  partitioned: true
-
-verification:
-  required:
-    - command: "git diff --check"
-      status: pass
-      fingerprint: "abc"
-      summary: "pass"
-`);
+function writeState(root, body) {
+  writeFileSync(join(root, "state.yaml"), body.trimStart());
 }
 
 function runChecker(root) {
@@ -53,24 +29,125 @@ function runChecker(root) {
   };
 }
 
-test("check-goal-state accepts goal.md and terminal null active unit", () => {
-  const root = mkdtempSync(join(tmpdir(), "goal-maker-test-"));
+const validScoutBoard = `
+version: 2
+
+goal:
+  title: "Improve this project"
+  slug: "improve-this-project"
+  kind: open_ended
+  tranche: "discovery-then-first-safe-improvement"
+  status: active
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+active_task: T001
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Map the repo and identify improvement candidates."
+    inputs:
+      - README.md
+      - package.json
+    constraints:
+      - "Read-only."
+    expected_output:
+      - "Repo map"
+      - "Candidate tasks"
+    receipt: null
+  - id: T002
+    type: judge
+    assignee: Judge
+    status: queued
+    objective: "Choose the first safe tranche."
+    inputs:
+      - "T001 receipt"
+    constraints:
+      - "Do not implement."
+    expected_output:
+      - "Decision"
+    receipt: null
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`;
+
+test("accepts a valid v2 board with one active Scout task", () => {
+  const root = makeRoot();
   try {
-    writeGoal(root, "goal.md");
+    writeState(root, validScoutBoard);
     const result = runChecker(root);
     assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
     assert.equal(result.stdout.ok, true);
-    assert.equal(result.stdout.active_unit, null);
-    assert.equal(result.stdout.active_unit_status, "none");
+    assert.equal(result.stdout.version, 2);
+    assert.equal(result.stdout.active_task, "T001");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("check-goal-state keeps README.md backward compatible", () => {
-  const root = mkdtempSync(join(tmpdir(), "goal-maker-test-"));
+test("accepts an active Worker only with scope, verification, and stop conditions", () => {
+  const root = makeRoot();
   try {
-    writeGoal(root, "README.md");
+    writeState(root, `
+version: 2
+goal:
+  title: "Fix router coverage"
+  slug: "fix-router-coverage"
+  kind: specific
+  tranche: "router regression coverage"
+  status: active
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T004
+tasks:
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Add focused router dispatch regression coverage."
+    allowed_files:
+      - src/router/index.ts
+      - test/router.test.ts
+    verify:
+      - git diff --check
+      - npm test -- test/router.test.ts
+    stop_if:
+      - "Need files outside allowed_files."
+      - "Verification fails twice."
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
     const result = runChecker(root);
     assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
     assert.equal(result.stdout.ok, true);
@@ -79,14 +156,134 @@ test("check-goal-state keeps README.md backward compatible", () => {
   }
 });
 
-test("check-goal-state rejects unexpected root markdown artifacts", () => {
-  const root = mkdtempSync(join(tmpdir(), "goal-maker-test-"));
+test("rejects legacy v1 state with gate or units schema", () => {
+  const root = makeRoot();
   try {
-    writeGoal(root, "goal.md");
-    writeFileSync(join(root, "scout-report.md"), "# stray\n");
+    writeFileSync(join(root, "evidence.jsonl"), "");
+    mkdirSync(join(root, "units"), { recursive: true });
+    writeState(root, `
+goal: "Legacy"
+status: green
+active_unit: U-001
+gate:
+  status: green
+`);
     const result = runChecker(root);
     assert.equal(result.status, 1);
-    assert.match(result.stdout.errors.join("\n"), /unexpected root markdown artifacts/);
+    assert.match(result.stdout.errors.join("\n"), /legacy v1/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects more than one active task", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace("status: queued", "status: active"));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /exactly one active task/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects done task without receipt", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(
+      `status: active
+    objective: "Map the repo and identify improvement candidates."`,
+      `status: done
+    objective: "Map the repo and identify improvement candidates."`,
+    ));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /done task T001 missing receipt/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects root evidence, units, artifacts, or stray markdown", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard);
+    writeFileSync(join(root, "evidence.jsonl"), "");
+    mkdirSync(join(root, "units"), { recursive: true });
+    mkdirSync(join(root, "artifacts"), { recursive: true });
+    writeFileSync(join(root, "scout-report.md"), "# Stray\n");
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /unexpected root entries/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("accepts done goal only with final Judge or PM audit receipt", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "Improve docs"
+  slug: "improve-docs"
+  kind: specific
+  tranche: "docs cleanup"
+  status: done
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: null
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Update docs."
+    allowed_files:
+      - README.md
+    verify:
+      - git diff --check
+    stop_if:
+      - "Verification fails twice."
+    receipt:
+      result: done
+      changed_files:
+        - README.md
+      commands:
+        - cmd: git diff --check
+          status: pass
+      summary: "Docs updated."
+  - id: T002
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit tranche completion."
+    receipt:
+      result: done
+      decision: complete
+      summary: "Tranche complete with current verification."
+checks:
+  dirty_fingerprint: clean
+  last_verification:
+    result: pass
+    task: T002
+    commands:
+      - cmd: git diff --check
+        status: pass
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

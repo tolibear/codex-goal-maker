@@ -20,4 +20,4 @@ max_depth = 1
 job_max_runtime_seconds = 1800
 ```
 
-Only the main `/goal` PM loop may select the active unit, mark units done, update gate truth, or mark the goal complete.
+Only the main `/goal` PM loop may select the active task, mark tasks done, update board truth, or mark the goal complete.

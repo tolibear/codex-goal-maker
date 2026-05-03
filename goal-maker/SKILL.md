@@ -1,341 +1,314 @@
 ---
 name: goal-maker
-description: Use for large, stalled, or unhealthy Codex /goal runs that need a finite-state PM loop, verification gate, recovery mode, bounded worker packets, subagent delegation, or completion audit.
+description: Use for broad, long-running, stalled, or unhealthy Codex work that needs autonomous task discovery, role-tagged Scout/Judge/Worker delegation, one active task, durable receipts, and a PM-owned rolling board.
 ---
 
 # Goal Maker
 
-`$goal-maker` prepares a Goal Maker control plane. It does not start `/goal` automatically.
+`$goal-maker` prepares a Goal Maker board. It does not start `/goal` automatically.
 
-The prepared `/goal` run is a state machine, not a project plan. Goal Maker turns a vague long-running objective into this loop:
+Goal Maker is for autonomous, long-running Codex work where the PM thread may need to discover the work, define tasks, sequence them, delegate them, execute them, verify them, and keep going without the human decomposing every step.
+
+The loop is:
 
 ```text
-observe -> gate -> choose one unit -> act or delegate -> verify -> record -> repeat
+vague goal -> discovery -> task board -> one active task -> receipt -> board update -> repeat
 ```
-
-Progress is one verified state transition.
 
 ## What `$goal-maker` Does
 
-When invoked directly, prepare or repair the control plane and stop for user choice.
+When invoked directly, prepare or repair the board and stop for user choice.
 
 Do:
 
 - clarify or infer the goal title and slug;
+- classify the goal as `specific`, `open_ended`, `recovery`, or `audit`;
 - create or repair `docs/goals/<slug>/`;
-- create `goal.md`, `state.yaml`, `evidence.jsonl`, `units/`, and `artifacts/`;
-- create the first candidate unit only when enough evidence exists;
-- identify likely verification commands and blockers;
+- create `goal.md`, `state.yaml`, and `notes/`;
+- seed a role-tagged task board;
+- make the first active task safe;
+- verify Scout, Worker, and Judge agents are installed or explain what is missing;
 - print the exact command `/goal Follow docs/goals/<slug>/goal.md`;
 - ask whether to start now, refine `goal.md`, or stop.
 
 Do not:
 
 - start `/goal` automatically;
-- edit implementation files before control state exists;
-- treat `goal.md` as execution truth when it conflicts with `state.yaml`.
+- create `evidence.jsonl`, `units/`, or `artifacts/` for new v2 goals;
+- edit implementation files before the board exists;
+- invent implementation tasks from vibes when a Scout or Judge task is needed first;
+- treat `goal.md` as board truth when it conflicts with `state.yaml`.
 
 ## When To Use
 
-Use this skill for goals that are multi-hour, multi-slice, ambiguous, high-risk, already stale, already red, or likely to need worker delegation. For a one-change task, do not create a heavy control system.
+Use this skill for goals that are broad, multi-hour, ambiguous, high-risk, already stale, already red, or likely to need Scout/Judge/Worker delegation.
 
-## The Five Primitives
+For a one-change task, do not create a Goal Maker board.
 
-1. **State**: one file says what is true.
-2. **Gate**: decides whether feature work is allowed.
-3. **Unit**: the only work that may happen.
-4. **Evidence**: proves the state transition.
-5. **Agents**: optional tools, never owners.
+## The Four Primitives
+
+1. **Charter**: `goal.md` says what the current tranche is trying to accomplish and what constraints matter.
+2. **Board**: `state.yaml` is the rolling task list and machine truth.
+3. **Task**: exactly one active task may be worked at a time.
+4. **Receipt**: every completed, blocked, or escalated task leaves a compact durable result on the task card.
+
+Agents are not a separate primitive. They are the assignee type on a task.
 
 ## Control Files
 
-For a big or recovery goal, create:
+For a v2 goal, create only:
 
 ```text
 docs/goals/<slug>/
   goal.md
   state.yaml
-  evidence.jsonl
-  units/
-    active/
-    completed/
-    blocked/
-  artifacts/
-    scouts/
-    judges/
-    audits/
-    owner-packets/
-    staging-slices/
-    commit-slices/
-    verification/
-    completion/
-    archive/
+  notes/
 ```
 
-Optional only when needed:
+The goal root may contain only `goal.md`, `state.yaml`, and `notes/`.
+
+Most results live inline as task receipts in `state.yaml`. Only create `notes/<task-id>-<slug>.md` when Scout, Judge, or PM output is too large to fit on the task card.
+
+Use:
+
+- `templates/goal.md`
+- `templates/state.yaml`
+- `templates/note.md`
+
+## Charter
+
+The charter answers:
 
 ```text
-  review-bundles.md
-  decisions.md
-  blockers.md
+What are we trying to improve?
+What constraints are non-negotiable?
+Is this goal specific, open-ended, recovery, or audit?
+What counts as enough for the current tranche?
 ```
 
-The goal root is the control plane. It may contain only:
+Avoid forever goals. A broad goal should define a tranche, for example:
 
-- `goal.md`
-- `README.md`
-- `state.yaml`
-- `evidence.jsonl`
-- `review-bundles.md`
-- `decisions.md`
-- `blockers.md`
-- directories
+```text
+Discover the highest-leverage local improvements, complete the first safe implementation tranche, and leave a reviewable handoff for anything larger.
+```
 
-Do not write Scout reports, Judge reviews, audits, packets, staging slices, verification notes, or completion tables at the goal root. Put generated narrative artifacts under `artifacts/<kind>/` and reference their paths from `state.yaml`, unit files, or `evidence.jsonl`.
+## Board
 
-Use these default artifact destinations:
-
-| Artifact | Destination |
-|---|---|
-| `scout-*.md` | `artifacts/scouts/` |
-| `judge-*.md` | `artifacts/judges/` |
-| `*-audit*.md` | `artifacts/audits/` |
-| `*owner*packet.md`, `*handoff*.md` | `artifacts/owner-packets/` |
-| `staging-slice-*.md`, `*staging*proposal.md` | `artifacts/staging-slices/` |
-| `*commit-slicing*.md`, `*commit-slice*.md` | `artifacts/commit-slices/` |
-| `*verification*.md` | `artifacts/verification/` |
-| `*completion*.md`, `*gap-table*.md` | `artifacts/completion/` |
-
-Every generated artifact must start with a compact frontmatter block:
+`state.yaml` is the board and machine truth. A task card has:
 
 ```yaml
----
-unit: U-001
-kind: scout | judge | audit | owner-packet | staging-slice | commit-slice | verification | completion | archive
-status: current | superseded | blocked
-created_at: "<iso timestamp>"
-supersedes: []
-source_evidence: []
----
+id: T001
+type: scout | judge | worker | pm
+assignee: Scout | Judge | Worker | PM
+status: queued | active | blocked | done
+objective: "<one sentence>"
+inputs: []
+constraints: []
+expected_output: []
+receipt: null
 ```
 
-`goal.md` is the user-editable brief. `state.yaml` is machine truth. If `goal.md` and `state.yaml` disagree, `state.yaml` wins for execution permission, active unit, gate status, verification status, and completion truth.
+Worker tasks additionally require:
 
-Use `templates/goal.md`, `templates/state.yaml`, `templates/unit.md`, and `templates/artifact.md`.
-
-## Mandatory First Action
-
-For a big or recovery goal, do not edit implementation files until control state exists or is repaired.
-
-The first action must be one of:
-
-- create `docs/goals/<slug>/goal.md`, `state.yaml`, and the first unit when evidence is sufficient;
-- repair stale control state;
-- checkpoint an unhealthy worktree;
-- escalate to Judge because no safe unit can be defined.
-
-## Gate
-
-Before every continuation, update the gate.
-
-- `green`: one bounded unit may proceed.
-- `red`: required verification failed; recovery only.
-- `blocked`: something is blocked.
-
-Blocked has scope. A blocked gate does not stop the goal unless `blocked_scope` includes `all_local_work`.
-
-Common scopes:
-
-- `completion`
-- `live_proof`
-- `production_readiness`
-- `feature_work`
-- `current_unit`
-- `all_local_work`
-
-Feature work is allowed only when:
-
-- exactly one active unit exists;
-- required verification is current for the dirty tree;
-- dirty diff is inside the active unit scope or explicitly partitioned;
-- behavior changes have source, spec, or decision evidence;
-- commands and stop conditions are defined;
-- no strategic blocker invalidates the unit.
-
-Red verification means:
-
-```text
-no feature work
-no unrelated cleanup
-no parity claims
-no completion claims
+```yaml
+allowed_files: []
+verify: []
+stop_if: []
 ```
 
-Allowed red work:
+The PM owns the board. Scout, Judge, and Worker return receipts; they do not select the next active task or mark the goal complete.
 
-- reproduce or classify the failure;
-- repair the owning unit;
-- update stale state;
-- classify artifacts;
-- partition broad diff;
-- escalate ambiguity.
+## Seed Boards
 
-After two failed repair attempts on the same unit, stop patching that unit and add `current_unit` to `blocked_scope`. Do not add `all_local_work` unless no local productive lane remains.
+If the goal is vague, the first active task is Scout.
+
+Example open-ended seed:
+
+```yaml
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Map repo health and identify improvement candidates."
+    receipt: null
+  - id: T002
+    type: scout
+    assignee: Scout
+    status: queued
+    objective: "Find verification commands, flaky tests, stale docs, dependency risks, and easy safety wins."
+    receipt: null
+  - id: T003
+    type: judge
+    assignee: Judge
+    status: queued
+    objective: "Choose the first tranche by impact, confidence, reversibility, and verification strength."
+    receipt: null
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: queued
+    objective: "Execute the first chosen implementation task."
+    allowed_files: []
+    verify: []
+    stop_if:
+      - "Need files outside allowed_files."
+      - "Behavior is ambiguous."
+      - "Verification fails twice."
+    receipt: null
+```
+
+If the goal is specific but evidence is incomplete, start with Scout. If risk or priority is unclear, queue Judge before Worker. If evidence is adequate and implementation is bounded, the first active task may be Worker.
+
+## Task Rules
+
+A task is the only work that may happen.
+
+- Scout tasks are read-only and produce findings.
+- Judge tasks are read-only and produce decisions or constraints.
+- Worker tasks may write only inside `allowed_files`.
+- PM tasks may update control files and board state.
+
+No implementation without an active Worker or PM task that explicitly allows it.
+
+At most one write-capable Worker may be active. Do not run parallel Workers unless `state.yaml` proves disjoint write scopes and the user explicitly asked for parallel agent work.
+
+## Receipts
+
+A receipt is compact proof that the task happened and what it changed, learned, decided, blocked, or spawned.
+
+Scout receipt:
+
+```yaml
+receipt:
+  result: done
+  summary: "Found three high-leverage candidates: flaky auth tests, missing router coverage, stale build docs."
+  evidence:
+    - test/auth/session.test.ts
+    - src/router/index.ts
+    - README.md
+  spawned_tasks:
+    - T004
+```
+
+Judge receipt:
+
+```yaml
+receipt:
+  result: done
+  decision: "Do router coverage first; defer auth flake because it is not reproducible locally."
+  next_allowed_task: T004
+  blocked_tasks:
+    - T005
+```
+
+Worker receipt:
+
+```yaml
+receipt:
+  result: done
+  changed_files:
+    - src/billing/router.ts
+    - test/billing/router.test.ts
+  commands:
+    - cmd: git diff --check
+      status: pass
+    - cmd: npm test -- test/billing/router.test.ts
+      status: pass
+  summary: "invoice.paid now routes through eventRouter.dispatch; regression test added."
+```
+
+For long findings or decisions, write `notes/<task-id>-<slug>.md` and point to it:
+
+```yaml
+receipt:
+  result: done
+  note: notes/T001-repo-map.md
+  summary: "Repo map completed; three candidate tranches found."
+```
+
+## Computed Gate
+
+Do not store manual gate booleans.
+
+The gate is computed from the active task:
+
+- active Scout: edits are not allowed; receipt must include findings or a note.
+- active Judge: edits are not allowed; receipt must include a decision.
+- active Worker: edits are allowed only inside `allowed_files`; receipt must include changed files and commands.
+- active PM: edits are limited to control files unless the task explicitly allows otherwise.
+
+If verification is red, stale, blocked, or unknown, choose recovery, Scout, Judge, or PM board work before feature work.
 
 ## Blocked Does Not Mean Stop
 
-External blockers usually block completion, live proof, production readiness, or a specific unit. They do not automatically block the goal.
+Blocked tasks do not necessarily block the goal. The PM should keep doing safe local board work when possible:
 
-If `gate.status: blocked` but `blocked_scope` does not include `all_local_work`, the PM must continue with local productive work that improves truth, reviewability, handoff quality, unblock readiness, or mechanical safety.
+- create a Scout task to improve evidence;
+- create a Judge task to resolve ambiguity;
+- create a Worker task for a smaller safe slice;
+- write or update a note for handoff;
+- update receipts and verification freshness.
 
-Allowed local work lanes include:
+Set `goal.status: blocked` only when every safe local next action is blocked, unsafe, or requires owner input.
 
-- review-bundle partitioning and staging plan;
-- artifact classification and ignore/delete/keep recommendations;
-- verification freshness under the declared repo engine;
-- completion-audit evidence gap table;
-- source-ledger and matrix consistency audit;
-- failing/stale test classification;
-- guard/script improvements that prevent drift;
-- API/live blocker decision memo with exact options and owner inputs;
-- packaging/staging proposal, clearly marked as a proposal;
-- PR/commit slicing plan with files, evidence, verification, and blockers per bundle.
+## Continuation Rule
 
-The PM may add `all_local_work` to `blocked_scope` only after producing an exhaustion table proving every local work lane is exhausted, unsafe, or requires external input.
+After a task completes, immediately write its receipt and select the next active task unless:
 
-## Checkpoint Does Not Mean Stop
+- the tranche audit passes;
+- every safe local next action is blocked;
+- owner input is required;
+- continuing would require credentials, destructive operations, or product strategy outside the board.
 
-After a unit completes, checkpoint the evidence and immediately select the next active unit unless `blocked_scope` includes `all_local_work` or the completion audit passed.
+Do not end with an active task marked done.
 
-Do not end a continuation with `active_unit` pointing at a completed unit while local productive work remains. Before ending, the PM must either:
-
-- set the next active unit and `gate.next_action`, or
-- add `all_local_work` to `blocked_scope` with an exhaustion table.
-
-Run the guard script when available:
+Run the checker when available:
 
 ```bash
 node <skill-path>/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
 ```
 
-For an older goal with root-level artifact sprawl, classify the files before continuing:
-
-```bash
-node <skill-path>/scripts/organize-goal-artifacts.mjs docs/goals/<slug>/state.yaml
-node <skill-path>/scripts/organize-goal-artifacts.mjs docs/goals/<slug>/state.yaml --write
-```
-
-If the script and your judgment disagree, choose the more conservative state.
-
-## Unit
-
-A unit is the smallest reviewable state transition.
-
-A unit must have:
-
-- objective;
-- evidence;
-- allowed files or exact subsystem boundary;
-- non-goals;
-- commands;
-- stop conditions;
-- done criteria.
-
-No unit, no implementation.
-
-The PM loop asks:
-
-```text
-What is the smallest reviewable state transition that makes the state more true?
-```
-
-Not:
-
-```text
-What can I implement next?
-```
-
-## Evidence
-
-Behavioral, compatibility, migration, auth, money, safety, persistence, or destructive work is not reviewable unless it records:
-
-```text
-source/spec/decision
-  -> implementation
-  -> positive test
-  -> negative or safety test when relevant
-  -> verification result
-  -> state update
-```
-
-Lots of docs or tests do not count unless this chain is coherent.
-
-Append every completed, blocked, or escalated unit to `evidence.jsonl`.
-
-Each evidence event should include any artifact paths produced or consumed by the unit. Artifact files are supporting evidence; they are not canonical state unless `state.yaml` or `evidence.jsonl` points to them.
+If the checker and your judgment disagree, choose the more conservative state.
 
 ## Agents
 
-Agents are optional tools, not project owners.
-
-Use only three default roles:
+Scout, Worker, and Judge are default-installed roles.
 
 | Agent | Thinking level | Write access | Use for |
 |---|---:|---:|---|
-| Scout | medium | no | read-only source/spec mapping |
-| Worker | low | yes, bounded | one exact implementation or recovery unit |
-| Judge | high | no | strategic review, ambiguity, scope, completion |
+| Scout | medium | no | source/spec/repo evidence mapping |
+| Worker | low | yes, bounded | one exact implementation or recovery task |
+| Judge | high | no | strategic review, ambiguity, scope, completion skepticism |
 
-Only the main `/goal` PM may choose the active unit, update the gate, mark units done, or mark the goal complete.
+A task's `assignee` determines the agent. The task card is the order. The receipt is the return format.
 
-At most one write-capable Worker may be active unless `state.yaml` proves disjoint write scopes.
-
-Agent definitions live in `agents/`. Copy the `goal_*.toml` files into `.codex/agents/` only when you want Codex to spawn these roles. `agents/openai.yaml` is skill metadata and should remain with the skill.
-
-## Worker Orders
-
-A Worker order must include:
-
-- one objective;
-- current gate state;
-- source/spec/decision evidence;
-- allowed files;
-- non-goals;
-- commands;
-- stop conditions;
-- required return format.
-
-A Worker must stop when evidence is missing, files outside scope are needed, verification fails twice, product/API strategy is required, or the diff exceeds the order.
-
-Use `templates/worker-order.md`.
-
-## Escalate To Judge
-
-Use Judge for high-thinking review when:
-
-- source, tests, and product behavior conflict;
-- verification and state disagree;
-- dirty diff exceeds active scope;
-- API, live, deployment, or compatibility strategy blocks acceptance;
-- a worker needs broad files or giant-file refactor;
-- safety, auth, money, persistence, idempotency, replay, or destructive behavior is ambiguous;
-- completion or parity is being considered.
-
-Judge should decide and constrain. Judge should not broadly implement.
+Only the main `/goal` PM may choose the active task, update the board, mark tasks done, or mark the goal complete.
 
 ## Completion
 
 Never complete because work looks substantial.
 
-Complete only after an audit maps every success criterion:
+Completion is a Judge or PM audit task. The goal is done only when a final done Judge or PM receipt says the current tranche is complete and maps completion to current receipts and verification.
 
-```text
-criterion -> evidence -> command result -> current state row
+Default final task:
+
+```yaml
+- id: T999
+  type: judge
+  assignee: Judge
+  status: queued
+  objective: "Audit whether the current tranche is complete."
+  inputs:
+    - "All done task receipts"
+    - "Last verification"
+    - "Current dirty diff"
+  expected_output:
+    - "complete | not_complete"
+    - "missing evidence"
+    - "next task if not complete"
+  receipt: null
 ```
-
-If anything is stale, red, blocked, externally gated, or unreviewable, the goal is not complete.
-
-Use `templates/completion-audit.md`.
 
 ## Default `/goal` Shape
 
