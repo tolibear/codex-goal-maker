@@ -1,6 +1,6 @@
 {
   "name": "goal-maker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Install the Codex Goal Maker skill for state-machine goal execution.",
   "type": "module",
   "bin": {

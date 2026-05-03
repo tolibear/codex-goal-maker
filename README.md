@@ -88,7 +88,7 @@ Generated Scout reports, Judge reviews, audits, owner packets, staging slices, v
 
 ## Install
 
-Install the skill:
+Install the skill and bundled agent definitions:
 
 ```bash
 npx goal-maker
@@ -107,7 +107,7 @@ npx goal-maker install
 npx goal-maker update
 ```
 
-Install the optional Scout, Worker, and Judge agent definitions:
+Repair or reinstall only the Scout, Worker, and Judge agent definitions:
 
 ```bash
 npx goal-maker agents

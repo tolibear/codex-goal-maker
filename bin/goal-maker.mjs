@@ -37,7 +37,7 @@ Usage:
   goal-maker doctor [--codex-home <path>]
 
 Default:
-  goal-maker
+  goal-maker  Installs the skill and bundled agent definitions.
 
 Environment:
   CODEX_HOME  Overrides the default ~/.codex target.
@@ -87,6 +87,11 @@ function installAgents() {
   }
 }
 
+function installAll() {
+  installSkill({ force: true });
+  installAgents();
+}
+
 function doctor() {
   const skillPath = join(codexHome(), "skills", "goal-maker", "SKILL.md");
   const agentsPath = join(codexHome(), "agents");
@@ -108,7 +113,7 @@ function doctor() {
 switch (command) {
   case "install":
   case "update":
-    installSkill({ force: command === "update" || hasFlag("--force") || command === "install" });
+    installAll();
     break;
   case "agents":
     installAgents();
