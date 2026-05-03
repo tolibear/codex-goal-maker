@@ -269,7 +269,7 @@ Only the main `/goal` PM may choose the active unit, update the gate, mark units
 
 At most one write-capable Worker may be active unless `state.yaml` proves disjoint write scopes.
 
-Custom agent examples live in `assets/codex-agents/`. Copy them into `.codex/agents/` only when you want Codex to spawn these roles.
+Agent definitions live in `agents/`. Copy the `goal_*.toml` files into `.codex/agents/` only when you want Codex to spawn these roles. `agents/openai.yaml` is skill metadata and should remain with the skill.
 
 ## Worker Orders
 

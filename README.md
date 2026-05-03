@@ -20,7 +20,7 @@ Agents are tools.
 - Goal control templates in `goal-maker/templates/`
 - A state checker script: `goal-maker/scripts/check-goal-state.mjs`
 - An artifact organizer for older flat goal folders: `goal-maker/scripts/organize-goal-artifacts.mjs`
-- Optional custom Codex agent definitions in `goal-maker/assets/codex-agents/`
+- Codex metadata and optional agent definitions in `goal-maker/agents/`
 - README images in `assets/`
 
 ## Repository Layout
@@ -33,7 +33,6 @@ Agents are tools.
     SKILL.md
     VERSION
     agents/
-    assets/codex-agents/
     references/
     scripts/
     templates/
@@ -102,11 +101,11 @@ mkdir -p .codex/skills
 cp -R /path/to/codex-goal-maker/goal-maker .codex/skills/goal-maker
 ```
 
-Optional custom agents:
+Install the optional Scout, Worker, and Judge agent definitions:
 
 ```bash
 mkdir -p ~/.codex/agents
-node ~/.codex/skills/goal-maker/scripts/install-custom-agents.mjs ~/.codex/agents
+node ~/.codex/skills/goal-maker/scripts/install-agents.mjs ~/.codex/agents
 ```
 
 ## Use

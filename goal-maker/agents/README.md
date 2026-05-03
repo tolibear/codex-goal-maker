@@ -1,6 +1,9 @@
-# Codex custom agents for Goal Maker
+# Goal Maker Agents
 
-Copy these files into `.codex/agents/` for project-scoped agents or `~/.codex/agents/` for personal agents.
+This directory contains both skill metadata and optional agent definitions.
+
+- `openai.yaml` stays with the skill as metadata.
+- `goal_*.toml` files can be copied into `.codex/agents/` for project-scoped agents or `~/.codex/agents/` for personal agents.
 
 | Agent | File | Reasoning effort | Sandbox |
 |---|---|---:|---|

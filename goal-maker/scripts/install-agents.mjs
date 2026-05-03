@@ -4,12 +4,12 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const sourceDir = resolve(__dirname, "../assets/codex-agents");
+const sourceDir = resolve(__dirname, "../agents");
 const destDir = resolve(process.argv[2] || ".codex/agents");
 const force = process.argv.includes("--force");
 
 if (!existsSync(sourceDir)) {
-  console.error(`custom agent assets not found: ${sourceDir}`);
+  console.error(`agent definitions not found: ${sourceDir}`);
   process.exit(1);
 }
 
