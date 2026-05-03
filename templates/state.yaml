@@ -1,0 +1,131 @@
+# Goal Maker state.yaml
+# State is truth. Narrative plans and matrices must match this file and current verification.
+
+goal: "<short goal name>"
+slug: "<goal-slug>"
+status: red # green | red | blocked | audit | done
+active_unit: U-001
+active_unit_status: ready # ready | active | completed | blocked
+wip_limit: 1
+strict_completion_status: cannot_claim_complete
+
+artifact_policy:
+  root_allowlist:
+    - README.md
+    - state.yaml
+    - evidence.jsonl
+    - review-bundles.md
+    - decisions.md
+    - blockers.md
+  required_directories:
+    - units
+    - artifacts
+    - artifacts/scouts
+    - artifacts/judges
+    - artifacts/audits
+    - artifacts/owner-packets
+    - artifacts/staging-slices
+    - artifacts/commit-slices
+    - artifacts/verification
+    - artifacts/completion
+    - artifacts/archive
+  root_artifacts_allowed: false
+
+# The gate decides whether feature work is allowed.
+gate:
+  status: red # green | red | blocked
+  feature_work_allowed: false
+  completion_allowed: false
+  blocked_scope: [] # completion | live_proof | production_readiness | feature_work | current_unit | all_local_work
+  reason: "Required verification is not yet current."
+  next_action: "Create or repair the active unit, then run required verification."
+  updated_at: "<iso timestamp>"
+  exhaustion_table_required_when_scope_includes_all_local_work: true
+  next_active_unit_required_when_current_completed: true
+
+# Dirty state should be refreshed before each continuation.
+dirty:
+  fingerprint: "unknown"
+  inside_active_scope: false
+  partitioned: false
+
+thresholds:
+  max_files_per_unit: 8
+  max_diff_lines_per_unit: 800
+  max_failed_attempts_before_escalation: 2
+  max_active_workers_with_write_access: 1
+  giant_file_line_threshold: 2500
+
+verification:
+  required:
+    - command: "git diff --check"
+      status: unknown # pass | fail | unknown | blocked
+      fingerprint: "unknown"
+      summary: "not run"
+    - command: "<project lint/typecheck/test command>"
+      status: unknown
+      fingerprint: "unknown"
+      summary: "not run"
+
+blockers: []
+
+audit:
+  completion_allowed: false
+  reason: "Completion audit has not passed."
+
+local_work_lanes:
+  review_bundle_partitioning:
+    status: available # available | exhausted | blocked
+    evidence: ""
+    artifact: ""
+  artifact_classification:
+    status: available
+    evidence: ""
+    artifact: ""
+  verification_freshness:
+    status: available
+    evidence: ""
+    artifact: ""
+  completion_gap_table:
+    status: available
+    evidence: ""
+    artifact: ""
+  source_ledger_matrix_consistency:
+    status: available
+    evidence: ""
+    artifact: ""
+  guard_script_improvements:
+    status: available
+    evidence: ""
+    artifact: ""
+  blocker_decision_memos:
+    status: available
+    evidence: ""
+    artifact: ""
+  packaging_staging_proposal:
+    status: available
+    evidence: ""
+    artifact: ""
+  pr_commit_slicing:
+    status: available
+    evidence: ""
+    artifact: ""
+
+agent_policy:
+  max_active_workers_with_write_access: 1
+  default_agents:
+    scout:
+      thinking: medium
+      sandbox: read-only
+    worker:
+      thinking: low
+      sandbox: workspace-write
+    judge:
+      thinking: high
+      sandbox: read-only
+
+done_when:
+  - "all required verification is green and current"
+  - "all success criteria map to evidence and command results"
+  - "all blockers are resolved or explicitly reclassified"
+  - "completion audit passes"
