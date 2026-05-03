@@ -31,9 +31,7 @@ Agents are tools.
   assets/
   goal-maker/
     SKILL.md
-    VERSION
     agents/
-    references/
     scripts/
     templates/
 ```
