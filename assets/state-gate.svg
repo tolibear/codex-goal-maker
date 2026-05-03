@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 1000 620">
+  <title id="title">goal.md points to state.yaml, and state.yaml controls execution</title>
+  <desc id="desc">A hand-drawn diagram showing goal.md as the editable brief, state.yaml as machine truth, a gate deciding whether exactly one unit may run, and evidence proving progress.</desc>
+  <rect width="1000" height="620" fill="#fff"/>
+  <g fill="none" stroke="#111" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M67 94 C65 70 79 56 103 58 L296 58 C319 59 333 74 331 98 L331 260 C329 282 313 294 291 291 L97 291 C74 288 63 273 66 250 Z"/>
+    <path d="M391 65 C388 42 402 30 426 32 L664 32 C687 33 701 48 699 72 L699 308 C696 331 681 343 658 340 L421 340 C398 337 386 322 389 299 Z"/>
+    <path d="M760 95 C758 72 772 58 796 59 L934 59 C957 60 970 75 968 99 L968 260 C966 283 950 294 928 292 L789 292 C767 289 755 274 759 251 Z"/>
+    <path d="M390 413 C386 391 402 379 426 380 L658 380 C681 381 695 396 692 419 L692 529 C690 552 674 563 651 561 L419 561 C396 558 384 543 388 520 Z"/>
+    <path d="M333 172 C354 171 367 170 390 169"/>
+    <path d="M699 176 C728 176 733 176 759 176"/>
+    <path d="M580 341 C575 358 575 364 575 380"/>
+    <path d="M375 158 L390 169 L375 181"/>
+    <path d="M744 165 L759 176 L744 188"/>
+    <path d="M563 365 L575 380 L587 365"/>
+  </g>
+  <g font-family="'Bradley Hand', 'Marker Felt', 'Comic Sans MS', cursive" fill="#111">
+    <text x="104" y="111" font-size="37">goal.md</text>
+    <text x="101" y="156" font-size="25">editable brief</text>
+    <text x="101" y="190" font-size="25">what are we doing?</text>
+    <text x="101" y="224" font-size="25">what changed?</text>
+    <text x="101" y="258" font-size="25">how to start /goal?</text>
+    <text x="433" y="83" font-size="37">state.yaml</text>
+    <text x="431" y="128" font-size="26">machine truth</text>
+    <text x="431" y="169" font-size="24">gate.status</text>
+    <text x="431" y="202" font-size="24">active_unit</text>
+    <text x="431" y="235" font-size="24">verification</text>
+    <text x="431" y="268" font-size="24">completion</text>
+    <text x="431" y="307" font-size="23">if files disagree, state wins</text>
+    <text x="803" y="116" font-size="34">Gate</text>
+    <text x="800" y="162" font-size="25">green: run</text>
+    <text x="800" y="196" font-size="25">red: stop</text>
+    <text x="800" y="230" font-size="25">blocked: route</text>
+    <text x="432" y="433" font-size="32">One Active Unit</text>
+    <text x="432" y="476" font-size="24">bounded task</text>
+    <text x="432" y="508" font-size="24">explicit files</text>
+    <text x="432" y="540" font-size="24">proof before done</text>
+    <text x="748" y="420" font-size="28">evidence.jsonl</text>
+    <text x="748" y="456" font-size="23">records commands,</text>
+    <text x="748" y="486" font-size="23">artifacts, decisions</text>
+  </g>
+  <g fill="none" stroke="#e11" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M428 312 C506 299 583 299 665 313"/>
+    <circle cx="931" cy="106" r="12" fill="#e11" stroke="none"/>
+    <path d="M781 193 L850 193"/>
+    <path d="M740 435 C716 444 703 455 691 475"/>
+    <path d="M705 471 L691 475 L700 462"/>
+  </g>
+</svg>

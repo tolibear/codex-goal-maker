@@ -22,7 +22,7 @@ $goal-maker
 
 The main Codex thread remains the PM. Agents help gather evidence, patch bounded work, and challenge completion, but they do not own goal state.
 
-![A hand-drawn loop showing Observe, Gate, Unit, and Verify.](assets/goal-loop.png)
+![A hand-drawn setup flow: run goal-maker, review goal.md, then start slash goal with a command that follows goal.md.](assets/setup-flow.svg)
 
 ## Why
 
@@ -82,7 +82,7 @@ Each goal starts with a user-editable `goal.md` brief that points to `state.yaml
 
 `goal.md` is where the user and Codex can refine the objective, assumptions, and handoff command. `state.yaml` remains machine truth for execution permission, active unit, gate status, verification status, and completion.
 
-![A hand-drawn state.yaml file feeding a gate and the next unit.](assets/state-gate.png)
+![A hand-drawn control diagram: goal.md is editable, state.yaml is machine truth, the gate permits one active unit, and evidence records proof.](assets/state-gate.svg)
 
 Create one folder per goal:
 
@@ -107,7 +107,7 @@ docs/goals/<slug>/
     archive/
 ```
 
-![A hand-drawn folder tree showing units, artifacts, and evidence.jsonl.](assets/artifacts-tree.png)
+![A hand-drawn folder tree showing root control files, units, and routed artifacts subfolders.](assets/artifacts-tree.svg)
 
 Keep the goal root as the control plane. Root files are limited to `goal.md`, `state.yaml`, `evidence.jsonl`, `review-bundles.md`, `decisions.md`, `blockers.md`, legacy `README.md`, and directories.
 

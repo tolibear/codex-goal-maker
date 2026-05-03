@@ -1,6 +1,6 @@
 {
   "name": "goal-maker",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Run large Codex /goal efforts as a finite-state PM loop with agents, gates, evidence, and recovery.",
   "type": "module",
   "bin": {
