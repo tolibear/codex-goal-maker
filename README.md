@@ -126,6 +126,10 @@ Check board health:
 node ~/.codex/skills/goal-maker/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
 ```
 
+## Example
+
+See `examples/improve-goal-maker/` for a completed Goal Maker run with a charter, board receipts, and Scout notes.
+
 ## Package Contents
 
 - `goal-maker/SKILL.md`: the Codex skill
@@ -133,6 +137,7 @@ node ~/.codex/skills/goal-maker/scripts/check-goal-state.mjs docs/goals/<slug>/s
 - `goal-maker/templates/`: `goal.md`, `state.yaml`, and `note.md`
 - `goal-maker/scripts/check-goal-state.mjs`: v2 board checker
 - `goal-maker/bin/goal-maker.mjs`: npm installer CLI
+- `examples/improve-goal-maker/`: completed sample run
 
 ## Status
 

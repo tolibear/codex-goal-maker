@@ -1,0 +1,224 @@
+# Goal Maker v2 state.yaml
+# Board truth lives here. goal.md is the editable charter; notes/ holds long receipts only.
+
+version: 2
+
+goal:
+  title: "Improve Goal Maker"
+  slug: "improve-goal-maker"
+  kind: open_ended # specific | open_ended | recovery | audit
+  tranche: "Discover the highest-leverage local improvements to Goal Maker, complete the first safe implementation tranche, and leave a reviewable handoff for anything larger."
+  status: done # active | blocked | done
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+active_task: null
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Map Goal Maker purpose, architecture, templates, scripts, tests, docs, verification commands, health signals, and improvement candidates."
+    inputs:
+      - README.md
+      - CONTRIBUTING.md
+      - package.json
+      - goal-maker/SKILL.md
+      - goal-maker/templates
+      - goal-maker/scripts
+      - goal-maker/test
+      - docs
+    constraints:
+      - "Read-only."
+      - "Do not edit implementation files."
+      - "Prefer concrete file-path evidence over generic advice."
+      - "Flag any mismatch between the skill contract, templates, checker, tests, and Codex agent behavior."
+    expected_output:
+      - "Repo map"
+      - "Verification commands"
+      - "Current failures or unknowns"
+      - "Ranked improvement candidates"
+      - "Candidate next tasks"
+    receipt:
+      result: done
+      note: notes/T001-repo-map.md
+      summary: "Repo map completed; verification is green, install/package checks work, and the top improvement area is Goal Maker workflow reliability around checker blind spots, agent installation assumptions, and template/skill drift."
+      evidence:
+        - README.md
+        - CONTRIBUTING.md
+        - package.json
+        - goal-maker/SKILL.md
+        - goal-maker/bin/goal-maker.mjs
+        - goal-maker/scripts/check-goal-state.mjs
+        - goal-maker/scripts/install-agents.mjs
+        - goal-maker/templates/state.yaml
+        - goal-maker/agents/goal_scout.toml
+        - goal-maker/agents/goal_worker.toml
+        - goal-maker/agents/goal_judge.toml
+        - goal-maker/test/check-goal-state.test.mjs
+      spawned_tasks:
+        - T002
+        - T003
+  - id: T002
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Investigate Goal Maker workflow risks, stale instructions, checker blind spots, and agent-installation assumptions."
+    inputs:
+      - "T001 receipt"
+      - goal-maker/agents
+      - goal-maker/scripts/check-goal-state.mjs
+      - goal-maker/scripts/install-agents.mjs
+      - goal-maker/templates
+      - goal-maker/test
+    constraints:
+      - "Read-only."
+      - "Do not edit implementation files."
+      - "Ground every risk in a file path, command result, or missing coverage."
+    expected_output:
+      - "Risk map"
+      - "Checker or template gaps"
+      - "Agent setup assumptions"
+      - "Small safe implementation candidates"
+    receipt:
+      result: done
+      note: notes/T002-risk-map.md
+      summary: "Risk map completed; doctor exits green with missing agents, checker accepts type/assignee mismatches, and update leaves stale agents unless forced."
+      evidence:
+        - goal-maker/bin/goal-maker.mjs
+        - goal-maker/scripts/check-goal-state.mjs
+        - goal-maker/scripts/install-agents.mjs
+        - goal-maker/test/check-goal-state.test.mjs
+        - README.md
+      spawned_tasks:
+        - T003
+  - id: T003
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Choose the first safe implementation tranche by impact, confidence, reversibility, and verification strength."
+    inputs:
+      - "T001 receipt"
+      - "T002 receipt if available"
+      - "Current dirty diff"
+    constraints:
+      - "Do not implement."
+      - "Pick small reviewable work."
+      - "Prefer changes that improve Goal Maker reliability or clarity without widening scope."
+    expected_output:
+      - "Decision"
+      - "First Worker task with allowed_files and verify commands"
+      - "Blocked or deferred tasks"
+    receipt:
+      result: done
+      decision: "Implement the doctor missing-agent reliability fix first; it directly supports the Goal Maker setup contract, is small, reversible, and can be verified with focused CLI tests plus npm run check."
+      evidence:
+        - examples/improve-goal-maker/notes/T001-repo-map.md
+        - examples/improve-goal-maker/notes/T002-risk-map.md
+        - goal-maker/bin/goal-maker.mjs
+        - package.json
+      next_allowed_task: T004
+      blocked_tasks:
+        - "Checker type/assignee mismatch fix deferred until after doctor reliability tranche."
+        - "Agent update overwrite semantics deferred because it may need owner policy on preserving local custom agents."
+      required_board_updates:
+        - "Set T004 active with allowed_files limited to the CLI and focused CLI test."
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Make `goal-maker doctor` fail when any required bundled agent definition is missing, with focused CLI test coverage."
+    allowed_files:
+      - goal-maker/bin/goal-maker.mjs
+      - goal-maker/test/goal-maker-cli.test.mjs
+    verify:
+      - npm run check
+      - tmp=$(mktemp -d); node goal-maker/bin/goal-maker.mjs install --codex-home "$tmp" >/dev/null && rm "$tmp/agents/goal_worker.toml" && ! node goal-maker/bin/goal-maker.mjs doctor --codex-home "$tmp"; rc=$?; rm -rf "$tmp"; exit $rc
+    stop_if:
+      - "Need files outside allowed_files."
+      - "Behavior is ambiguous."
+      - "Verification fails twice."
+      - "Need to touch unrelated asset changes in the dirty worktree."
+    receipt:
+      result: done
+      changed_files:
+        - goal-maker/bin/goal-maker.mjs
+        - goal-maker/test/goal-maker-cli.test.mjs
+      commands:
+        - cmd: node --test goal-maker/test/goal-maker-cli.test.mjs
+          status: fail_expected_red
+        - cmd: node --test goal-maker/test/goal-maker-cli.test.mjs
+          status: pass
+        - cmd: node --check goal-maker/bin/goal-maker.mjs
+          status: pass
+        - cmd: npm run check
+          status: pass
+        - cmd: tmp=$(mktemp -d); node goal-maker/bin/goal-maker.mjs install --codex-home "$tmp" >/dev/null && rm "$tmp/agents/goal_worker.toml" && ! node goal-maker/bin/goal-maker.mjs doctor --codex-home "$tmp"; rc=$?; rm -rf "$tmp"; exit $rc
+          status: pass
+        - cmd: git diff --check
+          status: pass
+      summary: "`goal-maker doctor` now reports `missing_agents` and exits non-zero when any required bundled agent definition is absent; focused CLI coverage was added."
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit whether the current tranche is complete."
+    inputs:
+      - "All done task receipts"
+      - "Last verification"
+      - "Current dirty diff"
+    constraints:
+      - "Do not implement."
+      - "Completion requires evidence from receipts and verification."
+    expected_output:
+      - "complete | not_complete"
+      - "missing evidence"
+      - "next task if not complete"
+    receipt:
+      result: done
+      decision: complete
+      summary: "Current tranche is complete: Scout mapped the repo, Scout/Judge selected the doctor missing-agent reliability fix, Worker implemented it inside allowed files, and fresh verification passed."
+      evidence:
+        - examples/improve-goal-maker/notes/T001-repo-map.md
+        - examples/improve-goal-maker/notes/T002-risk-map.md
+        - goal-maker/bin/goal-maker.mjs
+        - goal-maker/test/goal-maker-cli.test.mjs
+      verification:
+        - cmd: npm run check
+          status: pass
+        - cmd: tmp=$(mktemp -d); node goal-maker/bin/goal-maker.mjs install --codex-home "$tmp" >/dev/null && rm "$tmp/agents/goal_worker.toml" && ! node goal-maker/bin/goal-maker.mjs doctor --codex-home "$tmp"; rc=$?; rm -rf "$tmp"; exit $rc
+          status: pass
+        - cmd: git diff --check
+          status: pass
+        - cmd: node goal-maker/scripts/check-goal-state.mjs examples/improve-goal-maker/state.yaml
+          status: pass
+      deferred:
+        - "Checker type/assignee mismatch validation."
+        - "Agent update overwrite semantics."
+        - "Optional checker validation for missing or invalid agents section."
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: pass
+    task: T999
+    commands:
+      - cmd: npm run check
+        status: pass
+      - cmd: tmp=$(mktemp -d); node goal-maker/bin/goal-maker.mjs install --codex-home "$tmp" >/dev/null && rm "$tmp/agents/goal_worker.toml" && ! node goal-maker/bin/goal-maker.mjs doctor --codex-home "$tmp"; rc=$?; rm -rf "$tmp"; exit $rc
+        status: pass
+      - cmd: git diff --check
+        status: pass
+      - cmd: node goal-maker/scripts/check-goal-state.mjs examples/improve-goal-maker/state.yaml
+        status: pass
