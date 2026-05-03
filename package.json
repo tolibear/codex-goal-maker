@@ -1,0 +1,41 @@
+{
+  "name": "goal-maker",
+  "version": "0.1.0",
+  "description": "Install the Codex Goal Maker skill for state-machine goal execution.",
+  "type": "module",
+  "bin": {
+    "goal-maker": "./bin/goal-maker.mjs"
+  },
+  "files": [
+    "README.md",
+    "assets",
+    "bin",
+    "goal-maker"
+  ],
+  "scripts": {
+    "check": "node --check bin/goal-maker.mjs goal-maker/scripts/*.mjs",
+    "pack:dry-run": "npm pack --dry-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tolibear/codex-goal-maker.git"
+  },
+  "keywords": [
+    "codex",
+    "codex-skill",
+    "goal",
+    "workflow",
+    "agent"
+  ],
+  "author": "tolibear",
+  "bugs": {
+    "url": "https://github.com/tolibear/codex-goal-maker/issues"
+  },
+  "homepage": "https://github.com/tolibear/codex-goal-maker#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

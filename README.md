@@ -16,6 +16,7 @@ Agents are tools.
 
 ## What It Provides
 
+- An `npx` installer package named `goal-maker`
 - A self-contained Codex skill in `goal-maker/`
 - Goal control templates in `goal-maker/templates/`
 - A state checker script: `goal-maker/scripts/check-goal-state.mjs`
@@ -29,6 +30,8 @@ Agents are tools.
 .
   README.md
   assets/
+  bin/
+  package.json
   goal-maker/
     SKILL.md
     agents/
@@ -83,9 +86,46 @@ Keep the goal root as the control plane. Root files are limited to `README.md`, 
 
 Generated Scout reports, Judge reviews, audits, owner packets, staging slices, verification notes, and completion tables belong under `artifacts/<kind>/` and should be referenced from `state.yaml`, unit files, or `evidence.jsonl`.
 
-## Install For Codex
+## Install
 
-Personal install:
+Install the skill:
+
+```bash
+npx goal-maker
+```
+
+Before the npm package is published, install from GitHub:
+
+```bash
+npx github:tolibear/codex-goal-maker
+```
+
+Install or refresh explicitly:
+
+```bash
+npx goal-maker install
+npx goal-maker update
+```
+
+Install the optional Scout, Worker, and Judge agent definitions:
+
+```bash
+npx goal-maker agents
+```
+
+Check what is installed:
+
+```bash
+npx goal-maker doctor
+```
+
+Use a non-default Codex home:
+
+```bash
+npx goal-maker install --codex-home /path/to/.codex
+```
+
+Manual personal install:
 
 ```bash
 mkdir -p ~/.codex/skills
@@ -97,13 +137,6 @@ Project-scoped install:
 ```bash
 mkdir -p .codex/skills
 cp -R /path/to/codex-goal-maker/goal-maker .codex/skills/goal-maker
-```
-
-Install the optional Scout, Worker, and Judge agent definitions:
-
-```bash
-mkdir -p ~/.codex/agents
-node ~/.codex/skills/goal-maker/scripts/install-agents.mjs ~/.codex/agents
 ```
 
 ## Use
