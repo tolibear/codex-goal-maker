@@ -12,6 +12,8 @@ Then invoke the skill inside Codex:
 $goal-maker
 ```
 
+`$goal-maker` prepares a goal control folder and prints the `/goal` command to run next. It does not start the long-running `/goal` loop automatically.
+
 `goal-maker` installs a Codex skill plus three agent roles:
 
 - **Scout** maps source/spec evidence before work starts.
@@ -24,7 +26,7 @@ The main Codex thread remains the PM. Agents help gather evidence, patch bounded
 
 ## Why
 
-Long Codex goals tend to drift: assumptions get treated as truth, stale verification looks green, and broad work becomes hard to review. `goal-maker` turns a goal into a state machine:
+Long Codex goals tend to drift: assumptions get treated as truth, stale verification looks green, and broad work becomes hard to review. `goal-maker` prepares the control plane for a state-machine loop:
 
 ```text
 observe -> gate -> choose one unit -> act or delegate -> verify -> record -> repeat
@@ -76,7 +78,9 @@ npx goal-maker install --codex-home /path/to/.codex
 
 ## How It Works
 
-The root control file is `state.yaml`. Narrative plans, matrices, audits, and reports are supporting evidence unless they match the current state and verification.
+Each goal starts with a user-editable `goal.md` brief that points to `state.yaml`.
+
+`goal.md` is where the user and Codex can refine the objective, assumptions, and handoff command. `state.yaml` remains machine truth for execution permission, active unit, gate status, verification status, and completion.
 
 ![A hand-drawn state.yaml file feeding a gate and the next unit.](assets/state-gate.png)
 
@@ -84,7 +88,7 @@ Create one folder per goal:
 
 ```text
 docs/goals/<slug>/
-  README.md
+  goal.md
   state.yaml
   evidence.jsonl
   units/
@@ -105,16 +109,16 @@ docs/goals/<slug>/
 
 ![A hand-drawn folder tree showing units, artifacts, and evidence.jsonl.](assets/artifacts-tree.png)
 
-Keep the goal root as the control plane. Root files are limited to `README.md`, `state.yaml`, `evidence.jsonl`, `review-bundles.md`, `decisions.md`, `blockers.md`, and directories.
+Keep the goal root as the control plane. Root files are limited to `goal.md`, `state.yaml`, `evidence.jsonl`, `review-bundles.md`, `decisions.md`, `blockers.md`, legacy `README.md`, and directories.
 
 Generated Scout reports, Judge reviews, audits, owner packets, staging slices, verification notes, and completion tables belong under `artifacts/<kind>/` and should be referenced from `state.yaml`, unit files, or `evidence.jsonl`.
 
 ## Use
 
-Start `/goal` with an objective that points to the state machine:
+After `$goal-maker` creates or repairs the control folder, start `/goal` with the printed command:
 
 ```text
-/goal Operate docs/goals/<slug>/state.yaml as an autonomous PM loop. On every continuation: observe current state, update the gate, execute or delegate at most one active unit, verify, append evidence, update state, and stop, route, recover, or escalate when the gate is red or blocked. Complete only after the final audit passes.
+/goal Follow docs/goals/<slug>/goal.md
 ```
 
 Check state:

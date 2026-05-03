@@ -1,6 +1,6 @@
 interface:
   display_name: "Goal Maker"
-  short_description: "State-machine PM loop for long-running Codex goals."
-  default_prompt: "Use goal-maker to operate this /goal as a state machine with gates, units, evidence, and bounded agents."
+  short_description: "Prepare a state-machine control plane for long-running Codex goals."
+  default_prompt: "Use goal-maker to prepare or repair goal.md, state.yaml, units, evidence, and artifacts, then print the /goal Follow command instead of starting /goal automatically."
 policy:
   allow_implicit_invocation: true

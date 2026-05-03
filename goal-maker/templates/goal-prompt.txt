@@ -1,1 +1,1 @@
-/goal Operate docs/goals/<slug>/state.yaml as a state machine. On every continuation: observe repo/control state, update the gate, execute or delegate at most one active unit, verify, append evidence, update state, and route around blockers by scope. Stop only when blocked_scope includes all_local_work with an exhaustion table, or when final audit maps every criterion to current evidence and command truth.
+/goal Follow docs/goals/<slug>/goal.md

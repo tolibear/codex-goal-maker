@@ -1,6 +1,6 @@
 # Goal Maker Agents
 
-This directory contains both skill metadata and optional agent definitions.
+This directory contains both skill metadata and bundled agent definitions.
 
 - `openai.yaml` stays with the skill as metadata.
 - `goal_*.toml` files can be copied into `.codex/agents/` for project-scoped agents or `~/.codex/agents/` for personal agents.

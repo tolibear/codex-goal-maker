@@ -11,6 +11,7 @@ strict_completion_status: cannot_claim_complete
 
 artifact_policy:
   root_allowlist:
+    - goal.md
     - README.md
     - state.yaml
     - evidence.jsonl

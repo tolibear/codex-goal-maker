@@ -18,6 +18,7 @@ if (!existsSync(root) || !statSync(root).isDirectory()) {
 }
 
 const rootAllowlist = new Set([
+  "goal.md",
   "README.md",
   "state.yaml",
   "evidence.jsonl",

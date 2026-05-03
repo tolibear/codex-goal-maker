@@ -5,15 +5,35 @@ description: Use for large, stalled, or unhealthy Codex /goal runs that need a f
 
 # Goal Maker
 
-A `/goal` is a state machine, not a project plan.
+`$goal-maker` prepares a Goal Maker control plane. It does not start `/goal` automatically.
 
-Goal Maker turns a vague long-running objective into this loop:
+The prepared `/goal` run is a state machine, not a project plan. Goal Maker turns a vague long-running objective into this loop:
 
 ```text
 observe -> gate -> choose one unit -> act or delegate -> verify -> record -> repeat
 ```
 
 Progress is one verified state transition.
+
+## What `$goal-maker` Does
+
+When invoked directly, prepare or repair the control plane and stop for user choice.
+
+Do:
+
+- clarify or infer the goal title and slug;
+- create or repair `docs/goals/<slug>/`;
+- create `goal.md`, `state.yaml`, `evidence.jsonl`, `units/`, and `artifacts/`;
+- create the first candidate unit only when enough evidence exists;
+- identify likely verification commands and blockers;
+- print the exact command `/goal Follow docs/goals/<slug>/goal.md`;
+- ask whether to start now, refine `goal.md`, or stop.
+
+Do not:
+
+- start `/goal` automatically;
+- edit implementation files before control state exists;
+- treat `goal.md` as execution truth when it conflicts with `state.yaml`.
 
 ## When To Use
 
@@ -33,7 +53,7 @@ For a big or recovery goal, create:
 
 ```text
 docs/goals/<slug>/
-  README.md
+  goal.md
   state.yaml
   evidence.jsonl
   units/
@@ -62,6 +82,7 @@ Optional only when needed:
 
 The goal root is the control plane. It may contain only:
 
+- `goal.md`
 - `README.md`
 - `state.yaml`
 - `evidence.jsonl`
@@ -98,9 +119,9 @@ source_evidence: []
 ---
 ```
 
-`state.yaml` is truth. Narrative plans, matrices, and status docs are comments unless they match `state.yaml` and current verification.
+`goal.md` is the user-editable brief. `state.yaml` is machine truth. If `goal.md` and `state.yaml` disagree, `state.yaml` wins for execution permission, active unit, gate status, verification status, and completion truth.
 
-Use `templates/state.yaml`, `templates/unit.md`, and `templates/artifact.md`.
+Use `templates/goal.md`, `templates/state.yaml`, `templates/unit.md`, and `templates/artifact.md`.
 
 ## Mandatory First Action
 
@@ -108,7 +129,7 @@ For a big or recovery goal, do not edit implementation files until control state
 
 The first action must be one of:
 
-- create `docs/goals/<slug>/state.yaml` and the first unit;
+- create `docs/goals/<slug>/goal.md`, `state.yaml`, and the first unit when evidence is sufficient;
 - repair stale control state;
 - checkpoint an unhealthy worktree;
 - escalate to Judge because no safe unit can be defined.
@@ -319,5 +340,5 @@ Use `templates/completion-audit.md`.
 ## Default `/goal` Shape
 
 ```text
-/goal Operate docs/goals/<slug>/state.yaml as a state machine. On every continuation: observe, update the gate, execute at most one active unit, verify, append evidence, update state, and route around blockers by scope. Stop only when blocked_scope includes all_local_work with an exhaustion table, or when final audit passes.
+/goal Follow docs/goals/<slug>/goal.md
 ```

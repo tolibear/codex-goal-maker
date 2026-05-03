@@ -1,6 +1,6 @@
 {
   "name": "goal-maker",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Run large Codex /goal efforts as a finite-state PM loop with agents, gates, evidence, and recovery.",
   "type": "module",
   "bin": {
@@ -14,7 +14,8 @@
     "goal-maker"
   ],
   "scripts": {
-    "check": "node --check bin/goal-maker.mjs goal-maker/scripts/*.mjs",
+    "check": "node --check bin/goal-maker.mjs goal-maker/scripts/*.mjs && node --test",
+    "test": "node --test",
     "pack:dry-run": "npm pack --dry-run"
   },
   "repository": {

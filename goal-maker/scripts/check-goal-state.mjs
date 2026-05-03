@@ -19,6 +19,7 @@ const text = readFileSync(statePath, "utf8");
 const errors = [];
 const warnings = [];
 const rootAllowlist = new Set([
+  "goal.md",
   "README.md",
   "state.yaml",
   "evidence.jsonl",
@@ -40,7 +41,8 @@ const expectedArtifactDirs = [
 ];
 
 function clean(value) {
-  return value.replace(/#.*/, "").trim().replace(/^[\'\"]|[\'\"]$/g, "");
+  const cleaned = value.replace(/#.*/, "").trim().replace(/^[\'\"]|[\'\"]$/g, "");
+  return cleaned === "null" ? null : cleaned;
 }
 
 function topScalar(key) {
