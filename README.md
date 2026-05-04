@@ -124,7 +124,7 @@ npx goal-maker install --codex-home /path/to/.codex
 
 ## Extensions
 
-The npm package is the stable core. Extensions move through the GitHub-hosted `catalog.json`, so users do not need a new npm release for every optional integration.
+The npm package is the stable core. Extensions live under `extend/` and move through the GitHub-hosted `catalog.json`, so users do not need a new npm release for every optional integration.
 
 `goal-maker extend` reads the catalog and shows available extensions plus local install/configuration state. `goal-maker extend <id>` shows what an extension reads, writes, and requires. `goal-maker extend install <id>` copies a pinned, checksum-verified extension into the local Goal Maker install.
 
