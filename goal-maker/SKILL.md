@@ -45,6 +45,8 @@ Use this skill for goals that are broad, multi-hour, ambiguous, high-risk, alrea
 
 For a one-change task, do not create a Goal Maker board.
 
+Scout and Judge tasks may identify optional extension, plugin, publishing, reporting, or channel opportunities as improvement candidates. Treat those as normal board tasks. Extensions are supporting surfaces; `state.yaml` remains board truth.
+
 ## The Four Primitives
 
 1. **Charter**: `goal.md` says what the current tranche is trying to accomplish and what constraints matter.

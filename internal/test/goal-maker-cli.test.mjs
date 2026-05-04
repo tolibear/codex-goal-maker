@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const cli = resolve("goal-maker/bin/goal-maker.mjs");
+const cli = resolve("internal/cli/goal-maker.mjs");
 
 function runGoalMaker(args) {
   const result = spawnSync(process.execPath, [cli, ...args], {

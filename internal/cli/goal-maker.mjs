@@ -19,10 +19,6 @@ const packageRoot = resolve(__dirname, "../..");
 const skillSource = join(packageRoot, "goal-maker");
 const defaultCodexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
 const defaultCatalogUrl = "https://raw.githubusercontent.com/tolibear/goal-maker/main/catalog.json";
-const excludedSkillDirs = new Set([
-  join(skillSource, "bin"),
-  join(skillSource, "test"),
-]);
 const requiredAgentFiles = [
   "goal_judge.toml",
   "goal_scout.toml",
@@ -148,7 +144,6 @@ function installSkill({ force = true } = {}) {
 
   cpSync(skillSource, target, {
     recursive: true,
-    filter: (source) => !excludedSkillDirs.has(source),
   });
   console.log(`Installed Codex Goal Maker skill to ${target}`);
 }

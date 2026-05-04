@@ -148,13 +148,14 @@ node ~/.codex/skills/goal-maker/scripts/check-goal-state.mjs docs/goals/<slug>/s
 
 See `examples/improve-goal-maker/` for a completed Goal Maker run with a charter, board receipts, and Scout notes.
 
-## Package Contents
+## Repo Contents
 
 - `goal-maker/SKILL.md`: the Codex skill
 - `goal-maker/agents/`: Scout, Judge, and Worker definitions
 - `goal-maker/templates/`: `goal.md`, `state.yaml`, and `note.md`
 - `goal-maker/scripts/check-goal-state.mjs`: v2 board checker
-- `goal-maker/bin/goal-maker.mjs`: npm installer CLI
+- `internal/cli/goal-maker.mjs`: npm installer CLI
+- `extend/` and `catalog.json`: GitHub-hosted extension surface
 - `examples/improve-goal-maker/`: completed sample run
 
 ## Status

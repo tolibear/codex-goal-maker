@@ -1,25 +1,25 @@
 {
   "name": "goal-maker",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Run long Codex goals as a rolling Scout/Judge/Worker task board with receipts.",
   "type": "module",
   "bin": {
-    "goal-maker": "goal-maker/bin/goal-maker.mjs"
+    "goal-maker": "internal/cli/goal-maker.mjs"
   },
   "files": [
     "README.md",
     "CONTRIBUTING.md",
     "assets",
     "examples",
+    "internal/cli",
     "goal-maker/SKILL.md",
     "goal-maker/agents",
-    "goal-maker/bin",
     "goal-maker/scripts",
     "goal-maker/templates"
   ],
   "scripts": {
-    "check": "node --check goal-maker/bin/goal-maker.mjs goal-maker/scripts/*.mjs && node --test goal-maker/test/*.test.mjs",
-    "test": "node --test goal-maker/test/*.test.mjs",
+    "check": "node --check internal/cli/goal-maker.mjs goal-maker/scripts/*.mjs && node --test internal/test/*.test.mjs",
+    "test": "node --test internal/test/*.test.mjs",
     "pack:dry-run": "npm pack --dry-run"
   },
   "repository": {
