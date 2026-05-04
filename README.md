@@ -108,11 +108,27 @@ Check what is installed:
 npx goal-maker doctor
 ```
 
+Discover optional extensions from the GitHub-hosted catalog:
+
+```bash
+npx goal-maker extend
+npx goal-maker extend publish-github-projects
+npx goal-maker extend install publish-github-projects --dry-run
+```
+
 Use a non-default Codex home:
 
 ```bash
 npx goal-maker install --codex-home /path/to/.codex
 ```
+
+## Extensions
+
+The npm package is the stable core. Extensions move through the GitHub-hosted `catalog.json`, so users do not need a new npm release for every optional integration.
+
+`goal-maker extend` reads the catalog and shows available extensions plus local install/configuration state. `goal-maker extend <id>` shows what an extension reads, writes, and requires. `goal-maker extend install <id>` copies a pinned, checksum-verified extension into the local Goal Maker install.
+
+Extensions are not board truth. They may publish, report, intake, or add role guidance, but `state.yaml` remains authoritative.
 
 ## Running A Goal
 
