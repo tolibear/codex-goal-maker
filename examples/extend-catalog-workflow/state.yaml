@@ -1,0 +1,327 @@
+# Goal Maker v2 state.yaml
+# Board truth lives here. goal.md is the editable charter; notes/ holds long receipts only.
+
+version: 2
+
+goal:
+  title: "Extend Catalog Workflow"
+  slug: "extend-catalog-workflow"
+  kind: open_ended
+  tranche: "Design and implement the extension catalog workflow, root extend surface, and clean package/skill layout."
+  status: done
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+active_task: null
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    reasoning_hint: high
+    objective: "Map the product vocabulary, extension surfaces, catalog strategy, and repo boundaries for optional Goal Maker extensions."
+    inputs:
+      - README.md
+      - package.json
+      - goal-maker/SKILL.md
+      - goal-maker/scripts/check-goal-state.mjs
+      - docs/goals/board-publishing-surfaces/goal.md
+    constraints:
+      - "Read-only."
+      - "Do not implement."
+      - "Treat external services as generated views, not board truth."
+      - "Use extend as the high-level concept and extensions as item names."
+    expected_output:
+      - "Recommended vocabulary."
+      - "Catalog and extension repo shape."
+      - "Candidate implementation tasks."
+    receipt:
+      result: done
+      note: notes/T001-extension-model-map.md
+      summary: "Mapped `extend/` as the optional extension surface, `extend/catalog.json` as the GitHub-hosted catalog, and package/dev internals as separate from the installable skill payload."
+      evidence:
+        - README.md
+        - package.json
+        - goal-maker/SKILL.md
+        - goal-maker/scripts/check-goal-state.mjs
+      spawned_tasks:
+        - T002
+  - id: T002
+    type: judge
+    assignee: Judge
+    status: done
+    reasoning_hint: high
+    objective: "Choose the extension vocabulary, catalog source, CLI shape, and repo layout before implementation."
+    inputs:
+      - "T001 receipt"
+      - examples/extend-catalog-workflow/notes/T001-extension-model-map.md
+    constraints:
+      - "Do not implement."
+      - "Preserve Goal Maker's local-first model."
+      - "Keep the root relatively clean."
+      - "Avoid browse/list/show as separate user concepts."
+    expected_output:
+      - "Decision on extension language."
+      - "Decision on catalog hosting."
+      - "First implementation tranche."
+    receipt:
+      result: done
+      decision: "Use root `extend/`, `extend/catalog.json`, and `goal-maker extend` as the single discovery/details command; group package-only CLI and tests under `internal/` while keeping skill runtime scripts inside `goal-maker/scripts/`."
+      note: notes/T002-architecture-decision.md
+      evidence:
+        - examples/extend-catalog-workflow/notes/T001-extension-model-map.md
+        - README.md
+        - package.json
+      next_allowed_task: T003
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: done
+    reasoning_hint: medium
+    objective: "Implement the first catalog-backed `goal-maker extend` workflow."
+    allowed_files:
+      - README.md
+      - catalog.json
+      - goal-maker/bin/goal-maker.mjs
+      - goal-maker/test/goal-maker-cli.test.mjs
+      - package.json
+    verify:
+      - npm run check
+      - git diff --check
+      - node goal-maker/bin/goal-maker.mjs extend --catalog-url catalog.json --json
+      - npm publish --dry-run --json
+    stop_if:
+      - "Need provider credentials."
+      - "Need files outside allowed_files."
+      - "Catalog or extension semantics become ambiguous."
+      - "Verification fails twice."
+    receipt:
+      result: done
+      changed_files:
+        - README.md
+        - catalog.json
+        - goal-maker/bin/goal-maker.mjs
+        - goal-maker/test/goal-maker-cli.test.mjs
+        - package.json
+      commands:
+        - cmd: npm run check
+          status: pass
+        - cmd: git diff --check
+          status: pass
+        - cmd: node goal-maker/bin/goal-maker.mjs extend --catalog-url catalog.json --json
+          status: pass
+        - cmd: npm publish --dry-run --json
+          status: pass
+      summary: "Implemented catalog-backed `goal-maker extend`, root `catalog.json`, checksum-verified extension install, extension doctor checks, and CLI test coverage."
+      note: notes/T003-implementation-summary.md
+      commits:
+        - 105850e
+      spawned_tasks:
+        - T004
+  - id: T004
+    type: pm
+    assignee: PM
+    status: done
+    reasoning_hint: medium
+    objective: "Add a visible root `extend/` folder without bundling placeholder extensions."
+    inputs:
+      - "T002 decision"
+      - "T003 receipt"
+      - "Owner feedback that the repo should show an `/extend` folder."
+    constraints:
+      - "Do not add fake bundled extensions."
+      - "Keep extensions as subfolders under root `extend/`."
+      - "Keep npm catalog behavior GitHub-hosted."
+    expected_output:
+      - "Root extend folder with documentation."
+      - "README wording that points to the extension surface."
+    receipt:
+      result: done
+      summary: "Added root `extend/README.md` so the repo has a visible extension surface while keeping the catalog empty until real extensions ship."
+      note: notes/T004-root-extend-folder.md
+      changed_files:
+        - README.md
+        - extend/README.md
+      commands:
+        - cmd: npm run check
+          status: pass
+      commits:
+        - 17c65c9
+      spawned_tasks:
+        - T005
+  - id: T005
+    type: worker
+    assignee: Worker
+    status: done
+    reasoning_hint: medium
+    objective: "Move package-only CLI/tests out of the installable skill folder and add repo-specific agent guidance."
+    allowed_files:
+      - AGENTS.md
+      - CONTRIBUTING.md
+      - README.md
+      - extend/README.md
+      - goal-maker/SKILL.md
+      - goal-maker/bin/goal-maker.mjs
+      - goal-maker/test/check-goal-state.test.mjs
+      - goal-maker/test/goal-maker-cli.test.mjs
+      - internal/cli/goal-maker.mjs
+      - internal/test/check-goal-state.test.mjs
+      - internal/test/goal-maker-cli.test.mjs
+      - package.json
+    verify:
+      - npm run check
+      - git diff --check
+      - tmp=$(mktemp -d); node internal/cli/goal-maker.mjs install --codex-home "$tmp"; node internal/cli/goal-maker.mjs doctor --codex-home "$tmp"; rm -rf "$tmp"
+      - npm publish --dry-run --json
+    stop_if:
+      - "Need to move skill runtime scripts out of `goal-maker/scripts/`."
+      - "Need root folders beyond `internal/`."
+      - "Verification fails twice."
+    receipt:
+      result: done
+      changed_files:
+        - AGENTS.md
+        - CONTRIBUTING.md
+        - README.md
+        - extend/README.md
+        - goal-maker/SKILL.md
+        - internal/cli/goal-maker.mjs
+        - internal/test/check-goal-state.test.mjs
+        - internal/test/goal-maker-cli.test.mjs
+        - package.json
+      commands:
+        - cmd: npm run check
+          status: pass
+        - cmd: git diff --check
+          status: pass
+        - cmd: tmp=$(mktemp -d); node internal/cli/goal-maker.mjs install --codex-home "$tmp"; node internal/cli/goal-maker.mjs doctor --codex-home "$tmp"; rm -rf "$tmp"
+          status: pass
+        - cmd: npm publish --dry-run --json
+          status: pass
+      summary: "Moved package-only CLI/tests under `internal/`, removed `goal-maker/bin` and `goal-maker/test` from the skill payload, added root `AGENTS.md`, and updated docs/package paths."
+      note: notes/T005-layout-cleanup.md
+      commits:
+        - 6faa5de
+      spawned_tasks:
+        - T006
+  - id: T006
+    type: worker
+    assignee: Worker
+    status: done
+    reasoning_hint: low
+    objective: "Move the hosted catalog into `extend/` and update the CLI/default docs to match."
+    allowed_files:
+      - AGENTS.md
+      - README.md
+      - extend/README.md
+      - catalog.json
+      - extend/catalog.json
+      - internal/cli/goal-maker.mjs
+      - package.json
+      - examples/extend-catalog-workflow
+    verify:
+      - npm run check
+      - git diff --check
+      - node internal/cli/goal-maker.mjs extend --catalog-url extend/catalog.json --json
+      - npm publish --dry-run --json
+    stop_if:
+      - "Need to add bundled extensions."
+      - "Need a separate extension registry."
+      - "Verification fails twice."
+    receipt:
+      result: done
+      changed_files:
+        - AGENTS.md
+        - README.md
+        - extend/README.md
+        - extend/catalog.json
+        - internal/cli/goal-maker.mjs
+        - package.json
+        - examples/extend-catalog-workflow/goal.md
+        - examples/extend-catalog-workflow/state.yaml
+        - examples/extend-catalog-workflow/notes/T006-catalog-location.md
+      commands:
+        - cmd: npm run check
+          status: pass
+        - cmd: git diff --check
+          status: pass
+        - cmd: node internal/cli/goal-maker.mjs extend --catalog-url extend/catalog.json --json
+          status: pass
+        - cmd: npm publish --dry-run --json
+          status: pass
+      summary: "Moved the GitHub-hosted catalog into `extend/catalog.json`, updated the CLI default raw URL, and adjusted docs/example references."
+      note: notes/T006-catalog-location.md
+      commits:
+        - "this example/catalog-location commit"
+      spawned_tasks:
+        - T999
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: done
+    reasoning_hint: high
+    objective: "Audit whether the extension catalog and layout cleanup tranche is complete."
+    inputs:
+      - "All done task receipts"
+      - "Last verification"
+      - "Current package dry run"
+    constraints:
+      - "Do not implement."
+      - "Completion requires evidence from actual commits and verification commands."
+    expected_output:
+      - "complete | not_complete"
+      - "missing evidence"
+      - "next task if not complete"
+    receipt:
+      result: done
+      decision: complete
+      note: notes/T999-completion-audit.md
+      summary: "The tranche is complete: extension vocabulary, GitHub-hosted catalog, `extend` CLI workflow, root extension surface, package layout cleanup, and repo agent guidance are implemented and verified."
+      evidence:
+        - examples/extend-catalog-workflow/goal.md
+        - examples/extend-catalog-workflow/notes/T001-extension-model-map.md
+        - examples/extend-catalog-workflow/notes/T002-architecture-decision.md
+        - examples/extend-catalog-workflow/notes/T003-implementation-summary.md
+        - examples/extend-catalog-workflow/notes/T004-root-extend-folder.md
+        - examples/extend-catalog-workflow/notes/T005-layout-cleanup.md
+        - examples/extend-catalog-workflow/notes/T006-catalog-location.md
+        - AGENTS.md
+        - extend/catalog.json
+        - extend/README.md
+        - internal/cli/goal-maker.mjs
+        - package.json
+      verification:
+        - cmd: npm run check
+          status: pass
+        - cmd: git diff --check
+          status: pass
+        - cmd: npm publish --dry-run --json
+          status: pass
+        - cmd: node goal-maker/scripts/check-goal-state.mjs examples/extend-catalog-workflow/state.yaml
+          status: pass
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: pass
+    task: T999
+    commands:
+      - cmd: npm run check
+        status: pass
+      - cmd: git diff --check
+        status: pass
+      - cmd: npm publish --dry-run --json
+        status: pass
+      - cmd: node goal-maker/scripts/check-goal-state.mjs examples/extend-catalog-workflow/state.yaml
+        status: pass

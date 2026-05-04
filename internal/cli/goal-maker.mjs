@@ -18,7 +18,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, "../..");
 const skillSource = join(packageRoot, "goal-maker");
 const defaultCodexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
-const defaultCatalogUrl = "https://raw.githubusercontent.com/tolibear/goal-maker/main/catalog.json";
+const defaultCatalogUrl = "https://raw.githubusercontent.com/tolibear/goal-maker/main/extend/catalog.json";
 const requiredAgentFiles = [
   "goal_judge.toml",
   "goal_scout.toml",

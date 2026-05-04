@@ -1,6 +1,6 @@
 {
   "name": "goal-maker",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Run long Codex goals as a rolling Scout/Judge/Worker task board with receipts.",
   "type": "module",
   "bin": {

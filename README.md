@@ -124,7 +124,7 @@ npx goal-maker install --codex-home /path/to/.codex
 
 ## Extensions
 
-The npm package is the stable core. Extensions live under `extend/` and move through the GitHub-hosted `catalog.json`, so users do not need a new npm release for every optional integration.
+The npm package is the stable core. Extensions live under `extend/` and move through the GitHub-hosted `extend/catalog.json`, so users do not need a new npm release for every optional integration.
 
 `goal-maker extend` reads the catalog and shows available extensions plus local install/configuration state. `goal-maker extend <id>` shows what an extension reads, writes, and requires. `goal-maker extend install <id>` copies a pinned, checksum-verified extension into the local Goal Maker install.
 
@@ -146,7 +146,7 @@ node ~/.codex/skills/goal-maker/scripts/check-goal-state.mjs docs/goals/<slug>/s
 
 ## Example
 
-See `examples/improve-goal-maker/` for a completed Goal Maker run with a charter, board receipts, and Scout notes.
+See `examples/improve-goal-maker/` for a small completed reliability run, and `examples/extend-catalog-workflow/` for a larger run that moves from product framing through implementation and repo cleanup.
 
 ## Repo Contents
 
@@ -155,8 +155,8 @@ See `examples/improve-goal-maker/` for a completed Goal Maker run with a charter
 - `goal-maker/templates/`: `goal.md`, `state.yaml`, and `note.md`
 - `goal-maker/scripts/check-goal-state.mjs`: v2 board checker
 - `internal/cli/goal-maker.mjs`: npm installer CLI
-- `extend/` and `catalog.json`: GitHub-hosted extension surface
-- `examples/improve-goal-maker/`: completed sample run
+- `extend/` and `extend/catalog.json`: GitHub-hosted extension surface
+- `examples/`: completed sample runs
 
 ## Status
 

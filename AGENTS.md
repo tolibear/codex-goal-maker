@@ -7,7 +7,7 @@ Goal Maker is an npm package that installs a Codex skill. Keep the repo layout a
 - `goal-maker/` is the installable Codex skill payload.
 - `goal-maker/scripts/` stays inside the skill because installed skill instructions call those scripts.
 - `internal/` is package and development infrastructure, not skill content.
-- `extend/` and `catalog.json` are the GitHub-hosted extension surface.
+- `extend/` and `extend/catalog.json` are the GitHub-hosted extension surface.
 - `examples/` contains completed sample Goal Maker runs.
 
 ## Improvement Surfaces
