@@ -25,7 +25,7 @@ Goal Maker is a small dependency-free npm package that installs a Codex skill, t
 
 - `npm run check` passed: Node syntax checks and 7 node:test cases passed.
 - Temporary install plus doctor passed: `skill_installed: true`; installed agents were `goal_judge.toml`, `goal_scout.toml`, and `goal_worker.toml`.
-- `npm pack --dry-run` passed and listed the expected package files, including `README.md`, `CONTRIBUTING.md`, `assets/`, `package.json`, and `goal-maker/` runtime files.
+- `npm pack --dry-run` passed and listed the expected package files, including `README.md`, `CONTRIBUTING.md`, `internal/assets/`, `package.json`, and `goal-maker/` runtime files.
 - `node goal-maker/scripts/check-goal-state.mjs examples/improve-goal-maker/state.yaml` passed with `ok: true`.
 
 ## Health Signals

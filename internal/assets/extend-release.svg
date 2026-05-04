@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Goal Maker Extend release graphic</title>
+  <desc id="desc">A white-background black-and-red diagram showing a vague Codex goal becoming a Goal Maker board, then extending to optional add-ons through a GitHub-hosted catalog.</desc>
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .ink { fill: none; stroke: #141414; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+      .thin { fill: none; stroke: #141414; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+      .red { fill: none; stroke: #e1261c; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+      .redfill { fill: #e1261c; }
+      .inkfill { fill: #141414; }
+      .muted { fill: #5b5f68; }
+      text { font-family: Arial, Helvetica, sans-serif; letter-spacing: 0; }
+      .label { font-size: 40px; font-weight: 700; }
+      .small { font-size: 26px; font-weight: 500; }
+      .mono { font-family: Menlo, Consolas, monospace; font-size: 30px; font-weight: 700; }
+      .title { font-size: 86px; font-weight: 800; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1600" height="900"/>
+
+  <text x="110" y="130" class="title inkfill">goal-maker EXTEND</text>
+  <path class="red" d="M960 102 C1105 70 1255 76 1385 112"/>
+  <path class="red" d="M1372 91 L1394 116 L1362 130"/>
+  <text x="115" y="190" class="small muted">Open-ended Codex work becomes a local board. Optional integrations stay outside the core.</text>
+
+  <g transform="translate(105 280)">
+    <rect x="0" y="0" width="315" height="190" rx="24" class="thin"/>
+    <text x="34" y="58" class="label inkfill">vague goal</text>
+    <text x="34" y="105" class="small muted">“improve this”</text>
+    <path class="thin" d="M36 142 H212"/>
+    <path class="thin" d="M36 165 H152"/>
+  </g>
+
+  <path class="ink" d="M445 375 H565"/>
+  <path class="ink" d="M542 348 L572 375 L542 402"/>
+
+  <g transform="translate(600 250)">
+    <rect x="0" y="0" width="430" height="250" rx="28" class="ink"/>
+    <text x="38" y="62" class="label inkfill">local board</text>
+    <g transform="translate(42 98)">
+      <circle cx="20" cy="20" r="13" class="redfill"/>
+      <text x="52" y="30" class="small inkfill">Scout maps repo</text>
+    </g>
+    <g transform="translate(42 145)">
+      <circle cx="20" cy="20" r="13" class="redfill"/>
+      <text x="52" y="30" class="small inkfill">Judge picks scope</text>
+    </g>
+    <g transform="translate(42 192)">
+      <circle cx="20" cy="20" r="13" class="redfill"/>
+      <text x="52" y="30" class="small inkfill">Worker patches</text>
+    </g>
+  </g>
+
+  <path class="ink" d="M1060 375 H1130"/>
+  <path class="ink" d="M1107 348 L1137 375 L1107 402"/>
+
+  <g transform="translate(1160 245)">
+    <rect x="0" y="0" width="330" height="260" rx="28" class="red"/>
+    <text x="38" y="64" class="label inkfill">extend</text>
+    <text x="38" y="108" class="mono redfill">catalog.json</text>
+    <path class="thin" d="M42 144 H255"/>
+    <text x="42" y="190" class="small inkfill">publish</text>
+    <text x="42" y="228" class="small inkfill">report</text>
+    <text x="165" y="190" class="small inkfill">intake</text>
+    <text x="165" y="228" class="small inkfill">roles</text>
+  </g>
+
+  <g transform="translate(175 640)">
+    <path class="thin" d="M0 0 H1250"/>
+    <text x="0" y="62" class="small inkfill">core stays stable</text>
+    <text x="355" y="62" class="small inkfill">extensions move through GitHub</text>
+    <text x="870" y="62" class="small inkfill">state.yaml remains truth</text>
+    <circle cx="305" cy="51" r="7" class="redfill"/>
+    <circle cx="820" cy="51" r="7" class="redfill"/>
+  </g>
+
+  <g transform="translate(1110 735)">
+    <rect x="0" y="0" width="300" height="72" rx="36" class="red"/>
+    <text x="38" y="47" class="mono redfill">npx goal-maker</text>
+  </g>
+</svg>

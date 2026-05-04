@@ -9,8 +9,8 @@
   "files": [
     "README.md",
     "CONTRIBUTING.md",
-    "assets",
     "examples",
+    "internal/assets",
     "internal/cli",
     "goal-maker/SKILL.md",
     "goal-maker/agents",

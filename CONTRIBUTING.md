@@ -31,7 +31,7 @@ Before opening a PR, verify the npm package contents:
 npm pack --dry-run
 ```
 
-The package should include `README.md`, `assets/`, `package.json`, `internal/cli/`, and the installable `goal-maker/` skill directory.
+The package should include `README.md`, `internal/assets/`, `package.json`, `internal/cli/`, and the installable `goal-maker/` skill directory.
 
 ## Contribution Guidelines
 

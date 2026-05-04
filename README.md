@@ -14,7 +14,7 @@ $goal-maker
 
 `$goal-maker` creates a local goal charter and task board, then prints the `/goal` command to run next. It does not start `/goal` automatically.
 
-![A simple hand-drawn diagram showing a vague goal becoming a Goal Maker board with Scout, Judge, Worker, and a receipt.](assets/goal-maker-flow.png)
+![A simple hand-drawn diagram showing a vague goal becoming a Goal Maker board with Scout, Judge, Worker, and a receipt.](internal/assets/goal-maker-flow.png)
 
 ## Why It Exists
 
