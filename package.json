@@ -1,7 +1,7 @@
 {
   "name": "goal-maker",
-  "version": "0.2.5",
-  "description": "Run long Codex goals as a rolling Scout/Judge/Worker task board with receipts.",
+  "version": "0.2.6",
+  "description": "Turn open-ended Codex goals into a Scout/Judge/Worker board with receipts, verification, and optional extensions.",
   "type": "module",
   "bin": {
     "goal-maker": "internal/cli/goal-maker.mjs"
@@ -37,7 +37,9 @@
     "automation",
     "cli",
     "workflow",
-    "agent"
+    "agent",
+    "extensions",
+    "verification"
   ],
   "author": "tolibear",
   "bugs": {

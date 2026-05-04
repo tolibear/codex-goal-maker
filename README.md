@@ -1,6 +1,6 @@
 # goal-maker
 
-Turn vague, long-running Codex work into a rolling task board with Scout, Judge, Worker, and receipts.
+Turn open-ended Codex work into a living Scout/Judge/Worker board with receipts, verification, and optional extensions.
 
 ```bash
 npx goal-maker
@@ -12,21 +12,30 @@ Then invoke the skill inside Codex:
 $goal-maker
 ```
 
-`$goal-maker` creates a goal charter and task board, then prints the `/goal` command to run next. It does not start `/goal` automatically.
+`$goal-maker` creates a local goal charter and task board, then prints the `/goal` command to run next. It does not start `/goal` automatically.
 
 ![A simple hand-drawn diagram showing a vague goal becoming a Goal Maker board with Scout, Judge, Worker, and a receipt.](assets/goal-maker-flow.png)
 
-## What It Solves
+## Why It Exists
 
-Long Codex goals drift. The work starts vague, verification gets stale, and the agent can start implementing before it has actually discovered the right task.
+Long Codex goals drift. A broad request like “improve this project” can turn into unbounded edits, stale verification, and premature completion claims.
 
-Goal Maker gives Codex a small operating loop:
+Goal Maker gives Codex an operating loop for that kind of work:
 
 ```text
 vague goal -> discovery -> task board -> one active task -> receipt -> board update -> repeat
 ```
 
-The main Codex thread is the PM. It owns the board, chooses the active task, delegates when useful, and records receipts.
+The main Codex thread is the PM. It owns the board, chooses the active task, delegates when useful, records receipts, and only completes after a Judge or PM audit.
+
+## Core Features
+
+- **Local board truth**: `goal.md` is the editable charter; `state.yaml` is the machine-readable board; `notes/` holds long receipts.
+- **Default role agents**: Scout discovers evidence, Judge resolves risk and completion claims, Worker performs one bounded implementation task.
+- **One active task**: keeps autonomous work sequenced and reviewable instead of turning a vague goal into a pile of parallel edits.
+- **Task receipts**: every completed, blocked, or escalated task records what changed, what was learned, and what verification ran.
+- **Board checker**: validates v2 goal folders and rejects old `gate`, `units`, `artifacts`, and `evidence.jsonl` layouts.
+- **Extensions**: optional add-ons are discovered from `extend/catalog.json` without requiring npm updates for every integration.
 
 ## The Model
 
@@ -89,7 +98,7 @@ tasks:
 
 ## Commands
 
-Install or update the skill and bundled agents:
+Install or update the Codex skill and bundled agents:
 
 ```bash
 npx goal-maker
@@ -129,6 +138,8 @@ The npm package is the stable core. Extensions live under `extend/` and move thr
 `goal-maker extend` reads the catalog and shows available extensions plus local install/configuration state. `goal-maker extend <id>` shows what an extension reads, writes, and requires. `goal-maker extend install <id>` copies a pinned, checksum-verified extension into the local Goal Maker install.
 
 Extensions are not board truth. They may publish, report, intake, or add role guidance, but `state.yaml` remains authoritative.
+
+The catalog is intentionally empty until real extensions are ready to ship.
 
 ## Running A Goal
 
