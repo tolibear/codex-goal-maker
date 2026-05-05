@@ -192,3 +192,7 @@ See `examples/improve-goal-maker/` for a small completed reliability run, and `e
 `0.2.x` is the v2 board/receipt model. It intentionally rejects old v1 `gate`, `units`, `artifacts`, and `evidence.jsonl` goal folders instead of auto-migrating them.
 
 Use this to structure autonomous Codex work. Keep relying on repo-specific `AGENTS.md`, tests, and CI for repo facts.
+
+## License
+
+MIT

@@ -42,6 +42,7 @@
     "verification"
   ],
   "author": "tolibear",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/tolibear/goal-maker/issues"
   },
