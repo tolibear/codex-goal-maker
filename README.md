@@ -14,6 +14,14 @@ $goal-maker
 
 `$goal-maker` creates a local goal charter and task board, then prints the `/goal` command to run next. It does not start `/goal` automatically.
 
+Native Codex `/goal` is still an under-development Codex feature. Before relying on the printed command, confirm your local Codex runtime is logged in and has goals enabled:
+
+```bash
+codex login status
+codex features enable goals
+npx goal-maker doctor --goal-ready
+```
+
 ![A simple hand-drawn diagram showing a vague goal becoming a Goal Maker board with Scout, Judge, Worker, and a receipt.](internal/assets/goal-maker-flow.png)
 
 ## Why It Exists
@@ -116,6 +124,14 @@ Check what is installed:
 ```bash
 npx goal-maker doctor
 ```
+
+Strictly check whether the native Codex `/goal` runtime is ready too:
+
+```bash
+npx goal-maker doctor --goal-ready
+```
+
+`doctor` reports missing or stale bundled agents, Codex login status, and whether the `goals` feature is enabled. `update` refreshes the installed skill and bundled agents.
 
 Discover optional extensions from the GitHub-hosted catalog:
 

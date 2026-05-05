@@ -10,6 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { basename, dirname, join, normalize, resolve } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -106,7 +107,7 @@ Usage:
   goal-maker install [--codex-home <path>] [--force]
   goal-maker update [--codex-home <path>]
   goal-maker agents [--codex-home <path>] [--force]
-  goal-maker doctor [--codex-home <path>]
+  goal-maker doctor [--codex-home <path>] [--goal-ready]
   goal-maker extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
   goal-maker extend <id> [--catalog-url <url-or-path>] [--json]
   goal-maker extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
@@ -151,7 +152,7 @@ function installSkill({ force = true } = {}) {
 function installAgents() {
   const source = join(skillSource, "agents");
   const target = join(codexHome(), "agents");
-  const force = hasFlag("--force");
+  const force = hasFlag("--force") || command === "update" || command === "install";
   mkdirSync(target, { recursive: true });
 
   for (const file of readdirSync(source)) {
@@ -179,6 +180,17 @@ function doctor() {
     ? readdirSync(agentsPath).filter((file) => file.startsWith("goal_") && file.endsWith(".toml"))
     : [];
   const missingAgents = requiredAgentFiles.filter((file) => !agents.includes(file));
+  const staleAgents = requiredAgentFiles.filter((file) => {
+    const installedAgent = join(agentsPath, file);
+    const bundledAgent = join(skillSource, "agents", file);
+    if (!existsSync(installedAgent) || !existsSync(bundledAgent)) return false;
+    return sha256(readFileSync(installedAgent)) !== sha256(readFileSync(bundledAgent));
+  });
+  const goalRuntime = codexGoalRuntimeStatus();
+  const warnings = [];
+  if (!goalRuntime.ready) {
+    warnings.push("native Codex /goal runtime is not ready; run `codex login` and `codex features enable goals` before using /goal.");
+  }
 
   console.log(JSON.stringify({
     codex_home: codexHome(),
@@ -186,9 +198,59 @@ function doctor() {
     skill_path: skillPath,
     installed_agents: agents,
     missing_agents: missingAgents,
+    stale_agents: staleAgents,
+    goal_runtime: goalRuntime,
+    warnings,
   }, null, 2));
 
-  process.exit(installed && missingAgents.length === 0 ? 0 : 1);
+  const installOk = installed && missingAgents.length === 0 && staleAgents.length === 0;
+  const goalReadyOk = !hasFlag("--goal-ready") || goalRuntime.ready;
+  process.exit(installOk && goalReadyOk ? 0 : 1);
+}
+
+function codexGoalRuntimeStatus() {
+  const version = runCodex(["--version"]);
+  const login = version.ok ? runCodex(["login", "status"]) : { ok: false, stdout: "", stderr: "codex CLI unavailable" };
+  const features = version.ok ? runCodex(["features", "list"]) : { ok: false, stdout: "", stderr: "codex CLI unavailable" };
+  const goalFeature = parseGoalFeature(features.stdout);
+  const loggedIn = login.ok && !/not logged in/i.test(`${login.stdout}\n${login.stderr}`);
+
+  return {
+    codex_cli_available: version.ok,
+    codex_version: firstLine(version.stdout),
+    logged_in: loggedIn,
+    login_status: firstLine(login.stdout || login.stderr),
+    goals_feature_enabled: goalFeature.enabled,
+    goals_feature_stage: goalFeature.stage,
+    ready: version.ok && loggedIn && goalFeature.enabled,
+  };
+}
+
+function runCodex(args) {
+  const result = spawnSync("codex", args, {
+    encoding: "utf8",
+    env: { ...process.env, CODEX_HOME: codexHome() },
+  });
+  return {
+    ok: result.status === 0,
+    status: result.status,
+    stdout: result.stdout || "",
+    stderr: result.stderr || result.error?.message || "",
+  };
+}
+
+function parseGoalFeature(output) {
+  const line = output.split(/\r?\n/).find((candidate) => candidate.trim().startsWith("goals"));
+  if (!line) return { enabled: false, stage: "" };
+  const parts = line.trim().split(/\s{2,}/);
+  return {
+    enabled: parts.at(-1) === "true",
+    stage: parts.slice(1, -1).join(" "),
+  };
+}
+
+function firstLine(value) {
+  return (value || "").split(/\r?\n/).find((line) => line.trim())?.trim() || "";
 }
 
 async function extend() {
