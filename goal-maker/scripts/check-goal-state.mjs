@@ -140,11 +140,32 @@ function taskReceipt(task) {
     value: inline || "object",
     raw,
     has: (key) => new RegExp(`^\\s{6}${key}:`, "m").test(raw),
+    list: (key) => receiptList(raw, key),
+    commandStatuses: () => receiptCommandStatuses(raw),
     scalar: (key) => {
       const match = raw.match(new RegExp(`^\\s{6}${key}:\\s*(.*?)\\s*$`, "m"));
       return match ? clean(match[1]) : null;
     },
   };
+}
+
+function receiptList(raw, key) {
+  const lines = raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => new RegExp(`^\\s{6}${key}:\\s*$`).test(line));
+  if (start === -1) return [];
+  const values = [];
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (/^\s{6}\S/.test(lines[i])) break;
+    const item = lines[i].match(/^\s{8}-\s*(.+?)\s*$/);
+    if (item) values.push(clean(item[1]));
+  }
+  return values.filter((value) => value !== null);
+}
+
+function receiptCommandStatuses(raw) {
+  return [...raw.matchAll(/^\s{10}status:\s*(.*?)\s*$/gm)]
+    .map((match) => clean(match[1]))
+    .filter((value) => value !== null);
 }
 
 function rootEntryErrors() {
@@ -167,6 +188,10 @@ function rootEntryErrors() {
 const version = topScalar("version");
 const goalStatus = nestedScalar("goal", "status");
 const activeTask = topScalar("active_task");
+const installedAgents = ["scout", "worker", "judge"].map((agent) => ({
+  agent,
+  status: nestedScalar("agents", agent),
+}));
 const continuousUntilFullOutcome = nestedScalar("rules", "continuous_until_full_outcome") === true;
 const missingInputOrCredentialsDoNotStopGoal =
   nestedScalar("rules", "missing_input_or_credentials_do_not_stop_goal") === true;
@@ -182,6 +207,16 @@ if (version !== 2) {
     errors.push("legacy v1 goal state detected; Goal Maker v2 requires version: 2 with a task board. Create a new v2 goal or migrate manually.");
   } else {
     errors.push("state.yaml must declare version: 2");
+  }
+}
+
+if (!["active", "blocked", "done"].includes(goalStatus)) {
+  errors.push(`goal.status must be active, blocked, or done; got ${goalStatus || "<missing>"}`);
+}
+
+for (const { agent, status } of installedAgents) {
+  if (status !== "installed") {
+    errors.push(`agents.${agent} must be installed; got ${status || "<missing>"}`);
   }
 }
 
@@ -206,6 +241,15 @@ for (const task of tasks) {
   }
   if (!["Scout", "Judge", "Worker", "PM"].includes(task.assignee)) {
     errors.push(`task ${task.id} assignee must be Scout, Judge, Worker, or PM`);
+  }
+  const expectedAssignee = {
+    scout: "Scout",
+    judge: "Judge",
+    worker: "Worker",
+    pm: "PM",
+  }[task.type];
+  if (expectedAssignee && task.assignee !== expectedAssignee) {
+    errors.push(`task ${task.id} assignee must be ${expectedAssignee} for type ${task.type}`);
   }
   if (!["queued", "active", "blocked", "done"].includes(task.status)) {
     errors.push(`task ${task.id} status must be queued, active, blocked, or done`);
@@ -241,8 +285,15 @@ if (activeTask && !ids.has(activeTask)) errors.push(`active_task points to unkno
 
 for (const task of tasks) {
   const hasReceipt = task.receipt.present && task.receipt.value !== null;
+  const receiptResult = hasReceipt ? task.receipt.scalar("result") : null;
   if (task.status === "done" && !hasReceipt) {
     errors.push(`done task ${task.id} missing receipt`);
+  }
+  if (task.status === "done" && hasReceipt && receiptResult !== "done") {
+    errors.push(`done task ${task.id} receipt must include result: done`);
+  }
+  if (task.status === "blocked" && !hasReceipt) {
+    errors.push(`blocked task ${task.id} missing receipt`);
   }
   if (task.type === "worker" && task.status === "active") {
     if (task.allowedFiles.length === 0) errors.push(`active Worker task ${task.id} must include allowed_files`);
@@ -252,6 +303,21 @@ for (const task of tasks) {
   if (task.type === "worker" && task.status === "done" && hasReceipt) {
     for (const key of ["changed_files", "commands", "summary"]) {
       if (!task.receipt.has(key)) errors.push(`Worker receipt for ${task.id} missing ${key}`);
+    }
+    const changedFiles = task.receipt.list("changed_files");
+    for (const changedFile of changedFiles) {
+      if (!task.allowedFiles.includes(changedFile)) {
+        errors.push(`Worker receipt for ${task.id} changed file outside allowed_files: ${changedFile}`);
+      }
+    }
+    const commandStatuses = task.receipt.commandStatuses();
+    if (task.receipt.has("commands") && commandStatuses.length === 0) {
+      errors.push(`Worker receipt for ${task.id} commands must include status fields`);
+    }
+    for (const status of commandStatuses) {
+      if (status !== "pass") {
+        errors.push(`Worker receipt for ${task.id} has non-passing command status: ${status}`);
+      }
     }
   }
   if (task.type === "scout" && task.status === "done" && hasReceipt) {

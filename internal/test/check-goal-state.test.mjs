@@ -156,6 +156,96 @@ checks:
   }
 });
 
+test("rejects invalid goal status and missing installed agents", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "Bad status"
+  slug: "bad-status"
+  kind: open_ended
+  tranche: "truthful board"
+  status: banana
+rules:
+  continuous_until_full_outcome: true
+active_task: T001
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Map the repo."
+    receipt: null
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /goal\.status must be active, blocked, or done/i);
+    assert.match(result.stdout.errors.join("\n"), /agents\.scout must be installed/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects task type and assignee mismatch", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace("assignee: Scout", "assignee: Worker"));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /assignee must be Scout for type scout/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects blocked task without receipt", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "Blocked slice"
+  slug: "blocked-slice"
+  kind: open_ended
+  tranche: "truthful blocking"
+  status: active
+rules:
+  continuous_until_full_outcome: true
+  missing_input_or_credentials_do_not_stop_goal: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T002
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: blocked
+    objective: "Run the production-only command."
+    allowed_files:
+      - package.json
+    verify:
+      - npm test
+    stop_if:
+      - "Need production access."
+    receipt: null
+  - id: T002
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Find a safe local workaround."
+    receipt: null
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /blocked task T001 missing receipt/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("rejects legacy v1 state with gate or units schema", () => {
   const root = makeRoot();
   try {
@@ -284,6 +374,79 @@ checks:
     const result = runChecker(root);
     assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
     assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects done Worker receipts with failed commands or files outside scope", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "False green"
+  slug: "false-green"
+  kind: specific
+  tranche: "truthful receipt"
+  status: done
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+  continuous_until_full_outcome: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: null
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Update README only."
+    allowed_files:
+      - README.md
+    verify:
+      - npm test
+    stop_if:
+      - "Verification fails twice."
+    receipt:
+      result: done
+      changed_files:
+        - README.md
+        - package.json
+      commands:
+        - cmd: npm test
+          status: fail
+      summary: "Claimed done despite failed verification and widened scope."
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit completion."
+    receipt:
+      result: done
+      decision: complete
+      full_outcome_complete: true
+      summary: "Incorrectly approved."
+checks:
+  dirty_fingerprint: clean
+  last_verification:
+    result: fail
+    task: T001
+    commands:
+      - cmd: npm test
+        status: fail
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    const errors = result.stdout.errors.join("\n");
+    assert.match(errors, /changed file outside allowed_files: package\.json/i);
+    assert.match(errors, /non-passing command status: fail/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
