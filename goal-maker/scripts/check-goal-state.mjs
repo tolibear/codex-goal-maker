@@ -167,6 +167,9 @@ function rootEntryErrors() {
 const version = topScalar("version");
 const goalStatus = nestedScalar("goal", "status");
 const activeTask = topScalar("active_task");
+const continuousUntilFullOutcome = nestedScalar("rules", "continuous_until_full_outcome") === true;
+const missingInputOrCredentialsDoNotStopGoal =
+  nestedScalar("rules", "missing_input_or_credentials_do_not_stop_goal") === true;
 const legacySignals = [
   /^gate:\s*$/m,
   /^artifact_policy:\s*$/m,
@@ -216,8 +219,17 @@ const activeTasks = tasks.filter((task) => task.status === "active");
 if (goalStatus === "done") {
   if (activeTasks.length !== 0) errors.push("done goals must not have an active task");
   if (activeTask !== null) errors.push("done goals must set active_task: null");
+  const unfinishedWorkers = tasks
+    .filter((task) => task.type === "worker" && ["queued", "active"].includes(task.status))
+    .map((task) => task.id);
+  if (unfinishedWorkers.length > 0) {
+    errors.push(`done goals must not leave queued or active Worker tasks: ${unfinishedWorkers.join(", ")}`);
+  }
 } else if (goalStatus === "blocked") {
   if (activeTasks.length > 1) errors.push("blocked goals may have at most one active task");
+  if (continuousUntilFullOutcome && missingInputOrCredentialsDoNotStopGoal) {
+    errors.push("continuous goals must keep goal.status active; missing input or credentials should block specific tasks, not the whole goal");
+  }
 } else if (activeTasks.length !== 1) {
   errors.push(`exactly one active task is required while goal.status is active; found ${activeTasks.length}`);
 }
@@ -262,6 +274,18 @@ if (goalStatus === "done") {
   });
   if (!finalAudit) {
     errors.push("completion requires a final done Judge or PM audit receipt with decision: complete");
+  }
+  if (continuousUntilFullOutcome) {
+    const finalFullOutcomeAudit = tasks.some((task) => {
+      if (!["judge", "pm"].includes(task.type) || task.status !== "done") return false;
+      if (!task.receipt.present || task.receipt.value === null) return false;
+      const decision = task.receipt.scalar("decision");
+      const fullOutcomeComplete = task.receipt.scalar("full_outcome_complete");
+      return (decision === "complete" || decision === "done") && fullOutcomeComplete === true;
+    });
+    if (!finalFullOutcomeAudit) {
+      errors.push("continuous goals require a final done Judge or PM audit receipt with full_outcome_complete: true before goal.status: done");
+    }
   }
 }
 

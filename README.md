@@ -81,13 +81,13 @@ tasks:
     type: judge
     assignee: Judge
     status: queued
-    objective: "Choose the first safe implementation tranche."
+    objective: "Choose the next safe implementation task."
     receipt: null
   - id: T003
     type: worker
     assignee: Worker
     status: queued
-    objective: "Execute the first chosen implementation task."
+    objective: "Execute the safe implementation task selected by Judge."
     allowed_files: []
     verify: []
     stop_if:
@@ -146,8 +146,10 @@ The catalog is intentionally empty until real extensions are ready to ship.
 After `$goal-maker` creates or repairs the board, start `/goal` with the printed command:
 
 ```text
-/goal Follow docs/goals/<slug>/goal.md
+/goal Follow docs/goals/<slug>/goal.md continuously through successive safe verified implementation slices until the full original outcome is complete. Do not stop after planning, Judge selection, a single verified slice, missing credentials, missing owner input, missing production access, or a blocked execute path. After each Worker slice is verified and audited, immediately advance the board to the next highest-leverage safe Worker slice and continue in the same run. If a slice is blocked by credentials, input, production access, destructive operations, or policy, mark that exact slice blocked with a receipt, create the smallest safe follow-up or workaround task, and continue all other local, non-destructive work.
 ```
+
+By default, Goal Maker treats broad goals as requests for continuous work, not plan-only or one-slice exercises. Missing credentials or owner input are blockers for specific tasks, not reasons to stop the goal. A queued or active Worker task blocks `goal.status: done`; finish it, block it with a receipt, or replace it with a smaller safe Worker task before final audit. For continuous execution boards, a final audit must prove the full original outcome is complete, not merely that the latest slice passed.
 
 Check board health:
 

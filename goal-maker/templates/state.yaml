@@ -7,7 +7,7 @@ goal:
   title: "<Goal title>"
   slug: "<goal-slug>"
   kind: open_ended # specific | open_ended | recovery | audit
-  tranche: "<bounded current tranche>"
+  tranche: "<continuous execution: complete successive safe verified slices until the full original outcome is complete>"
   status: active # active | blocked | done
 
 rules:
@@ -16,6 +16,10 @@ rules:
   max_write_workers: 1
   no_implementation_without_worker_or_pm_task: true
   no_completion_without_judge_or_pm_audit: true
+  planning_is_not_completion: true
+  queued_required_worker_blocks_completion: true
+  continuous_until_full_outcome: true
+  missing_input_or_credentials_do_not_stop_goal: true
 
 agents:
   scout: installed
@@ -51,7 +55,7 @@ tasks:
     assignee: Judge
     status: queued
     reasoning_hint: default
-    objective: "Review Scout findings and choose the first safe implementation tranche."
+    objective: "Review Scout findings and choose the first safe implementation task."
     inputs:
       - "T001 receipt"
     constraints:
@@ -59,7 +63,10 @@ tasks:
       - "Pick small reviewable work."
     expected_output:
       - "Decision"
-      - "First Worker task"
+      - "Exact Worker objective"
+      - "allowed_files"
+      - "verify"
+      - "stop_if"
       - "Blocked or deferred tasks"
     receipt: null
   - id: T003
@@ -67,13 +74,34 @@ tasks:
     assignee: Worker
     status: queued
     reasoning_hint: default
-    objective: "Reserved for the first implementation task after Judge selection."
+    objective: "Execute the first safe implementation task selected by Judge."
     allowed_files: []
     verify: []
     stop_if:
       - "Need files outside allowed_files."
       - "Behavior is ambiguous."
       - "Verification fails twice."
+    receipt: null
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: queued
+    reasoning_hint: default
+    objective: "Audit whether the implemented slice satisfies the original user outcome for this tranche."
+    inputs:
+      - "All done task receipts"
+      - "Last verification"
+      - "Current dirty diff"
+    constraints:
+      - "Do not implement."
+      - "Reject completion if required Worker work is still queued or active."
+      - "Reject completion if the broader original outcome still has safe local follow-up slices."
+      - "Reject stopping only because a slice needs owner input, credentials, production access, destructive operations, or policy decisions."
+    expected_output:
+      - "complete | not_complete"
+      - "full_outcome_complete: true | false"
+      - "missing evidence"
+      - "next task if not complete"
     receipt: null
 
 checks:

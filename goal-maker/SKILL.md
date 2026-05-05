@@ -5,7 +5,7 @@ description: Use for broad, long-running, stalled, or unhealthy Codex work that 
 
 # Goal Maker
 
-`$goal-maker` prepares a Goal Maker board. It does not start `/goal` automatically.
+`$goal-maker` prepares a Goal Maker board. It does not start `/goal` automatically, but the board and starter `/goal` command must be shaped so the next run continues into safe execution by default.
 
 Goal Maker is for autonomous, long-running Codex work where the PM thread may need to discover the work, define tasks, sequence them, delegate them, execute them, verify them, and keep going without the human decomposing every step.
 
@@ -28,7 +28,7 @@ Do:
 - seed a role-tagged task board;
 - make the first active task safe;
 - verify Scout, Worker, and Judge agents are installed or explain what is missing;
-- print the exact command `/goal Follow docs/goals/<slug>/goal.md`;
+- print the exact command `/goal Follow docs/goals/<slug>/goal.md continuously through successive safe verified implementation slices until the full original outcome is complete. Do not stop after planning, Judge selection, a single verified slice, missing credentials, missing owner input, missing production access, or a blocked execute path. After each Worker slice is verified and audited, immediately advance the board to the next highest-leverage safe Worker slice and continue in the same run. If a slice is blocked by credentials, input, production access, destructive operations, or policy, mark that exact slice blocked with a receipt, create the smallest safe follow-up or workaround task, and continue all other local, non-destructive work.`;
 - ask whether to start now, refine `goal.md`, or stop.
 
 Do not:
@@ -38,6 +38,24 @@ Do not:
 - edit implementation files before the board exists;
 - invent implementation tasks from vibes when a Scout or Judge task is needed first;
 - treat `goal.md` as board truth when it conflicts with `state.yaml`.
+
+## Default Bias: Users Want Work Done
+
+Unless the user explicitly asks for planning only, treat a Goal Maker request as a request for work to happen.
+
+Planning, Scout findings, Judge decisions, and a queued Worker task are not terminal outcomes when the user's original ask is for a working capability, automation, fix, cleanup, or backend/frontend behavior. They are setup for execution.
+
+For execution goals, the default run is continuous:
+
+```text
+Discover enough evidence, choose a safe implementation slice, implement it, verify it, audit it, then immediately choose and execute the next safe slice until the full original outcome is complete.
+```
+
+If the first `/goal` run reaches a Judge decision that names a safe Worker task with `allowed_files`, `verify`, and `stop_if`, the PM should activate that Worker and continue in the same run unless a stop condition applies.
+
+After a verified Worker slice and audit, do not mark the thread goal complete merely because that slice passed. A slice audit is a checkpoint. For broad automation or product goals, continue by reopening or advancing the board to the next safe Worker task until the full owner outcome is complete.
+
+Missing owner input, credentials, production access, destructive-operation permission, or policy decisions are blockers for specific tasks, not stopping conditions for the whole goal. When a slice hits one of those blockers, mark that exact task blocked with a receipt, create a safe follow-up or workaround task, and keep doing local, non-destructive work that advances the full outcome.
 
 ## When To Use
 
@@ -88,10 +106,10 @@ Is this goal specific, open-ended, recovery, or audit?
 What counts as enough for the current tranche?
 ```
 
-Avoid forever goals. A broad goal should define a tranche, for example:
+Avoid forever goals. A broad goal should define an execution tranche, for example:
 
 ```text
-Discover the highest-leverage local improvements, complete the first safe implementation tranche, and leave a reviewable handoff for anything larger.
+Discover the highest-leverage local improvements, complete successive safe verified implementation slices, audit each slice against the original user outcome, and keep advancing until the full outcome is complete.
 ```
 
 ## Board
@@ -122,7 +140,7 @@ The PM owns the board. Scout, Judge, and Worker return receipts; they do not sel
 
 ## Seed Boards
 
-If the goal is vague, the first active task is Scout.
+If the goal is vague, the first active task is Scout, but the seeded board should still lead toward execution. Queue Judge selection, a bounded Worker slot, and a final audit.
 
 Example open-ended seed:
 
@@ -144,19 +162,31 @@ tasks:
     type: judge
     assignee: Judge
     status: queued
-    objective: "Choose the first tranche by impact, confidence, reversibility, and verification strength."
+    objective: "Choose the first safe implementation task by impact, confidence, reversibility, and verification strength."
+    expected_output:
+      - "Decision"
+      - "Exact Worker objective"
+      - "allowed_files"
+      - "verify"
+      - "stop_if"
     receipt: null
   - id: T004
     type: worker
     assignee: Worker
     status: queued
-    objective: "Execute the first chosen implementation task."
+    objective: "Execute the first safe implementation task selected by Judge."
     allowed_files: []
     verify: []
     stop_if:
       - "Need files outside allowed_files."
       - "Behavior is ambiguous."
       - "Verification fails twice."
+    receipt: null
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: queued
+    objective: "Audit whether the implemented slice satisfies the original user outcome for this tranche."
     receipt: null
 ```
 
@@ -252,16 +282,21 @@ Blocked tasks do not necessarily block the goal. The PM should keep doing safe l
 - write or update a note for handoff;
 - update receipts and verification freshness.
 
-Set `goal.status: blocked` only when every safe local next action is blocked, unsafe, or requires owner input.
+Avoid setting `goal.status: blocked` for missing input, credentials, production access, destructive-operation permission, or policy decisions. Block the specific task instead, record the missing requirement, and continue with every safe local workaround or adjacent slice.
 
 ## Continuation Rule
 
 After a task completes, immediately write its receipt and select the next active task unless:
 
-- the tranche audit passes;
-- every safe local next action is blocked;
-- owner input is required;
-- continuing would require credentials, destructive operations, or product strategy outside the board.
+- a final audit proves the full original owner outcome is complete.
+
+Do not stop at "ready for implementation" when a safe Worker task exists. Activate the Worker, execute it, verify it, and then run the audit task.
+
+Do not stop after one verified implementation slice when the broader owner outcome still has safe local follow-up slices. Treat a slice audit as permission to advance the board, not as permission to finish, unless the audit explicitly proves the full original outcome is complete.
+
+Do not stop because the current slice needs owner input, credentials, production access, destructive operations, or policy decisions. Mark that slice blocked, spawn or activate the smallest safe local task that can proceed around the blocker, and continue.
+
+Do not mark a goal or tranche done while any queued or active Worker task is still required for the user's original outcome. Complete it, block it with a receipt, or replace it with a smaller safe Worker task.
 
 Do not end with an active task marked done.
 
@@ -315,7 +350,13 @@ Treat `reasoning_hint` as PM guidance. It does not override task scope, write pe
 
 Never complete because work looks substantial.
 
-Completion is a Judge or PM audit task. The goal is done only when a final done Judge or PM receipt says the current tranche is complete and maps completion to current receipts and verification.
+Completion is a Judge or PM audit task. The goal is done only when a final done Judge or PM receipt says the full original outcome is complete and maps completion to current receipts, verification, and the user's original outcome.
+
+For execution goals, completion also requires implementation evidence. A final audit cannot call the goal done if the only completed work is planning, discovery, or task selection.
+
+For continuous execution goals, the final audit receipt must include `full_outcome_complete: true`. If the receipt only proves that the current slice or tranche is complete, keep the goal active and queue or activate the next safe Worker/Judge/PM task.
+
+Queued or active Worker tasks block `goal.status: done`. If a Worker is no longer required, mark it blocked with a receipt explaining why, remove it during PM board maintenance, or replace it with the actual required Worker task before completion.
 
 Default final task:
 
@@ -331,6 +372,7 @@ Default final task:
     - "Current dirty diff"
   expected_output:
     - "complete | not_complete"
+    - "full_outcome_complete: true | false"
     - "missing evidence"
     - "next task if not complete"
   receipt: null
@@ -339,5 +381,5 @@ Default final task:
 ## Default `/goal` Shape
 
 ```text
-/goal Follow docs/goals/<slug>/goal.md
+/goal Follow docs/goals/<slug>/goal.md continuously through successive safe verified implementation slices until the full original outcome is complete. Do not stop after planning, Judge selection, a single verified slice, missing credentials, missing owner input, missing production access, or a blocked execute path. After each Worker slice is verified and audited, immediately advance the board to the next highest-leverage safe Worker slice and continue in the same run. If a slice is blocked by credentials, input, production access, destructive operations, or policy, mark that exact slice blocked with a receipt, create the smallest safe follow-up or workaround task, and continue all other local, non-destructive work.
 ```

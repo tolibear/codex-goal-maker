@@ -288,3 +288,286 @@ checks:
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("rejects done goal with unfinished Worker task", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "Improve backend automation"
+  slug: "improve-backend-automation"
+  kind: open_ended
+  tranche: "first safe backend automation slice"
+  status: done
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: null
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Map backend automation gaps."
+    receipt:
+      result: done
+      summary: "Found one safe automation slice."
+      evidence:
+        - package.json
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: queued
+    objective: "Implement the first safe automation slice."
+    allowed_files:
+      - package.json
+    verify:
+      - npm test
+    stop_if:
+      - "Verification fails twice."
+    receipt: null
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit tranche completion."
+    receipt:
+      result: done
+      decision: complete
+      summary: "Incorrectly claimed complete despite queued Worker."
+checks:
+  dirty_fingerprint: clean
+  last_verification:
+    result: pass
+    task: T999
+    commands:
+      - cmd: npm test
+        status: pass
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /done goals must not leave queued or active Worker tasks: T002/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects continuous done goal without full outcome audit", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "Build autonomous backend"
+  slug: "build-autonomous-backend"
+  kind: open_ended
+  tranche: "continuous backend automation"
+  status: done
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+  continuous_until_full_outcome: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: null
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Implement the first safe backend slice."
+    allowed_files:
+      - package.json
+    verify:
+      - npm test
+    stop_if:
+      - "Verification fails twice."
+    receipt:
+      result: done
+      changed_files:
+        - package.json
+      commands:
+        - cmd: npm test
+          status: pass
+      summary: "One slice completed."
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit slice completion."
+    receipt:
+      result: done
+      decision: complete
+      summary: "Current slice complete, but full outcome was not declared complete."
+checks:
+  dirty_fingerprint: clean
+  last_verification:
+    result: pass
+    task: T001
+    commands:
+      - cmd: npm test
+        status: pass
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /full_outcome_complete: true/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("accepts continuous done goal with full outcome audit", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "Build autonomous backend"
+  slug: "build-autonomous-backend"
+  kind: open_ended
+  tranche: "continuous backend automation"
+  status: done
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+  continuous_until_full_outcome: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: null
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Implement the complete backend automation outcome."
+    allowed_files:
+      - package.json
+    verify:
+      - npm test
+    stop_if:
+      - "Verification fails twice."
+    receipt:
+      result: done
+      changed_files:
+        - package.json
+      commands:
+        - cmd: npm test
+          status: pass
+      summary: "Full outcome completed."
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit full outcome completion."
+    receipt:
+      result: done
+      decision: complete
+      full_outcome_complete: true
+      summary: "Full original outcome complete."
+checks:
+  dirty_fingerprint: clean
+  last_verification:
+    result: pass
+    task: T001
+    commands:
+      - cmd: npm test
+        status: pass
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects blocked continuous goal when missing input should not stop the goal", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "Build autonomous backend"
+  slug: "build-autonomous-backend"
+  kind: open_ended
+  tranche: "continuous backend automation"
+  status: blocked
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+  continuous_until_full_outcome: true
+  missing_input_or_credentials_do_not_stop_goal: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T002
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: blocked
+    objective: "Run credentialed backend execute slice."
+    allowed_files:
+      - package.json
+    verify:
+      - npm test
+    stop_if:
+      - "Need credentials."
+    receipt:
+      result: blocked
+      changed_files:
+        - package.json
+      commands:
+        - cmd: npm test
+          status: pass
+      summary: "Blocked on credentials."
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Implement safe local workaround while credentials are missing."
+    allowed_files:
+      - package.json
+    verify:
+      - npm test
+    stop_if:
+      - "Verification fails twice."
+    receipt: null
+checks:
+  dirty_fingerprint: dirty
+  last_verification:
+    result: pass
+    task: T001
+    commands:
+      - cmd: npm test
+        status: pass
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /missing input or credentials should block specific tasks/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
