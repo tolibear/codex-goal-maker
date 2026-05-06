@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const checker = resolve("goal-maker/scripts/check-goal-state.mjs");
+const checker = resolve("goalbuddy/scripts/check-goal-state.mjs");
 
 function makeRoot() {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-test-"));

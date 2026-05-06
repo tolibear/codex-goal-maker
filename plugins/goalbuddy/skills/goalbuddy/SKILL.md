@@ -15,6 +15,28 @@ The loop is:
 raw user intent -> intake compiler -> discovery/plan validation/execution board -> one active task -> receipt -> board update -> repeat
 ```
 
+## Invocation Boundary
+
+There are two different modes:
+
+- `$goalbuddy`: prepare intake, `goal.md`, `state.yaml`, and the starter `/goal` command, then stop.
+- `/goal Follow docs/goals/<slug>/goal.md.`: execute the board, including Scout/Judge/Worker work.
+
+This boundary is strict. `$goalbuddy` is not a lightweight `/goal`; it is a board compiler.
+
+During a `$goalbuddy` turn, do not perform the user's requested work, even if the work looks read-only, preparatory, or obviously useful. Do not refresh or load named skills, inspect implementation files, browse reference repos, research design inspiration, generate design plans, generate images/assets, run app-specific checks, start servers, or edit product files. Put those actions into Scout, Judge, Worker, or PM tasks for the later `/goal` run.
+
+Allowed `$goalbuddy` actions:
+
+- ask diagnostic intake questions and wait when required;
+- create or repair only `docs/goals/<slug>/goal.md`, `docs/goals/<slug>/state.yaml`, and `docs/goals/<slug>/notes/`;
+- optionally run the GoalBuddy board checker against that `state.yaml`;
+- verify that the GoalBuddy agents are installed, if this can be done without touching implementation work;
+- print exactly `/goal Follow docs/goals/<slug>/goal.md.`;
+- ask whether to start `/goal`, refine the board, or stop.
+
+If the prompt names another skill or tool, such as "use the taste skill", "refresh the taste skill", "look at this repo", "use browser", or "generate assets", record that requirement in the charter and seed tasks. Do not load that skill, browse that repo, or generate those assets during `$goalbuddy`.
+
 ## Intake Compiler
 
 Before creating, repairing, or running a board, privately translate the user's input into a Goal Intake. The input may be vague, specific, or detailed with an existing plan. Do not dump the intake to the user unless they ask for it.
@@ -124,6 +146,8 @@ Do:
 Do not:
 
 - start `/goal` automatically;
+- use, refresh, inspect, or load named skills requested by the goal; schedule that as `/goal` work instead;
+- browse links, inspect reference repos, read implementation files, generate design plans, generate images, or create assets for the requested outcome;
 - create or repair a board from vague/open-ended input before diagnostic intake is complete;
 - create `evidence.jsonl`, `units/`, or `artifacts/` for new v2 goals;
 - edit implementation files before the board exists;
@@ -131,9 +155,11 @@ Do not:
 - discard a user-provided plan; preserve it as facts and validate it before execution;
 - treat `goal.md` as board truth when it conflicts with `state.yaml`.
 
-## Default Bias: Users Want Work Done
+## `/goal` Default Bias: Users Want Work Done
 
-Unless the user explicitly asks for planning only, treat a GoalBuddy request as a request for work to happen.
+This section applies after the user starts `/goal Follow docs/goals/<slug>/goal.md.` It does not apply to the initial `$goalbuddy` board-preparation turn.
+
+Unless the user explicitly asks for planning only, treat a `/goal` run as a request for work to happen.
 
 Planning, Scout findings, Judge decisions, and a queued Worker task are not terminal outcomes when the user's original ask is for a working capability, automation, fix, cleanup, or backend/frontend behavior. They are setup for execution.
 

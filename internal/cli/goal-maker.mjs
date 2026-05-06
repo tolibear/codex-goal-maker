@@ -188,9 +188,8 @@ function installSkill({ force = true, quiet = false } = {}) {
 
   mkdirSync(dirname(legacyTarget), { recursive: true });
   rmSync(legacyTarget, { recursive: true, force: true });
-  cpSync(skillSource, legacyTarget, {
-    recursive: true,
-  });
+  mkdirSync(legacyTarget, { recursive: true });
+  writeFileSync(join(legacyTarget, "SKILL.md"), compatibilitySkillBody());
   restoreInstalledExtensions(legacyTarget, extensionTempPath);
   writeInstallMetadata(legacyTarget, previousMetadata);
   cleanupPreservedExtensions([extensionTempPath]);
@@ -209,6 +208,28 @@ function installSkill({ force = true, quiet = false } = {}) {
     current_version: packageInfo.version,
     preserved_extensions: preservedExtensionIds,
   };
+}
+
+function compatibilitySkillBody() {
+  return `---
+name: ${legacySkillName}
+description: Compatibility alias for GoalBuddy. Use $${canonicalSkillName} as the canonical skill.
+---
+
+# GoalBuddy Compatibility Alias
+
+$${legacySkillName} is the previous name for $${canonicalSkillName}.
+
+Use $${canonicalSkillName} for new work. This compatibility skill exists so older prompts and local installs do not fail after the rebrand.
+
+When invoked through $${legacySkillName}:
+
+1. Tell the user Goal Maker has been rebranded to GoalBuddy.
+2. Show the canonical command: $${canonicalSkillName}.
+3. If the user wants to continue immediately, follow the same workflow as $${canonicalSkillName}: run diagnostic intake, create or repair \`docs/goals/<slug>/goal.md\` and \`state.yaml\`, preserve one active task, and print \`/goal Follow docs/goals/<slug>/goal.md.\` without starting \`/goal\` automatically.
+
+This alias has the same invocation boundary as \`$${canonicalSkillName}\`: prepare the board only. Do not use or refresh named skills, inspect implementation files, browse references, research, generate assets, or perform the requested work until the user starts the printed \`/goal\` command.
+`;
 }
 
 function installAgents({ quiet = false } = {}) {
