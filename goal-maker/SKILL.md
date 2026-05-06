@@ -118,7 +118,7 @@ Do:
 - seed a role-tagged task board that matches the input shape;
 - make the first active task safe;
 - verify Scout, Worker, and Judge agents are installed or explain what is missing;
-- print the exact command `/goal Follow docs/goals/<slug>/goal.md. First read the intake, original request, constraints, authority, proof, likely misfire, and state.yaml board truth. Then continue through successive safe verified implementation slices until the full original outcome is complete. Preserve and validate any user-provided plan instead of discarding it or executing it blindly. Do not stop after intake, planning, Judge selection, a single verified slice, missing credentials, missing owner input, missing production access, or a blocked execute path. After each Worker slice is verified and audited, immediately advance the board to the next highest-leverage safe Worker slice and continue in the same run. If a slice is blocked by credentials, input, production access, destructive operations, or policy, mark that exact slice blocked with a receipt, create the smallest safe follow-up or workaround task, and continue all other local, non-destructive work.`;
+- print the exact command `/goal Follow docs/goals/<slug>/goal.md.`;
 - ask whether to start now, refine `goal.md`, or stop.
 
 Do not:
@@ -480,5 +480,5 @@ Default final task:
 ## Default `/goal` Shape
 
 ```text
-/goal Follow docs/goals/<slug>/goal.md. First read the intake, original request, constraints, authority, proof, likely misfire, and state.yaml board truth. Then continue through successive safe verified implementation slices until the full original outcome is complete. Preserve and validate any user-provided plan instead of discarding it or executing it blindly. Do not stop after intake, planning, Judge selection, a single verified slice, missing credentials, missing owner input, missing production access, or a blocked execute path. After each Worker slice is verified and audited, immediately advance the board to the next highest-leverage safe Worker slice and continue in the same run. If a slice is blocked by credentials, input, production access, destructive operations, or policy, mark that exact slice blocked with a receipt, create the smallest safe follow-up or workaround task, and continue all other local, non-destructive work.
+/goal Follow docs/goals/<slug>/goal.md.
 ```

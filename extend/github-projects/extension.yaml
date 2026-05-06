@@ -1,0 +1,37 @@
+id: github-projects
+name: GitHub Projects
+kind: integration
+version: 0.1.0
+source_of_truth: local
+description: Mirror Goal Maker state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, and a Goal Board view.
+use_when:
+  - A long-running Goal Maker board needs stakeholder visibility in GitHub Projects.
+  - The team wants one-way sync from state.yaml into ProjectV2 draft issues.
+  - The PM needs a safe dry-run plan before using GitHub credentials.
+  - Goal Maker receipts, verification commands, allowed files, owners, role/agent fields, credential gates, and dependencies should appear in a GitHub board.
+activation: publish_handoff
+outputs:
+  - GitHub Projects dry-run plan
+  - GitHub ProjectV2 draft issue sync
+  - Goal Board ProjectV2 view
+requires_approval: true
+safe_by_default: false
+reads:
+  - docs/goals/<slug>/state.yaml
+  - GITHUB_PROJECT_ID
+  - GITHUB_PROJECT_OWNER
+  - GITHUB_PROJECT_NUMBER
+writes:
+  - GitHub ProjectV2 draft issues
+  - GitHub ProjectV2 fields
+  - GitHub ProjectV2 board view
+side_effects:
+  - Live sync creates or updates GitHub Project draft issues, fields, and views.
+auth:
+  env:
+    - GITHUB_TOKEN
+supports:
+  dry_run: true
+  live_github_projects: true
+  credentials_required: true
+  one_way_sync: true

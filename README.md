@@ -158,15 +158,17 @@ The npm package is the stable core. Extensions live under `extend/` and move thr
 
 Extensions are not board truth. They may publish, report, intake, or add role guidance, but `state.yaml` remains authoritative.
 
-The first cataloged extension, `github-pr-workflow`, prepares GitHub PR handoff text from goal receipts without requiring GitHub credentials or making GitHub authoritative. The catalog also includes GitHub Projects board publishing, local-first review, recovery, planning, documentation, audit, and credential-gated handoff extensions such as `publish-github-projects`, `ai-diff-risk-review`, `ci-failure-triage`, `docs-drift-audit`, `test-gap-planner`, `release-readiness`, `dependency-upgrade-planner`, `security-review-brief`, `codebase-onboarding-map`, `slack-standup-digest`, and `linear-ticket-handoff`.
+The first cataloged extension, `github-pr-workflow`, prepares receipt-aligned commit boundaries and GitHub PR handoff text from goal receipts without requiring GitHub credentials or making GitHub authoritative. The catalog also includes GitHub Projects sync plus local-first review, recovery, planning, documentation, audit, and credential-gated handoff extensions such as `github-projects`, `ai-diff-risk-review`, `ci-failure-triage`, `docs-drift-audit`, `test-gap-planner`, `release-readiness`, `dependency-upgrade-planner`, `security-review-brief`, `codebase-onboarding-map`, `slack-standup-digest`, and `linear-ticket-handoff`.
 
 ## Running A Goal
 
 After `$goal-maker` creates or repairs the board, start `/goal` with the printed command:
 
 ```text
-/goal Follow docs/goals/<slug>/goal.md continuously through successive safe verified implementation slices until the full original outcome is complete. Do not stop after planning, Judge selection, a single verified slice, missing credentials, missing owner input, missing production access, or a blocked execute path. After each Worker slice is verified and audited, immediately advance the board to the next highest-leverage safe Worker slice and continue in the same run. If a slice is blocked by credentials, input, production access, destructive operations, or policy, mark that exact slice blocked with a receipt, create the smallest safe follow-up or workaround task, and continue all other local, non-destructive work.
+/goal Follow docs/goals/<slug>/goal.md.
 ```
+
+The detailed run instructions live in that goal's `goal.md`, so the kickoff prompt can stay short while the board carries the full stop rule, intake, and PM loop.
 
 By default, Goal Maker treats broad goals as requests for continuous work, not plan-only or one-slice exercises. Missing credentials or owner input are blockers for specific tasks, not reasons to stop the goal. A queued or active Worker task blocks `goal.status: done`; finish it, block it with a receipt, or replace it with a smaller safe Worker task before final audit. For continuous execution boards, a final audit must prove the full original outcome is complete, not merely that the latest slice passed.
 

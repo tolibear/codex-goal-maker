@@ -6,17 +6,19 @@
       "name": "GitHub PR workflow",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Prepare GitHub pull request handoff text from Goal Maker receipts without requiring GitHub credentials.",
-      "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, and verification output into PR-ready Markdown while keeping state.yaml authoritative.",
+      "summary": "Prepare receipt-aligned commit boundaries and GitHub pull request handoff text from Goal Maker receipts without requiring GitHub credentials.",
+      "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, verification output, and commit boundaries into PR-ready Markdown while keeping state.yaml authoritative.",
       "source": "extend/github-pr-workflow",
       "docs": "README.md",
       "use_when": [
         "The goal produced code changes intended for GitHub review.",
         "The user asks to push, open a PR, or prepare review context.",
-        "The board has Worker receipts and verification commands worth summarizing."
+        "The board has Worker receipts and verification commands worth summarizing.",
+        "The branch should be decomposed into commits that map to completed Worker or PM receipts."
       ],
       "activation": "publish_handoff",
       "outputs": [
+        "Receipt-aligned commit plan",
         "PR handoff Markdown"
       ],
       "requires_approval": false,
@@ -32,9 +34,11 @@
         "docs/goals/<slug>/state.yaml",
         "docs/goals/<slug>/notes",
         "git status --short",
-        "git diff --stat"
+        "git diff --stat",
+        "git log --oneline <base>..HEAD"
       ],
       "writes": [
+        "Receipt-aligned local commits",
         "PR handoff Markdown"
       ],
       "side_effects": [
@@ -53,32 +57,35 @@
         {
           "path": "README.md",
           "url": "github-pr-workflow/README.md",
-          "sha256": "4cbc9eb4f905a759d461bb83e6c4b1fce5387ee8a5e84c7712f2f371965764ce"
+          "sha256": "0cda5b3a9f4aca73cb2ffa15ae5126d22345c5f4c2eba36d51aaac237dfe22d5"
         },
         {
           "path": "extension.yaml",
           "url": "github-pr-workflow/extension.yaml",
-          "sha256": "641e998bd6453e1a9160b2fdabf3a251bbfd4f9354e62a61b789e15d8e6f147e"
+          "sha256": "75a207a6f8a62574860afa1cc42de464ef511920540c302f78130f0175930845"
         }
       ]
     },
     {
-      "id": "publish-github-projects",
-      "name": "GitHub Projects publishing",
+      "id": "github-projects",
+      "name": "GitHub Projects",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Publish a one-way GitHub Projects board view from Goal Maker state while keeping state.yaml authoritative.",
-      "description": "A credential-gated workflow for publishing or refreshing a GitHub Projects board with Goal Maker task cards, agent-oriented fields, and Todo/In Progress/Blocked/Done status mirroring.",
-      "source": "extend/publish-github-projects",
+      "summary": "Mirror Goal Maker state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, and a Goal Board view.",
+      "description": "A cataloged one-way GitHub Projects sync extension that ports PR #1 into the extension system while keeping state.yaml authoritative and live GitHub writes credential-gated.",
+      "source": "extend/github-projects",
       "docs": "README.md",
       "use_when": [
-        "A user asks to actively track a Goal Maker run in GitHub Projects.",
-        "A long-running goal needs a human-visible external board while agents keep state.yaml authoritative.",
-        "Goal Maker task status should mirror to Todo, In Progress, Blocked, and Done columns."
+        "A long-running Goal Maker board needs stakeholder visibility in GitHub Projects.",
+        "The team wants one-way sync from state.yaml into ProjectV2 draft issues.",
+        "The PM needs a safe dry-run plan before using GitHub credentials.",
+        "Goal Maker receipts, verification commands, allowed files, owners, role/agent fields, credential gates, and dependencies should appear in a GitHub board."
       ],
-      "activation": "publish_board",
+      "activation": "publish_handoff",
       "outputs": [
-        "GitHub Projects board view"
+        "GitHub Projects dry-run plan",
+        "GitHub ProjectV2 draft issue sync",
+        "Goal Board ProjectV2 view"
       ],
       "requires_approval": true,
       "safe_by_default": false,
@@ -86,44 +93,72 @@
         "goal_state": "v2",
         "surfaces": [
           "github_projects",
-          "external_board"
+          "stakeholder_board",
+          "external_visibility"
         ]
       },
       "reads": [
-        "docs/goals/<slug>/goal.md",
         "docs/goals/<slug>/state.yaml",
-        "gh auth status",
-        "GitHub owner and repository"
+        "GITHUB_PROJECT_ID",
+        "GITHUB_PROJECT_OWNER",
+        "GITHUB_PROJECT_NUMBER"
       ],
       "writes": [
-        "GitHub Project",
-        "docs/goals/<slug>/state.yaml receipt with project and item ids"
+        "GitHub ProjectV2 draft issues",
+        "GitHub ProjectV2 fields",
+        "GitHub ProjectV2 board view"
       ],
       "side_effects": [
-        "creates or updates GitHub Projects when explicitly approved"
+        "Live sync creates or updates GitHub Project draft issues, fields, and views."
       ],
       "auth": {
-        "env": []
+        "env": [
+          "GITHUB_TOKEN"
+        ]
       },
       "supports": {
         "dry_run": true,
         "live_github_projects": true,
         "credentials_required": true,
-        "required_gh_scopes": [
-          "project"
-        ]
+        "one_way_sync": true,
+        "alternate_token_env": "GH_TOKEN"
       },
       "source_of_truth": "local",
       "files": [
         {
           "path": "README.md",
-          "url": "publish-github-projects/README.md",
-          "sha256": "8d9a026c34b79615c2ce0b405cf28e77d262e2bc3ded710ba5e45ff81403d1f3"
+          "url": "github-projects/README.md",
+          "sha256": "95d1359d87f9c40f664c6abeb74c5001d8f85a77dffb1ac220f11a055d4f6c4c"
         },
         {
           "path": "extension.yaml",
-          "url": "publish-github-projects/extension.yaml",
-          "sha256": "2d148fbeecbf53519566dac6db4ed0e3afa68dee178ce87084bf764185ef9b0e"
+          "url": "github-projects/extension.yaml",
+          "sha256": "ef14824725943353cf38f34cd8ce1d10745f7433b831811e31a4dd9b406e2ad8"
+        },
+        {
+          "path": "scripts/sync-github-project.mjs",
+          "url": "github-projects/scripts/sync-github-project.mjs",
+          "sha256": "cb381f5bc282d68e1fe8cb7abe1727e3bf1ef44eb16994274b28d30fec1806a5"
+        },
+        {
+          "path": "scripts/lib/goal-state.mjs",
+          "url": "github-projects/scripts/lib/goal-state.mjs",
+          "sha256": "ea394983b7a641e47565932a53657caf3cd51e5f142cd2910dcfeff36c6b62a8"
+        },
+        {
+          "path": "scripts/lib/github-projects.mjs",
+          "url": "github-projects/scripts/lib/github-projects.mjs",
+          "sha256": "c1dacdd1624230407d1c056a0b683f915b369c7075beef5795c9611f71f2693b"
+        },
+        {
+          "path": "test/github-projects.test.mjs",
+          "url": "github-projects/test/github-projects.test.mjs",
+          "sha256": "2484c20743c1b379ca45dadbf8923bd3d5502071ba8986b5f8c52fefb66101a8"
+        },
+        {
+          "path": "examples/goal-board-sync/state.yaml",
+          "url": "github-projects/examples/goal-board-sync/state.yaml",
+          "sha256": "33ab718d27b839fe7b8f7b94a69b796304845c93f2fdddf97308bb05b9d1732e"
         }
       ]
     },

@@ -12,18 +12,18 @@ Use `goal-maker extend <id>` when deciding whether to activate an extension. The
 
 ## Extensions
 
-- `github-pr-workflow`: prepares GitHub pull request handoff text from Goal Maker receipts while keeping `state.yaml` authoritative.
-- `publish-github-projects`: publishes a GitHub Projects board view with Goal Maker task cards, agent fields, credential gates, and `Todo`/`In Progress`/`Blocked`/`Done` status mirroring.
-- `ai-diff-risk-review`: prepares a local risk review brief for AI-assisted or agent-produced diffs.
-- `ci-failure-triage`: summarizes failed checks, logs, changed files, and receipts into recovery-focused next steps.
-- `docs-drift-audit`: checks changed behavior and documentation surfaces for stale or missing docs before completion or PR handoff.
+- `github-pr-workflow`: prepares receipt-aligned commit boundaries and GitHub pull request handoff text while keeping `state.yaml` authoritative.
+- `github-projects`: mirrors Goal Maker boards into GitHub Projects with dry-run planning, draft issue upserts, `Todo`/`In Progress`/`Blocked`/`Done` statuses, agent-facing fields, credential gates, ProjectV2 fields, and a Goal Board view.
+- `codebase-onboarding-map`: creates a concise onboarding map from repo files, commands, conventions, and receipts.
+- `slack-standup-digest`: prepares Slack-ready status digests while keeping live delivery credential-gated.
+- `linear-ticket-handoff`: prepares Linear-ready issue text while keeping live issue creation credential-gated.
 - `test-gap-planner`: identifies weak test coverage and proposes the smallest useful next tests.
 - `release-readiness`: assembles release scope, verification, docs, packaging, and publish blockers.
 - `dependency-upgrade-planner`: plans dependency upgrades with policy fit, migration risk, verification, and rollback notes.
 - `security-review-brief`: prepares a focused local security review brief from changed files and receipts.
-- `codebase-onboarding-map`: creates a concise onboarding map from repo files, commands, conventions, and receipts.
-- `slack-standup-digest`: prepares Slack-ready status digests while keeping live delivery credential-gated.
-- `linear-ticket-handoff`: prepares Linear-ready issue text while keeping live issue creation credential-gated.
+- `ai-diff-risk-review`: prepares a local risk review brief for AI-assisted or agent-produced diffs.
+- `ci-failure-triage`: summarizes failed checks, logs, changed files, and receipts into recovery-focused next steps.
+- `docs-drift-audit`: checks changed behavior and documentation surfaces for stale or missing docs before completion or PR handoff.
 
 ## Catalog Rules
 

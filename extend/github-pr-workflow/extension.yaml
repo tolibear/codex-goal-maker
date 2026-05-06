@@ -3,13 +3,15 @@ name: GitHub PR workflow
 kind: integration
 version: 0.1.0
 source_of_truth: local
-description: Prepare GitHub pull request handoff text from Goal Maker receipts without requiring GitHub credentials.
+description: Prepare review-ready GitHub pull request handoff text and commit boundaries from Goal Maker receipts without requiring GitHub credentials.
 use_when:
   - The goal produced code changes intended for GitHub review.
   - The user asks to push, open a PR, or prepare review context.
   - The board has Worker receipts and verification commands worth summarizing.
+  - The branch should be decomposed into commits that map to completed Worker or PM receipts.
 activation: publish_handoff
 outputs:
+  - Receipt-aligned commit plan
   - PR handoff Markdown
 requires_approval: false
 safe_by_default: true
@@ -19,7 +21,9 @@ reads:
   - docs/goals/<slug>/notes
   - git status --short
   - git diff --stat
+  - git log --oneline <base>..HEAD
 writes:
+  - Receipt-aligned local commits
   - PR handoff Markdown
 side_effects:
   - none by default
