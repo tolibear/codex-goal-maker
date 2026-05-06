@@ -67,6 +67,102 @@
       ]
     },
     {
+      "id": "github-projects",
+      "name": "GitHub Projects",
+      "kind": "integration",
+      "version": "0.1.0",
+      "summary": "Mirror Goal Maker state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, and a Goal Board view.",
+      "description": "A cataloged one-way GitHub Projects sync extension that ports PR #1 into the extension system while keeping state.yaml authoritative and live GitHub writes credential-gated.",
+      "source": "extend/github-projects",
+      "docs": "README.md",
+      "use_when": [
+        "A long-running Goal Maker board needs stakeholder visibility in GitHub Projects.",
+        "The team wants one-way sync from state.yaml into ProjectV2 draft issues.",
+        "The PM needs a safe dry-run plan before using GitHub credentials.",
+        "Goal Maker receipts, verification commands, allowed files, owners, and dependencies should appear in a GitHub board."
+      ],
+      "activation": "publish_handoff",
+      "outputs": [
+        "GitHub Projects dry-run plan",
+        "GitHub ProjectV2 draft issue sync",
+        "Goal Board ProjectV2 view"
+      ],
+      "requires_approval": true,
+      "safe_by_default": false,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "github_projects",
+          "stakeholder_board",
+          "external_visibility"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/state.yaml",
+        "GITHUB_PROJECT_ID",
+        "GITHUB_PROJECT_OWNER",
+        "GITHUB_PROJECT_NUMBER"
+      ],
+      "writes": [
+        "GitHub ProjectV2 draft issues",
+        "GitHub ProjectV2 fields",
+        "GitHub ProjectV2 board view"
+      ],
+      "side_effects": [
+        "Live sync creates or updates GitHub Project draft issues, fields, and views."
+      ],
+      "auth": {
+        "env": [
+          "GITHUB_TOKEN"
+        ]
+      },
+      "supports": {
+        "dry_run": true,
+        "live_github_projects": true,
+        "credentials_required": true,
+        "one_way_sync": true,
+        "alternate_token_env": "GH_TOKEN"
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "github-projects/README.md",
+          "sha256": "2e6529440652629dcf44173828899b8144e089f804c2e53725254d9ba1d58ad1"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "github-projects/extension.yaml",
+          "sha256": "127660de4fce721cd2f55fc71e655fa91c80de14a773901827bb53ab44ed5387"
+        },
+        {
+          "path": "scripts/sync-github-project.mjs",
+          "url": "github-projects/scripts/sync-github-project.mjs",
+          "sha256": "f5bab9d6ea01b42d26ff3b0f3e37e74ee510c18ffc4dd63bf4264bef4ccd030b"
+        },
+        {
+          "path": "scripts/lib/goal-state.mjs",
+          "url": "github-projects/scripts/lib/goal-state.mjs",
+          "sha256": "438e966de8b9a525c5f36b8851450308311ea78ec3dc10ee7bf39d8cacf6b625"
+        },
+        {
+          "path": "scripts/lib/github-projects.mjs",
+          "url": "github-projects/scripts/lib/github-projects.mjs",
+          "sha256": "1e3c48e385c9ce8aacf53a756b01633958a2f9363eb01e076ec0bd80a8f79a72"
+        },
+        {
+          "path": "test/github-projects.test.mjs",
+          "url": "github-projects/test/github-projects.test.mjs",
+          "sha256": "71dfc18bf14d6b0a032ff2c58343ad2cf65d98969239a4bf48bc09116d68b08c"
+        },
+        {
+          "path": "examples/goal-board-sync/state.yaml",
+          "url": "github-projects/examples/goal-board-sync/state.yaml",
+          "sha256": "33ab718d27b839fe7b8f7b94a69b796304845c93f2fdddf97308bb05b9d1732e"
+        }
+      ]
+    },
+    {
       "id": "ai-diff-risk-review",
       "name": "AI diff risk review",
       "kind": "review",
