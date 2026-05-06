@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-labelledby="title desc">
+  <title id="title">GoalBuddy mascot</title>
+  <desc id="desc">A friendly lavender cloud mascot holding a blue pen.</desc>
+  <defs>
+    <radialGradient id="cloudGlow" cx="36%" cy="18%" r="86%">
+      <stop offset="0" stop-color="#f6efff"/>
+      <stop offset="0.42" stop-color="#c9bdff"/>
+      <stop offset="1" stop-color="#4f62ff"/>
+    </radialGradient>
+    <linearGradient id="penGrad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#786cff"/>
+      <stop offset="0.48" stop-color="#3454f6"/>
+      <stop offset="1" stop-color="#1e2fbf"/>
+    </linearGradient>
+    <radialGradient id="limbGrad" cx="34%" cy="20%" r="78%">
+      <stop offset="0" stop-color="#f2ecff"/>
+      <stop offset="1" stop-color="#6d72ff"/>
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="28" stdDeviation="22" flood-color="#3b3fa9" flood-opacity="0.22"/>
+    </filter>
+    <filter id="innerSoft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.2"/>
+    </filter>
+  </defs>
+  <g filter="url(#softShadow)">
+    <g transform="rotate(-22 222 390)">
+      <rect x="180" y="170" width="82" height="440" rx="40" fill="url(#penGrad)"/>
+      <path d="M180 238h82" stroke="#17208d" stroke-width="18" opacity=".6"/>
+      <path d="M188 520h66l-24 72c-4 12-21 12-26 0z" fill="#182492"/>
+      <circle cx="221" cy="144" r="45" fill="url(#penGrad)"/>
+      <rect x="192" y="192" width="28" height="356" rx="14" fill="#9da4ff" opacity=".35"/>
+    </g>
+    <path d="M224 622c-58 0-105-47-105-105 0-50 35-93 83-103 5-78 70-140 150-140 15 0 30 2 44 7 37-78 116-131 208-131 116 0 212 86 228 198 62 26 105 87 105 158 0 94-77 171-171 171H301c-25 0-50-20-77-55z" fill="url(#cloudGlow)" filter="url(#innerSoft)"/>
+    <path d="M308 438c-48 16-78 47-85 92-5 35 12 66 43 78 35 14 76-3 93-38l28-58c17-36-27-88-79-74z" fill="url(#limbGrad)"/>
+    <path d="M810 469c45 19 70 55 72 101 2 40-23 74-59 81-39 8-75-17-86-55l-19-66c-12-42 41-79 92-61z" fill="url(#limbGrad)"/>
+    <path d="M360 676h81v94c0 45-36 81-81 81s-81-36-81-81v-13c0-45 36-81 81-81z" fill="url(#limbGrad)"/>
+    <path d="M617 676h81v94c0 45-36 81-81 81s-81-36-81-81v-13c0-45 36-81 81-81z" fill="url(#limbGrad)"/>
+    <ellipse cx="433" cy="422" rx="38" ry="58" fill="#061238"/>
+    <ellipse cx="610" cy="422" rx="38" ry="58" fill="#061238"/>
+    <circle cx="447" cy="399" r="13" fill="#fff"/>
+    <circle cx="624" cy="399" r="13" fill="#fff"/>
+    <ellipse cx="342" cy="505" rx="41" ry="25" fill="#ffabc2" opacity=".86"/>
+    <ellipse cx="701" cy="505" rx="41" ry="25" fill="#ffabc2" opacity=".86"/>
+    <path d="M483 501c18 24 54 24 72 0" fill="none" stroke="#071238" stroke-width="18" stroke-linecap="round"/>
+    <path d="M336 242c34-39 77-67 128-83 71-22 144-10 206 28" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="34" stroke-linecap="round"/>
+  </g>
+</svg>

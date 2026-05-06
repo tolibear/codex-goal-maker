@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GoalBuddy - Structured progress for Codex goals</title>
+    <meta
+      name="description"
+      content="GoalBuddy turns broad Codex goals into a living Scout, Judge, and Worker board with receipts and verification."
+    >
+    <link rel="canonical" href="https://goalbuddy.dev/">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://goalbuddy.dev/">
+    <meta property="og:title" content="GoalBuddy - Structured progress for Codex goals">
+    <meta property="og:description" content="A local Scout / Judge / Worker board with receipts, verification, and one active task.">
+    <meta property="og:image" content="https://goalbuddy.dev/assets/goalbuddy-og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="GoalBuddy - Structured progress for Codex goals">
+    <meta name="twitter:description" content="A local Scout / Judge / Worker board with receipts, verification, and one active task.">
+    <meta name="twitter:image" content="https://goalbuddy.dev/assets/goalbuddy-og.png">
+    <link rel="icon" href="./assets/goalbuddy-mark.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="page-shell overflow-x-hidden" id="top">
+      <div class="ambient ambient-one"></div>
+      <div class="ambient ambient-two"></div>
+
+      <header class="site-header" data-animate="fade-down">
+        <a class="brand-lockup" href="#top" aria-label="GoalBuddy home">
+          <img class="brand-mark" src="./assets/goalbuddy-mark.svg" alt="">
+          <span>GoalBuddy</span>
+        </a>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="#docs">Docs</a>
+          <a href="https://github.com/tolibear/goalbuddy">GitHub</a>
+          <a href="#extensions">Extensions</a>
+        </nav>
+        <a class="nav-cta" href="#install">Get Started</a>
+      </header>
+
+      <section class="hero-section" aria-labelledby="hero-title">
+        <div class="hero-copy" data-animate="hero-copy">
+          <p class="companion-line">Open-source Codex companion</p>
+          <h1 id="hero-title">
+            Turn vague Codex goals into structured progress.
+          </h1>
+          <p class="hero-subcopy">
+            GoalBuddy turns broad work into a living Scout, Judge, and Worker board with one active task, receipts, and verification.
+          </p>
+          <div class="hero-actions" aria-label="GoalBuddy actions">
+            <a class="button button-primary" href="#install">
+              <span class="prompt-glyph" aria-hidden="true">$</span>
+              npx goalbuddy
+            </a>
+            <a class="button button-secondary" href="https://github.com/tolibear/goalbuddy">View on GitHub</a>
+          </div>
+        </div>
+
+        <div class="hero-stage" data-animate="terminal">
+          <section class="terminal-card" aria-label="GoalBuddy terminal preview">
+            <div class="terminal-topbar">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot amber"></span>
+              <span class="terminal-dot green"></span>
+              <span class="terminal-title">goalbuddy.dev</span>
+            </div>
+            <pre class="terminal-body" aria-label="Terminal command and output"><code><span class="muted">$</span> npx goalbuddy
+<span class="muted">$</span> goalbuddy
+
+<span class="success">Creating docs/goals/improve-project/</span>
+  - goal.md
+  - state.yaml
+  - notes/
+
+<span class="success">Installed agents:</span> Scout, Judge, Worker
+
+<span class="accent">Next:</span> /goal Follow docs/goals/improve-project/
+      goal.md continuously<span class="cursor"> </span></code></pre>
+          </section>
+
+          <img class="mascot" src="./assets/goalbuddy-mascot.svg" alt="">
+        </div>
+      </section>
+
+      <section class="board-section" id="docs" aria-labelledby="board-title">
+        <div class="section-heading reveal-words">
+          <h2 id="board-title">
+            One board that makes
+            <span class="inline-image" aria-hidden="true"></span>
+            open-ended work reviewable.
+          </h2>
+        </div>
+
+        <div class="role-board" data-animate="board">
+          <article class="role-column">
+            <div class="role-header">
+              <h3>Scout</h3>
+            </div>
+            <ul>
+              <li>Map repo structure</li>
+              <li>List key workflows</li>
+              <li>Identify risks</li>
+            </ul>
+            <p>+1 more</p>
+          </article>
+          <article class="role-column active">
+            <div class="role-header">
+              <h3>Judge</h3>
+              <span>Active</span>
+            </div>
+            <ul>
+              <li class="selected">Draft architecture decision note <small>1h</small></li>
+              <li>Define boundaries</li>
+              <li>Choose test strategy</li>
+            </ul>
+            <p>+1 more</p>
+          </article>
+          <article class="role-column">
+            <div class="role-header">
+              <h3>Worker</h3>
+            </div>
+            <ul>
+              <li>Implement minimal spike</li>
+              <li>Add tests</li>
+              <li>Update docs</li>
+            </ul>
+            <p>+1 more</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="bento-section" aria-label="GoalBuddy benefits">
+        <div class="bento-grid">
+          <article class="bento-card bento-focus group-card">
+            <div class="bento-icon target-icon" aria-hidden="true"></div>
+            <h3>One active task</h3>
+            <p>Stay focused and reviewable with a single bounded next step.</p>
+          </article>
+          <article class="bento-card bento-receipts group-card">
+            <div class="bento-image" aria-hidden="true"></div>
+            <div>
+              <h3>Receipts for every move</h3>
+              <p>Completed or blocked tasks leave proof: notes, findings, and commands to rerun.</p>
+            </div>
+          </article>
+          <article class="bento-card group-card">
+            <div class="bento-icon shield-icon" aria-hidden="true"></div>
+            <h3>Verification before done</h3>
+            <p>Judge checks the work against acceptance criteria before the loop continues.</p>
+          </article>
+          <article class="bento-card group-card">
+            <h3>Local files, simple truth</h3>
+            <p><code>goal.md</code>, <code>state.yaml</code>, and <code>notes/</code> stay inside your repo.</p>
+          </article>
+          <article class="bento-card group-card">
+            <h3>Codex-native workflow</h3>
+            <p>Designed for long-running goals where context, receipts, and the next task matter.</p>
+          </article>
+          <article class="bento-card bento-command group-card" id="install">
+            <p>Install locally</p>
+            <code>$ npx goalbuddy</code>
+          </article>
+          <article class="bento-card group-card">
+            <h3>Open source</h3>
+            <p>MIT licensed, repo-friendly, and built to work with your existing process.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="workflow-section" aria-labelledby="workflow-title">
+        <div class="workflow-sticky">
+          <h2 id="workflow-title">How it works</h2>
+          <p>Start vague. Move through Scout, Judge, and Worker. Keep the proof close enough that future you can trust the path.</p>
+        </div>
+        <div class="workflow-stack">
+          <article class="stack-card">
+            <span>1</span>
+            <h3>Start with a vague goal</h3>
+            <p>Capture the intent in a short charter instead of over-planning the whole project.</p>
+          </article>
+          <article class="stack-card">
+            <span>2</span>
+            <h3>Scout maps the work</h3>
+            <p>Repo shape, workflows, constraints, and likely risks become visible before changes start.</p>
+          </article>
+          <article class="stack-card">
+            <span>3</span>
+            <h3>Judge picks the safest slice</h3>
+            <p>The next task is small enough to verify and meaningful enough to move the goal forward.</p>
+          </article>
+          <article class="stack-card">
+            <span>4</span>
+            <h3>Worker executes one bounded task</h3>
+            <p>Implementation stays scoped to the active task, then leaves a receipt for review.</p>
+          </article>
+          <article class="stack-card">
+            <span>5</span>
+            <h3>Verify, receipt, repeat</h3>
+            <p>The board advances only after the outcome is checked against the charter.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="extensions-section" id="extensions" aria-labelledby="extensions-title">
+        <div class="section-heading compact">
+          <h2 id="extensions-title">Example extensions</h2>
+        </div>
+        <div class="accordion-row" aria-label="GoalBuddy extensions">
+          <article class="accordion-panel wide">
+            <img src="./assets/goalbuddy-readme-hero.png" alt="">
+            <div>
+              <h3>GitHub PR workflow</h3>
+              <p>Prepare receipt-aligned PR handoff text.</p>
+            </div>
+          </article>
+          <article class="accordion-panel">
+            <img src="./assets/goalbuddy-og.png" alt="">
+            <div>
+              <h3>GitHub Projects</h3>
+              <p>Mirror GoalBuddy boards into GitHub Projects.</p>
+            </div>
+          </article>
+          <article class="accordion-panel">
+            <img src="./assets/goalbuddy-readme-hero.png" alt="">
+            <div>
+              <h3>Codebase onboarding</h3>
+              <p>Generate a concise map from repo files and conventions.</p>
+            </div>
+          </article>
+        </div>
+        <div class="marquee" aria-hidden="true">
+          <div>
+            <span>Scout</span>
+            <span>Judge</span>
+            <span>Worker</span>
+            <span>Receipts</span>
+            <span>Verification</span>
+            <span>One active task</span>
+          </div>
+          <div>
+            <span>Scout</span>
+            <span>Judge</span>
+            <span>Worker</span>
+            <span>Receipts</span>
+            <span>Verification</span>
+            <span>One active task</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-section" aria-labelledby="cta-title">
+        <img class="cta-mascot" src="./assets/goalbuddy-mark.svg" alt="">
+        <div>
+          <h2 id="cta-title">Open source. Free forever.</h2>
+          <p>MIT licensed, runs locally, and keeps your goal state in files you can inspect.</p>
+        </div>
+        <a class="terminal-pill" href="#install">
+          <span>$</span>
+          npx goalbuddy
+        </a>
+      </section>
+
+      <footer class="site-footer">
+        <a class="brand-lockup" href="#top" aria-label="GoalBuddy home">
+          <img class="brand-mark small" src="./assets/goalbuddy-mark.svg" alt="">
+          <span>GoalBuddy</span>
+        </a>
+        <nav aria-label="Footer navigation">
+          <a href="#docs">Docs</a>
+          <a href="https://github.com/tolibear/goalbuddy">GitHub</a>
+          <a href="#extensions">Extensions</a>
+          <a href="https://github.com/tolibear/goalbuddy/blob/main/LICENSE">MIT License</a>
+        </nav>
+      </footer>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>

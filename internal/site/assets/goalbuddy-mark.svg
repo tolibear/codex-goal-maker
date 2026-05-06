@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 192" role="img" aria-labelledby="title desc">
+  <title id="title">GoalBuddy mark</title>
+  <desc id="desc">A compact lavender cloud brand mark.</desc>
+  <defs>
+    <radialGradient id="markGrad" cx="34%" cy="18%" r="92%">
+      <stop offset="0" stop-color="#f8f2ff"/>
+      <stop offset="0.46" stop-color="#b6a9ff"/>
+      <stop offset="1" stop-color="#5361ff"/>
+    </radialGradient>
+    <filter id="markShadow" x="-20%" y="-25%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#4d48b8" flood-opacity=".28"/>
+    </filter>
+  </defs>
+  <g filter="url(#markShadow)">
+    <path d="M55 145c-30 0-54-24-54-54 0-26 18-48 43-53C48 19 65 4 86 4c18 0 34 10 42 24 12-8 27-13 43-13 36 0 66 26 72 61 22 11 37 33 37 59 0 36-30 66-66 66H76c-8 0-15-2-21-6z" transform="translate(-12 -4) scale(.95)" fill="url(#markGrad)"/>
+    <ellipse cx="86" cy="92" rx="9" ry="14" fill="#061238"/>
+    <ellipse cx="147" cy="92" rx="9" ry="14" fill="#061238"/>
+    <path d="M105 115c10 11 24 11 34 0" fill="none" stroke="#061238" stroke-width="8" stroke-linecap="round"/>
+    <ellipse cx="67" cy="112" rx="13" ry="8" fill="#ffadc3" opacity=".85"/>
+    <ellipse cx="167" cy="112" rx="13" ry="8" fill="#ffadc3" opacity=".85"/>
+  </g>
+</svg>

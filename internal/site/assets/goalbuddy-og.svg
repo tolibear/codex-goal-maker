@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">GoalBuddy social image</title>
+  <desc id="desc">GoalBuddy brand card with terminal preview and mascot.</desc>
+  <defs>
+    <radialGradient id="bgA" cx="18%" cy="14%" r="72%">
+      <stop offset="0" stop-color="#f0eaff"/>
+      <stop offset=".56" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e8fbff"/>
+    </radialGradient>
+    <linearGradient id="buttonGrad" x1="0" x2="1">
+      <stop offset="0" stop-color="#765cff"/>
+      <stop offset="1" stop-color="#563bea"/>
+    </linearGradient>
+    <radialGradient id="cloudGrad" cx="35%" cy="18%" r="82%">
+      <stop offset="0" stop-color="#f8f2ff"/>
+      <stop offset=".45" stop-color="#c2b6ff"/>
+      <stop offset="1" stop-color="#5361ff"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="26" stdDeviation="25" flood-color="#172347" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bgA)"/>
+  <circle cx="1005" cy="455" r="250" fill="#c9fbff" opacity=".58"/>
+  <circle cx="130" cy="100" r="230" fill="#ded5ff" opacity=".42"/>
+  <g transform="translate(74 58)">
+    <path d="M34 72c-18 0-33-15-33-33 0-16 11-29 26-32C30-4 41-13 54-13c11 0 21 6 26 15 8-5 17-8 27-8 22 0 40 16 44 38 13 7 22 20 22 36 0 22-18 40-40 40H47c-5 0-9-1-13-4z" transform="translate(0 12)" fill="url(#cloudGrad)"/>
+    <text x="190" y="86" fill="#071236" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="50" font-weight="800">GoalBuddy</text>
+  </g>
+  <text x="78" y="220" fill="#071236" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="-1">Turn vague Codex goals</text>
+  <text x="78" y="274" fill="#071236" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="-1">into structured progress.</text>
+  <text x="82" y="350" fill="#34415f" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="24" font-weight="500">A local Scout / Judge / Worker board</text>
+  <text x="82" y="384" fill="#34415f" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="24" font-weight="500">with receipts and verification.</text>
+  <rect x="82" y="448" width="270" height="66" rx="14" fill="url(#buttonGrad)"/>
+  <text x="123" y="490" fill="#fff" font-family="Geist Mono, Menlo, monospace" font-size="24" font-weight="700">$ npx goalbuddy</text>
+  <g filter="url(#shadow)" transform="translate(705 130)">
+    <rect x="0" y="0" width="430" height="292" rx="18" fill="#081426"/>
+    <rect x="0" y="0" width="430" height="56" rx="18" fill="#111d31"/>
+    <circle cx="34" cy="28" r="8" fill="#ff6b65"/>
+    <circle cx="58" cy="28" r="8" fill="#ffbd55"/>
+    <circle cx="82" cy="28" r="8" fill="#48d86a"/>
+    <text x="34" y="103" fill="#f7f8ff" font-family="Geist Mono, Menlo, monospace" font-size="18" font-weight="600">$ npx goalbuddy</text>
+    <text x="34" y="148" fill="#75f27b" font-family="Geist Mono, Menlo, monospace" font-size="18" font-weight="600">Creating docs/goals/...</text>
+    <text x="56" y="187" fill="#f7f8ff" font-family="Geist Mono, Menlo, monospace" font-size="17">- goal.md</text>
+    <text x="56" y="218" fill="#f7f8ff" font-family="Geist Mono, Menlo, monospace" font-size="17">- state.yaml</text>
+    <text x="34" y="264" fill="#75f27b" font-family="Geist Mono, Menlo, monospace" font-size="17" font-weight="600">Agents ready</text>
+  </g>
+  <g filter="url(#shadow)" transform="translate(850 320) scale(.31)">
+    <path d="M224 622c-58 0-105-47-105-105 0-50 35-93 83-103 5-78 70-140 150-140 15 0 30 2 44 7 37-78 116-131 208-131 116 0 212 86 228 198 62 26 105 87 105 158 0 94-77 171-171 171H301c-25 0-50-20-77-55z" fill="url(#cloudGrad)"/>
+    <ellipse cx="433" cy="422" rx="38" ry="58" fill="#061238"/>
+    <ellipse cx="610" cy="422" rx="38" ry="58" fill="#061238"/>
+    <circle cx="447" cy="399" r="13" fill="#fff"/>
+    <circle cx="624" cy="399" r="13" fill="#fff"/>
+    <ellipse cx="342" cy="505" rx="41" ry="25" fill="#ffabc2" opacity=".86"/>
+    <ellipse cx="701" cy="505" rx="41" ry="25" fill="#ffabc2" opacity=".86"/>
+    <path d="M483 501c18 24 54 24 72 0" fill="none" stroke="#071238" stroke-width="18" stroke-linecap="round"/>
+  </g>
+</svg>
