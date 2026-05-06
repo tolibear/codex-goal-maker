@@ -66,6 +66,13 @@ function writeCatalog(root) {
         version: "0.1.0",
         summary: "Publish a one-way Goal Maker board view to GitHub Projects.",
         docs: "README.md",
+        use_when: [
+          "The goal needs a generated GitHub Projects board view.",
+        ],
+        activation: "publish_handoff",
+        outputs: ["GitHub Projects board view"],
+        requires_approval: true,
+        safe_by_default: false,
         auth: {
           env: ["GITHUB_TOKEN"],
         },
@@ -173,6 +180,11 @@ test("extend shows catalog entries and reports local install state", () => {
 
     const report = JSON.parse(result.stdout);
     assert.equal(report.extensions[0].id, "publish-github-projects");
+    assert.deepEqual(report.extensions[0].use_when, ["The goal needs a generated GitHub Projects board view."]);
+    assert.equal(report.extensions[0].activation, "publish_handoff");
+    assert.deepEqual(report.extensions[0].outputs, ["GitHub Projects board view"]);
+    assert.equal(report.extensions[0].requires_approval, true);
+    assert.equal(report.extensions[0].safe_by_default, false);
     assert.equal(report.extensions[0].state.available, true);
     assert.equal(report.extensions[0].state.installed, false);
     assert.equal(report.extensions[0].state.configured, false);

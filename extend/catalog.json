@@ -1,4 +1,66 @@
 {
   "version": 1,
-  "extensions": []
+  "extensions": [
+    {
+      "id": "github-pr-workflow",
+      "name": "GitHub PR workflow",
+      "kind": "integration",
+      "version": "0.1.0",
+      "summary": "Prepare GitHub pull request handoff text from Goal Maker receipts without requiring GitHub credentials.",
+      "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, and verification output into PR-ready Markdown while keeping state.yaml authoritative.",
+      "source": "extend/github-pr-workflow",
+      "docs": "README.md",
+      "use_when": [
+        "The goal produced code changes intended for GitHub review.",
+        "The user asks to push, open a PR, or prepare review context.",
+        "The board has Worker receipts and verification commands worth summarizing."
+      ],
+      "activation": "publish_handoff",
+      "outputs": [
+        "PR handoff Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "github_pull_request"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "git status --short",
+        "git diff --stat"
+      ],
+      "writes": [
+        "PR handoff Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "live_github": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "github-pr-workflow/README.md",
+          "sha256": "4cbc9eb4f905a759d461bb83e6c4b1fce5387ee8a5e84c7712f2f371965764ce"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "github-pr-workflow/extension.yaml",
+          "sha256": "641e998bd6453e1a9160b2fdabf3a251bbfd4f9354e62a61b789e15d8e6f147e"
+        }
+      ]
+    }
+  ]
 }
