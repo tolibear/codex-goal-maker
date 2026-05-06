@@ -8,6 +8,7 @@
     "goal-maker": "internal/cli/goal-maker.mjs"
   },
   "files": [
+    ".agents/plugins/marketplace.json",
     "README.md",
     "CONTRIBUTING.md",
     "examples",
