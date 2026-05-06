@@ -155,7 +155,7 @@ The npm package is the stable core. Extensions live under `extend/` and move thr
 
 Extensions are not board truth. They may publish, report, intake, or add role guidance, but `state.yaml` remains authoritative.
 
-The first cataloged extension, `github-pr-workflow`, prepares GitHub PR handoff text from goal receipts without requiring GitHub credentials or making GitHub authoritative. The catalog also includes local-first review, recovery, planning, documentation, audit, and credential-gated handoff extensions such as `ai-diff-risk-review`, `ci-failure-triage`, `docs-drift-audit`, `test-gap-planner`, `release-readiness`, `dependency-upgrade-planner`, `security-review-brief`, `codebase-onboarding-map`, `slack-standup-digest`, and `linear-ticket-handoff`.
+The first cataloged extension, `github-pr-workflow`, prepares receipt-aligned commit boundaries and GitHub PR handoff text from goal receipts without requiring GitHub credentials or making GitHub authoritative. The catalog also includes local-first review, recovery, planning, documentation, audit, and credential-gated handoff extensions such as `ai-diff-risk-review`, `ci-failure-triage`, `docs-drift-audit`, `test-gap-planner`, `release-readiness`, `dependency-upgrade-planner`, `security-review-brief`, `codebase-onboarding-map`, `slack-standup-digest`, and `linear-ticket-handoff`.
 
 ## Running A Goal
 
