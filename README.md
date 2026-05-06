@@ -1,34 +1,34 @@
-# goal-maker
+# GoalBuddy
 
 Turn open-ended Codex work into a living Scout/Judge/Worker board with receipts, verification, and optional extensions.
 
 ```bash
-npx goal-maker
+npx goalbuddy
 ```
 
 Then invoke the skill inside Codex:
 
 ```text
-$goal-maker
+$goalbuddy
 ```
 
-`$goal-maker` creates a local goal charter and task board, then prints the `/goal` command to run next. It does not start `/goal` automatically.
+`$goalbuddy` creates a local goal charter and task board, then prints the `/goal` command to run next. It does not start `/goal` automatically.
 
 Native Codex `/goal` is still an under-development Codex feature. Before relying on the printed command, confirm your local Codex runtime is logged in and has goals enabled:
 
 ```bash
 codex login status
 codex features enable goals
-npx goal-maker doctor --goal-ready
+npx goalbuddy doctor --goal-ready
 ```
 
-![A simple hand-drawn diagram showing a vague goal becoming a Goal Maker board with Scout, Judge, Worker, and a receipt.](internal/assets/goal-maker-flow.png)
+![A simple hand-drawn diagram showing a vague goal becoming a GoalBuddy board with Scout, Judge, Worker, and a receipt.](internal/assets/goal-maker-flow.png)
 
 ## Why It Exists
 
 Long Codex goals drift. A broad request like “improve this project” can turn into unbounded edits, stale verification, and premature completion claims.
 
-Goal Maker gives Codex an operating loop for that kind of work:
+GoalBuddy gives Codex an operating loop for that kind of work:
 
 ```text
 vague goal -> discovery -> task board -> one active task -> receipt -> board update -> repeat
@@ -47,7 +47,7 @@ The main Codex thread is the PM. It owns the board, chooses the active task, del
 
 ## The Model
 
-Goal Maker uses four primitives:
+GoalBuddy uses four primitives:
 
 - **Charter**: `goal.md` states the objective, constraints, current tranche, and stop rule.
 - **Board**: `state.yaml` is machine truth for tasks, status, receipts, and verification freshness.
@@ -64,7 +64,7 @@ The main `/goal` thread is the PM. Use medium thinking for specific bounded goal
 
 ## Goal Folder
 
-For each goal, `$goal-maker` prepares:
+For each goal, `$goalbuddy` prepares:
 
 ```text
 docs/goals/<slug>/
@@ -109,28 +109,40 @@ tasks:
 Install or update the Codex skill and bundled agents:
 
 ```bash
-npx goal-maker
-npx goal-maker update
+npx goalbuddy
+npx goalbuddy update
 ```
 
 `install` and `update` print a compact summary of the skill, agent files, preserved installed extensions, and extension catalog recommendations. Use `--json` when an agent or script needs structured output.
 
+### Compatibility Window
+
+GoalBuddy was previously published as `goal-maker`. During the migration window, `npx goal-maker` remains available as a compatibility alias and prints the new command:
+
+```bash
+npx goalbuddy
+```
+
+Machine-readable commands such as `npx goal-maker install --json` keep JSON output clean so existing automation can migrate safely.
+
+Release automation for future npm publishes is documented in [RELEASE.md](RELEASE.md).
+
 Repair only the agent definitions:
 
 ```bash
-npx goal-maker agents
+npx goalbuddy agents
 ```
 
 Check what is installed:
 
 ```bash
-npx goal-maker doctor
+npx goalbuddy doctor
 ```
 
 Strictly check whether the native Codex `/goal` runtime is ready too:
 
 ```bash
-npx goal-maker doctor --goal-ready
+npx goalbuddy doctor --goal-ready
 ```
 
 `doctor` reports missing or stale bundled agents, Codex login status, and whether the `goals` feature is enabled. `update` refreshes the installed skill and bundled agents.
@@ -138,23 +150,23 @@ npx goal-maker doctor --goal-ready
 Discover optional extensions from the GitHub-hosted catalog:
 
 ```bash
-npx goal-maker extend
-npx goal-maker extend github-pr-workflow
-npx goal-maker extend install github-pr-workflow --dry-run
-npx goal-maker extend install --all --dry-run
+npx goalbuddy extend
+npx goalbuddy extend github-pr-workflow
+npx goalbuddy extend install github-pr-workflow --dry-run
+npx goalbuddy extend install --all --dry-run
 ```
 
 Use a non-default Codex home:
 
 ```bash
-npx goal-maker install --codex-home /path/to/.codex
+npx goalbuddy install --codex-home /path/to/.codex
 ```
 
 ## Extensions
 
 The npm package is the stable core. Extensions live under `extend/` and move through the GitHub-hosted `extend/catalog.json`, so users do not need a new npm release for every optional integration.
 
-`goal-maker extend` reads the catalog and shows available extensions plus operational state such as activation, install/configuration status, approval requirements, safe-by-default status, and missing environment variables. `goal-maker extend <id>` shows what an extension reads, writes, requires, supports, and a local-use prompt. `goal-maker extend install <id>` copies a pinned, checksum-verified extension into the local Goal Maker install. `goal-maker extend install --all` installs every cataloged extension.
+`goalbuddy extend` reads the catalog and shows available extensions plus operational state such as activation, install/configuration status, approval requirements, safe-by-default status, and missing environment variables. `goalbuddy extend <id>` shows what an extension reads, writes, requires, supports, and a local-use prompt. `goalbuddy extend install <id>` copies a pinned, checksum-verified extension into the local GoalBuddy install. `goalbuddy extend install --all` installs every cataloged extension.
 
 Extensions are not board truth. They may publish, report, intake, or add role guidance, but `state.yaml` remains authoritative.
 
@@ -162,7 +174,7 @@ The first cataloged extension, `github-pr-workflow`, prepares receipt-aligned co
 
 ## Running A Goal
 
-After `$goal-maker` creates or repairs the board, start `/goal` with the printed command:
+After `$goalbuddy` creates or repairs the board, start `/goal` with the printed command:
 
 ```text
 /goal Follow docs/goals/<slug>/goal.md.
@@ -170,12 +182,12 @@ After `$goal-maker` creates or repairs the board, start `/goal` with the printed
 
 The detailed run instructions live in that goal's `goal.md`, so the kickoff prompt can stay short while the board carries the full stop rule, intake, and PM loop.
 
-By default, Goal Maker treats broad goals as requests for continuous work, not plan-only or one-slice exercises. Missing credentials or owner input are blockers for specific tasks, not reasons to stop the goal. A queued or active Worker task blocks `goal.status: done`; finish it, block it with a receipt, or replace it with a smaller safe Worker task before final audit. For continuous execution boards, a final audit must prove the full original outcome is complete, not merely that the latest slice passed.
+By default, GoalBuddy treats broad goals as requests for continuous work, not plan-only or one-slice exercises. Missing credentials or owner input are blockers for specific tasks, not reasons to stop the goal. A queued or active Worker task blocks `goal.status: done`; finish it, block it with a receipt, or replace it with a smaller safe Worker task before final audit. For continuous execution boards, a final audit must prove the full original outcome is complete, not merely that the latest slice passed.
 
 Check board health:
 
 ```bash
-node ~/.codex/skills/goal-maker/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
+node ~/.codex/skills/goalbuddy/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
 ```
 
 ## Example
@@ -184,11 +196,13 @@ See `examples/improve-goal-maker/` for a small completed reliability run, `examp
 
 ## Repo Contents
 
-- `goal-maker/SKILL.md`: the Codex skill
-- `goal-maker/agents/`: Scout, Judge, and Worker definitions
-- `goal-maker/templates/`: `goal.md`, `state.yaml`, and `note.md`
-- `goal-maker/scripts/check-goal-state.mjs`: v2 board checker
+- `goalbuddy/SKILL.md`: the canonical Codex skill
+- `goalbuddy/agents/`: Scout, Judge, and Worker definitions
+- `goalbuddy/templates/`: `goal.md`, `state.yaml`, and `note.md`
+- `goalbuddy/scripts/check-goal-state.mjs`: v2 board checker
+- `goal-maker/`: temporary compatibility skill payload for existing users
 - `internal/cli/goal-maker.mjs`: npm installer CLI
+- `plugins/goalbuddy/`: repo-local Codex plugin package scaffold
 - `extend/` and `extend/catalog.json`: GitHub-hosted extension surface
 - `examples/`: completed sample runs
 

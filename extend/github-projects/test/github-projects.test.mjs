@@ -5,9 +5,11 @@ import { resolve } from "node:path";
 import { GoalStateError, normalizeGoalBoard, parseGoalStateText } from "../scripts/lib/goal-state.mjs";
 import {
   GITHUB_PROJECT_FIELDS,
+  GITHUB_PROJECT_VIEWS,
+  agentLaneForTask,
   buildDraftIssueBody,
   buildFieldUpdates,
-  ensureGoalBoardView,
+  ensureGoalProjectViews,
   planGitHubProjectSync,
   priorityForTask,
   projectStatusForTask,
@@ -15,7 +17,7 @@ import {
 } from "../scripts/lib/github-projects.mjs";
 
 describe("goal state parsing", () => {
-  it("normalizes a Goal Maker v2 board", async () => {
+  it("normalizes a GoalBuddy v2 board", async () => {
     const text = await readFile(resolve("extend/github-projects/examples/goal-board-sync/state.yaml"), "utf8");
     const board = normalizeGoalBoard(parseGoalStateText(text));
 
@@ -24,7 +26,7 @@ describe("goal state parsing", () => {
     assert.equal(board.tasks.length, 3);
     assert.equal(board.tasks[0].title, "Map external board API requirements");
     assert.equal(board.tasks[1].priority, "P1");
-    assert.equal(board.tasks[0].receiptSummary, "The board sync can read Goal Maker state.yaml and mirror tasks into an external board.");
+    assert.equal(board.tasks[0].receiptSummary, "The board sync can read GoalBuddy state.yaml and mirror tasks into an external board.");
     assert.equal(board.tasks[0].goalRole, "Scout");
     assert.equal(board.tasks[1].agentResponsible, "Worker");
     assert.equal(board.tasks[1].credentialGate, "Credentials");
@@ -101,6 +103,7 @@ describe("GitHub Projects mapping", () => {
       status: { id: "F_status", name: GITHUB_PROJECT_FIELDS.status, options: [{ id: "O_progress", name: "In Progress" }] },
       priority: { id: "F_priority", name: GITHUB_PROJECT_FIELDS.priority, options: [{ id: "O_p1", name: "P1" }] },
       workType: { id: "F_type", name: GITHUB_PROJECT_FIELDS.workType, options: [{ id: "O_execution", name: "Execution" }] },
+      agentLane: { id: "F_lane", name: GITHUB_PROJECT_FIELDS.agentLane, options: [{ id: "O_worker", name: "Worker" }] },
       owner: { id: "F_owner" },
       goalRole: { id: "F_goal_role" },
       agentResponsible: { id: "F_agent" },
@@ -129,12 +132,15 @@ describe("GitHub Projects mapping", () => {
     };
 
     const updates = buildFieldUpdates(task, fields);
-    assert.equal(updates.length, 14);
+    assert.equal(updates.length, 15);
     assert.deepEqual(updates.find((update) => update.fieldId === "F_status").value, {
       singleSelectOptionId: "O_progress",
     });
     assert.deepEqual(updates.find((update) => update.fieldId === "F_task").value, {
       text: "T002",
+    });
+    assert.deepEqual(updates.find((update) => update.fieldId === "F_lane").value, {
+      singleSelectOptionId: "O_worker",
     });
     assert.deepEqual(updates.find((update) => update.fieldId === "F_goal_role").value, { text: "Worker" });
     assert.deepEqual(updates.find((update) => update.fieldId === "F_agent").value, { text: "Worker" });
@@ -169,13 +175,15 @@ describe("GitHub Projects mapping", () => {
     assert.match(body, /extend\/github-projects\/examples\/goal-board-sync\/state\.yaml/);
   });
 
-  it("creates a GitHub Board view with visible fields when missing", async () => {
+  it("creates default GitHub Project views with visible fields when missing", async () => {
     const restCalls = [];
-    const view = await ensureGoalBoardView({
+    const views = await ensureGoalProjectViews({
       client: {
         rest: async (path, options) => {
           restCalls.push({ path, options });
-          return { html_url: "https://github.com/users/example/projects/1/views/2" };
+          return {
+            html_url: `https://github.com/users/example/projects/1/views/${options.body.name === "Goal Board" ? "2" : "3"}`,
+          };
         },
       },
       project: {
@@ -189,6 +197,7 @@ describe("GitHub Projects mapping", () => {
         priority: { databaseId: 3 },
         workType: { databaseId: 4 },
         owner: { databaseId: 5 },
+        agentLane: { databaseId: 13 },
         goalRole: { databaseId: 10 },
         agentResponsible: { databaseId: 11 },
         credentialGate: { databaseId: 12 },
@@ -199,20 +208,54 @@ describe("GitHub Projects mapping", () => {
       },
     });
 
-    assert.equal(view.html_url, "https://github.com/users/example/projects/1/views/2");
+    assert.equal(views.board.html_url, "https://github.com/users/example/projects/1/views/2");
+    assert.equal(views.agentWorkboard.html_url, "https://github.com/users/example/projects/1/views/3");
     assert.equal(restCalls[0].path, "users/example/projectsV2/1/views");
+    assert.equal(restCalls[1].path, "users/example/projectsV2/1/views");
     assert.equal(restCalls[0].options.body.layout, "board");
-    assert.deepEqual(restCalls[0].options.body.visible_fields, [3, 2, 4, 5, 10, 11, 12]);
+    assert.equal(restCalls[1].options.body.layout, "board");
+    assert.equal(restCalls[0].options.body.name, GITHUB_PROJECT_VIEWS.board.name);
+    assert.equal(restCalls[1].options.body.name, GITHUB_PROJECT_VIEWS.agentWorkboard.name);
+    assert.deepEqual(restCalls[0].options.body.visible_fields, [3, 2, 4, 5, 10, 11, 13, 12]);
+    assert.deepEqual(restCalls[1].options.body.visible_fields, [13, 11, 10, 2, 4, 5, 1, 3, 6, 7, 8, 9]);
+    assert.equal(restCalls[0].options.body.group_by, undefined);
+    assert.equal(restCalls[1].options.body.group_by, undefined);
+    assert.equal(restCalls[1].options.body.vertical_group_by, undefined);
+    assert.equal(restCalls[1].options.body.sort_by, undefined);
   });
 
-  it("maps Goal Maker task statuses to native GitHub board statuses", () => {
+  it("reuses existing default GitHub Project views", async () => {
+    const views = await ensureGoalProjectViews({
+      client: {
+        rest: async () => {
+          throw new Error("REST should not be called for existing views.");
+        },
+      },
+      project: {
+        number: 1,
+        owner: { __typename: "User", login: "example" },
+        views: {
+          nodes: [
+            { id: "PVTV_board", name: "Goal Board", layout: "BOARD_LAYOUT" },
+            { id: "PVTV_agent", name: "Agent Workboard", layout: "BOARD_LAYOUT" },
+          ],
+        },
+      },
+      fields: {},
+    });
+
+    assert.equal(views.board.id, "PVTV_board");
+    assert.equal(views.agentWorkboard.id, "PVTV_agent");
+  });
+
+  it("maps GoalBuddy task statuses to native GitHub board statuses", () => {
     assert.equal(projectStatusForTask("queued"), "Todo");
     assert.equal(projectStatusForTask("active"), "In Progress");
     assert.equal(projectStatusForTask("blocked"), "Blocked");
     assert.equal(projectStatusForTask("done"), "Done");
   });
 
-  it("maps Goal Maker task types and priorities to lean PM fields", () => {
+  it("maps GoalBuddy task types and priorities to lean PM fields", () => {
     assert.equal(workTypeForTask("scout"), "Discovery");
     assert.equal(workTypeForTask("judge"), "Decision");
     assert.equal(workTypeForTask("worker"), "Execution");
@@ -221,5 +264,10 @@ describe("GitHub Projects mapping", () => {
     assert.equal(priorityForTask({ status: "queued", type: "scout" }), "P2");
     assert.equal(priorityForTask({ status: "done", type: "worker" }), "P3");
     assert.equal(priorityForTask({ status: "queued", type: "scout", priority: "P0" }), "P0");
+    assert.equal(agentLaneForTask({ assignee: "PM" }), "PM");
+    assert.equal(agentLaneForTask({ agentResponsible: "Scout" }), "Scout");
+    assert.equal(agentLaneForTask({ goalRole: "Judge" }), "Judge");
+    assert.equal(agentLaneForTask({ agentResponsible: "Worker" }), "Worker");
+    assert.equal(agentLaneForTask({ agentResponsible: "User" }), "User");
   });
 });

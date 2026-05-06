@@ -2,7 +2,7 @@
 
 Create a concise map of how a repository is organized and how to work in it.
 
-This extension is local-first. It helps a Goal Maker run turn repo files, commands, conventions, and recent receipts into an onboarding artifact for developers or future agents. It does not edit project docs by default.
+This extension is local-first. It helps a GoalBuddy run turn repo files, commands, conventions, and recent receipts into an onboarding artifact for developers or future agents. It does not edit project docs by default.
 
 ## Use When
 

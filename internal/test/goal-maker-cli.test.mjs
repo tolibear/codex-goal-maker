@@ -113,6 +113,10 @@ test("doctor fails when a required bundled agent is missing", () => {
     assert.equal(doctor.status, 1, doctor.stderr || doctor.stdout);
 
     const report = JSON.parse(doctor.stdout);
+    assert.equal(report.skill_installed, true);
+    assert.equal(report.compatibility_skill_installed, true);
+    assert.match(report.skill_path, /skills\/goalbuddy\/SKILL\.md$/);
+    assert.match(report.compatibility_skill_path, /skills\/goal-maker\/SKILL\.md$/);
     assert.deepEqual(report.missing_agents, ["goal_worker.toml"]);
   } finally {
     rmSync(codexHome, { recursive: true, force: true });
@@ -209,8 +213,8 @@ test("extend human output shows extension names, descriptions, and next commands
     assert.match(list.stdout, /state: available \| configured: no/);
     assert.match(list.stdout, /safe by default: no \| requires approval: yes/);
     assert.match(list.stdout, /missing env: GITHUB_TOKEN/);
-    assert.match(list.stdout, /npx goal-maker extend install --all/);
-    assert.match(list.stdout, /npx goal-maker extend publish-github-projects/);
+    assert.match(list.stdout, /npx goalbuddy extend install --all/);
+    assert.match(list.stdout, /npx goalbuddy extend publish-github-projects/);
     assert.doesNotMatch(list.stdout, /publish-github-projects\tpublish/);
 
     const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome]);
@@ -228,8 +232,8 @@ test("extend human output shows extension names, descriptions, and next commands
     assert.match(details.stdout, /Auth env:/);
     assert.match(details.stdout, /Supports:/);
     assert.match(details.stdout, /Local use prompt:/);
-    assert.match(details.stdout, /npx goal-maker extend install publish-github-projects/);
-    assert.match(details.stdout, /npx goal-maker extend install publish-github-projects --dry-run/);
+    assert.match(details.stdout, /npx goalbuddy extend install publish-github-projects/);
+    assert.match(details.stdout, /npx goalbuddy extend install publish-github-projects --dry-run/);
     assert.doesNotMatch(details.stdout, /files:/);
 
     const missing = runGoalMaker(["extend", "missing-extension", "--catalog-url", catalogPath, "--codex-home", codexHome]);
@@ -237,7 +241,7 @@ test("extend human output shows extension names, descriptions, and next commands
     assert.match(missing.stderr, /Extension not found: missing-extension/);
     assert.match(missing.stderr, /Available extensions:/);
     assert.match(missing.stderr, /publish-github-projects/);
-    assert.match(missing.stderr, /npx goal-maker extend/);
+    assert.match(missing.stderr, /npx goalbuddy extend/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -284,10 +288,71 @@ test("install reports extension discovery in json mode", () => {
 
     const report = JSON.parse(result.stdout);
     assert.equal(report.command, "install");
+    assert.equal(report.package.name, "goalbuddy");
     assert.equal(report.skill.status, "installed");
+    assert.match(report.skill.path, /skills\/goalbuddy$/);
+    assert.match(report.skill.compatibility_path, /skills\/goal-maker$/);
     assert.equal(report.extensions.available_count, 1);
     assert.equal(report.extensions.available[0].id, "publish-github-projects");
     assert.equal(report.extensions.recommended.length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("legacy goal-maker invocation prints rebrand notice only for human output", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const codexHome = join(root, "codex-home");
+    const env = {
+      ...process.env,
+      GOALBUDDY_INVOKED_AS: "goal-maker",
+    };
+
+    const human = runGoalMaker(["--help"], { env });
+    assert.equal(human.status, 0, human.stderr || human.stdout);
+    assert.match(human.stdout, /Codex GoalBuddy/);
+    assert.match(human.stdout, /goalbuddy install/);
+    assert.match(human.stderr, /goal-maker has been rebranded to goalbuddy/);
+    assert.match(human.stderr, /Use: npx goalbuddy/);
+
+    const json = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", writeCatalog(root), "--json"], { env });
+    assert.equal(json.status, 0, json.stderr || json.stdout);
+    assert.equal(json.stderr, "");
+    const report = JSON.parse(json.stdout);
+    assert.equal(report.package.name, "goalbuddy");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("install migrates legacy skill extensions and metadata to GoalBuddy paths", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+    const legacySkill = join(codexHome, "skills", "goal-maker");
+    const legacyExtension = join(legacySkill, "extend", "legacy-only");
+    mkdirSync(legacyExtension, { recursive: true });
+    writeFileSync(join(legacyExtension, "README.md"), "# Legacy extension\n");
+    writeFileSync(join(legacySkill, ".goal-maker-install.json"), JSON.stringify({
+      package_name: "goal-maker",
+      package_version: "0.2.9",
+    }));
+
+    const install = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+    const report = JSON.parse(install.stdout);
+    assert.deepEqual(report.skill.preserved_extensions, ["legacy-only"]);
+    assert.equal(report.skill.previous_version, "0.2.9");
+
+    const doctor = runGoalMaker(["doctor", "--codex-home", codexHome]);
+    assert.equal(doctor.status, 0, doctor.stderr || doctor.stdout);
+    const doctorReport = JSON.parse(doctor.stdout);
+    assert.equal(doctorReport.skill_installed, true);
+    assert.equal(doctorReport.compatibility_skill_installed, true);
+    assert.match(doctorReport.skill_path, /skills\/goalbuddy\/SKILL\.md$/);
+    assert.match(doctorReport.compatibility_skill_path, /skills\/goal-maker\/SKILL\.md$/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

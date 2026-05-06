@@ -1,0 +1,48 @@
+{
+  "name": "goalbuddy",
+  "version": "0.2.10",
+  "description": "Turn broad Codex work into verified GoalBuddy boards with Scout, Judge, Worker, receipts, and optional extensions.",
+  "author": {
+    "name": "tolibear",
+    "email": "support@tolibear.com",
+    "url": "https://github.com/tolibear"
+  },
+  "homepage": "https://github.com/tolibear/goalbuddy#readme",
+  "repository": "https://github.com/tolibear/goalbuddy",
+  "license": "MIT",
+  "keywords": [
+    "goalbuddy",
+    "codex",
+    "skills",
+    "goal",
+    "task-board",
+    "receipts",
+    "workflow",
+    "extensions"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "GoalBuddy",
+    "shortDescription": "Turn broad Codex work into verified Scout/Judge/Worker boards",
+    "longDescription": "GoalBuddy packages a structured Codex goal workflow for broad, long-running, or ambiguous engineering work. It creates durable goal charters, task boards, receipts, verification gates, extension handoffs, and compatibility guidance for teams moving from goal-maker.",
+    "developerName": "tolibear",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/tolibear/goalbuddy",
+    "privacyPolicyURL": "https://github.com/tolibear/goalbuddy#privacy",
+    "termsOfServiceURL": "https://github.com/tolibear/goalbuddy#license",
+    "defaultPrompt": [
+      "Prepare a GoalBuddy board for this goal",
+      "Audit this GoalBuddy board and continue safely",
+      "Install GoalBuddy extensions and verify setup"
+    ],
+    "brandColor": "#2563EB",
+    "composerIcon": "./assets/goalbuddy-icon.svg",
+    "logo": "./assets/goalbuddy-icon.svg",
+    "screenshots": []
+  }
+}

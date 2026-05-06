@@ -2,7 +2,7 @@
 
 Review an AI-assisted or agent-produced diff before it moves to PR handoff.
 
-This extension is local-first. It helps a Goal Maker run inspect the original request, board receipts, changed files, verification evidence, and known risk areas so the PM can produce a concise review brief for a human reviewer. It does not approve code, post comments, or call an external model by default.
+This extension is local-first. It helps a GoalBuddy run inspect the original request, board receipts, changed files, verification evidence, and known risk areas so the PM can produce a concise review brief for a human reviewer. It does not approve code, post comments, or call an external model by default.
 
 ## Use When
 

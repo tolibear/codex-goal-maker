@@ -1,15 +1,15 @@
 # GitHub Projects
 
-Mirror a Goal Maker `state.yaml` board into GitHub Projects without making GitHub the source of truth.
+Mirror a GoalBuddy `state.yaml` board into GitHub Projects without making GitHub the source of truth.
 
-This extension ports the GitHub Projects work from PR #1 into the catalog-based extension system. It keeps the package core dependency-free and optional, while giving teams a practical way to publish a Goal Maker board into a familiar project surface.
+This extension ports the GitHub Projects work from PR #1 into the catalog-based extension system. It keeps the package core dependency-free and optional, while giving teams a practical way to publish a GoalBuddy board into a familiar project surface.
 
 ## Use When
 
-- A long-running Goal Maker board needs stakeholder visibility in GitHub Projects.
+- A long-running GoalBuddy board needs stakeholder visibility in GitHub Projects.
 - A team wants one-way sync from `state.yaml` into ProjectV2 draft issues.
 - The PM needs a dry-run plan before using GitHub credentials.
-- Existing Goal Maker receipts, verification commands, allowed files, owners, and dependencies should be visible in a board layout.
+- Existing GoalBuddy receipts, verification commands, allowed files, owners, and dependencies should be visible in a board layout.
 
 ## What It Creates
 
@@ -17,9 +17,12 @@ The live sync ensures a GitHub Project has:
 
 - Draft issues keyed by `Task ID`, so reruns update existing cards instead of duplicating them.
 - Status mapping: `queued -> Todo`, `active -> In Progress`, `blocked -> Blocked`, `done -> Done`.
-- Single-select fields for `Status`, `Priority`, and `Work Type`.
+- Single-select fields for `Status`, `Priority`, `Work Type`, and `Agent Lane`.
 - Text fields for `Task ID`, `Owner`, `Goal Role`, `Agent Responsible`, `Credential Gate`, `Parent ID`, `Depends On`, `Receipt Summary`, `Verify`, `Allowed Files`, and `Goal Updated`.
-- A `Goal Board` board-layout view with useful visible fields.
+- A `Goal Board` board-layout view for PM flow.
+- An `Agent Workboard` board-layout view with `Agent Lane`, `Status`, and `Priority` visible on cards.
+
+The extension does not promise custom board grouping or sort order. GitHub's public Project views REST API currently accepts `name`, `layout`, `filter`, and `visible_fields` when creating a view, and GraphQL exposes grouping/sort fields for reading but not a public mutation for saving them. Because that display state cannot be written reliably through the public API, the sync only creates supported fields, cards, and views.
 
 ## Inputs
 
@@ -89,7 +92,7 @@ node extend/github-projects/scripts/sync-github-project.mjs \
 ## Boundaries
 
 - `state.yaml` remains authoritative.
-- The sync is one-way from Goal Maker to GitHub Projects.
+- The sync is one-way from GoalBuddy to GitHub Projects.
 - Missing GitHub credentials block only live sync, not local dry-run validation.
 - Live sync creates or updates GitHub Project draft issues and fields.
 - Native GitHub issue hierarchy and dependencies are represented as fields because ProjectV2 draft issues do not provide full issue relationship semantics.

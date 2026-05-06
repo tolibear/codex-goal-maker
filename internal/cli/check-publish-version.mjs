@@ -28,6 +28,9 @@ if (compareVersions(currentVersion, latestPublishedVersion) <= 0) {
 console.log(`Publish version check passed: ${pkg.name}@${currentVersion} > published ${latestPublishedVersion}.`);
 
 function readPublishedVersions(packageName) {
+  if (process.env.GOALBUDDY_PUBLISHED_VERSIONS !== undefined) {
+    return parseVersionList(process.env.GOALBUDDY_PUBLISHED_VERSIONS);
+  }
   if (process.env.GOAL_MAKER_PUBLISHED_VERSIONS !== undefined) {
     return parseVersionList(process.env.GOAL_MAKER_PUBLISHED_VERSIONS);
   }

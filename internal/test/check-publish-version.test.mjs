@@ -9,7 +9,8 @@ function runCheck(publishedVersions) {
     encoding: "utf8",
     env: {
       ...process.env,
-      GOAL_MAKER_PUBLISHED_VERSIONS: publishedVersions,
+      GOALBUDDY_PUBLISHED_VERSIONS: publishedVersions,
+      GOAL_MAKER_PUBLISHED_VERSIONS: "",
     },
   });
 }
@@ -18,14 +19,14 @@ test("publish version check passes when package version is newer than npm", () =
   const result = runCheck(JSON.stringify(["0.2.8", "0.2.9"]));
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /goal-maker@0\.2\.10 > published 0\.2\.9/);
+  assert.match(result.stdout, /goalbuddy@0\.2\.10 > published 0\.2\.9/);
 });
 
 test("publish version check rejects already-published package version", () => {
   const result = runCheck(JSON.stringify(["0.2.9", "0.2.10"]));
 
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /goal-maker@0\.2\.10 has already been published/);
+  assert.match(result.stderr, /goalbuddy@0\.2\.10 has already been published/);
 });
 
 test("publish version check rejects package versions behind the registry", () => {

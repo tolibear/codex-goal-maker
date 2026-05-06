@@ -2,7 +2,7 @@
 
 Check whether a package, app, or extension change is ready to release.
 
-This extension is local-first. It helps a Goal Maker run assemble release evidence from changed files, package metadata, verification commands, docs, examples, and follow-up risks. It does not publish a release or change versions by default.
+This extension is local-first. It helps a GoalBuddy run assemble release evidence from changed files, package metadata, verification commands, docs, examples, and follow-up risks. It does not publish a release or change versions by default.
 
 ## Use When
 

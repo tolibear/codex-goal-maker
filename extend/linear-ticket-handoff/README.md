@@ -1,8 +1,8 @@
 # Linear Ticket Handoff
 
-Prepare Linear-ready issue text from Goal Maker receipts.
+Prepare Linear-ready issue text from GoalBuddy receipts.
 
-This extension is credential-gated for live Linear issue creation but useful locally without credentials. It helps a Goal Maker run convert scoped follow-up work, blockers, verification evidence, and review notes into ticket-ready Markdown. It does not create Linear issues by default.
+This extension is credential-gated for live Linear issue creation but useful locally without credentials. It helps a GoalBuddy run convert scoped follow-up work, blockers, verification evidence, and review notes into ticket-ready Markdown. It does not create Linear issues by default.
 
 ## Use When
 

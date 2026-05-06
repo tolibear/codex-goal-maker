@@ -1,24 +1,30 @@
 {
-  "name": "goal-maker",
+  "name": "goalbuddy",
   "version": "0.2.10",
-  "description": "Turn open-ended Codex goals into a Scout/Judge/Worker board with receipts, verification, and optional extensions.",
+  "description": "Turn open-ended Codex goals into a GoalBuddy Scout/Judge/Worker board with receipts, verification, and optional extensions.",
   "type": "module",
   "bin": {
+    "goalbuddy": "internal/cli/goal-maker.mjs",
     "goal-maker": "internal/cli/goal-maker.mjs"
   },
   "files": [
     "README.md",
     "CONTRIBUTING.md",
     "examples",
+    "plugins/goalbuddy",
     "internal/assets",
     "internal/cli",
+    "goalbuddy/SKILL.md",
+    "goalbuddy/agents",
+    "goalbuddy/scripts",
+    "goalbuddy/templates",
     "goal-maker/SKILL.md",
     "goal-maker/agents",
     "goal-maker/scripts",
     "goal-maker/templates"
   ],
   "scripts": {
-    "check": "node --check internal/cli/goal-maker.mjs goal-maker/scripts/*.mjs && node --test internal/test/*.test.mjs",
+    "check": "node --check internal/cli/goal-maker.mjs goal-maker/scripts/*.mjs goalbuddy/scripts/*.mjs && node --test internal/test/*.test.mjs",
     "test": "node --test internal/test/*.test.mjs",
     "pack:dry-run": "npm pack --dry-run",
     "publish:check": "node internal/cli/check-publish-version.mjs && npm run pack:dry-run",
@@ -26,12 +32,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tolibear/goal-maker.git"
+    "url": "git+https://github.com/tolibear/goalbuddy.git"
   },
   "keywords": [
     "codex",
     "codex-skill",
     "openai-codex",
+    "goalbuddy",
     "goal",
     "task-board",
     "receipts",
@@ -46,9 +53,9 @@
   "author": "tolibear",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tolibear/goal-maker/issues"
+    "url": "https://github.com/tolibear/goalbuddy/issues"
   },
-  "homepage": "https://github.com/tolibear/goal-maker#readme",
+  "homepage": "https://github.com/tolibear/goalbuddy#readme",
   "engines": {
     "node": ">=18"
   },

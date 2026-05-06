@@ -3,7 +3,7 @@ name: Codebase onboarding map
 kind: documentation
 version: 0.1.0
 source_of_truth: local
-description: Create a concise local onboarding map from repo files, commands, conventions, examples, and Goal Maker receipts.
+description: Create a concise local onboarding map from repo files, commands, conventions, examples, and GoalBuddy receipts.
 use_when:
   - A developer or agent is starting work in an unfamiliar repo.
   - A broad goal needs an evidence-backed repo map before implementation.

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">Goal Maker Extend release graphic</title>
-  <desc id="desc">A white-background black-and-red diagram showing a vague Codex goal becoming a Goal Maker board, then extending to optional add-ons through a GitHub-hosted catalog.</desc>
+  <title id="title">GoalBuddy Extend release graphic</title>
+  <desc id="desc">A white-background black-and-red diagram showing a vague Codex goal becoming a GoalBuddy board, then extending to optional add-ons through a GitHub-hosted catalog.</desc>
   <defs>
     <style>
       .bg { fill: #ffffff; }
@@ -20,7 +20,7 @@
 
   <rect class="bg" width="1600" height="900"/>
 
-  <text x="110" y="130" class="title inkfill">goal-maker EXTEND</text>
+  <text x="110" y="130" class="title inkfill">goalbuddy EXTEND</text>
   <path class="red" d="M960 102 C1105 70 1255 76 1385 112"/>
   <path class="red" d="M1372 91 L1394 116 L1362 130"/>
   <text x="115" y="190" class="small muted">Open-ended Codex work becomes a local board. Optional integrations stay outside the core.</text>
@@ -78,6 +78,6 @@
 
   <g transform="translate(1110 735)">
     <rect x="0" y="0" width="300" height="72" rx="36" class="red"/>
-    <text x="38" y="47" class="mono redfill">npx goal-maker</text>
+    <text x="38" y="47" class="mono redfill">npx goalbuddy</text>
   </g>
 </svg>

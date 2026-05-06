@@ -3,7 +3,7 @@ name: GitHub PR workflow
 kind: integration
 version: 0.1.0
 source_of_truth: local
-description: Prepare review-ready GitHub pull request handoff text and commit boundaries from Goal Maker receipts without requiring GitHub credentials.
+description: Prepare review-ready GitHub pull request handoff text and commit boundaries from GoalBuddy receipts without requiring GitHub credentials.
 use_when:
   - The goal produced code changes intended for GitHub review.
   - The user asks to push, open a PR, or prepare review context.

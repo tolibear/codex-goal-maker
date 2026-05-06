@@ -1,19 +1,19 @@
 # Extend
 
-Optional Goal Maker extensions live here as subfolders when they are ready to ship.
+Optional GoalBuddy extensions live here as subfolders when they are ready to ship.
 
 The npm package reads the GitHub-hosted catalog at `extend/catalog.json`, so adding or updating extension entries here does not require an npm release.
 
-Each extension folder should contain the files referenced by `extend/catalog.json`. Keep catalog entries checksum-pinned so `goal-maker extend install <id>` can verify downloads before copying them into a local Codex install.
+Each extension folder should contain the files referenced by `extend/catalog.json`. Keep catalog entries checksum-pinned so `goalbuddy extend install <id>` can verify downloads before copying them into a local Codex install.
 
-Use `goal-maker extend install --all` to install every cataloged extension into the active Goal Maker skill install. Use `--dry-run` first when testing catalog changes.
+Use `goalbuddy extend install --all` to install every cataloged extension into the active GoalBuddy skill install. Use `--dry-run` first when testing catalog changes.
 
-Use `goal-maker extend <id>` when deciding whether to activate an extension. The detail view includes lifecycle activation, safety and approval state, missing env vars, reads/writes, outputs, support flags, and a local-use prompt.
+Use `goalbuddy extend <id>` when deciding whether to activate an extension. The detail view includes lifecycle activation, safety and approval state, missing env vars, reads/writes, outputs, support flags, and a local-use prompt.
 
 ## Extensions
 
 - `github-pr-workflow`: prepares receipt-aligned commit boundaries and GitHub pull request handoff text while keeping `state.yaml` authoritative.
-- `github-projects`: mirrors Goal Maker boards into GitHub Projects with dry-run planning, draft issue upserts, `Todo`/`In Progress`/`Blocked`/`Done` statuses, agent-facing fields, credential gates, ProjectV2 fields, and a Goal Board view.
+- `github-projects`: mirrors GoalBuddy boards into GitHub Projects with dry-run planning, draft issue upserts, `Todo`/`In Progress`/`Blocked`/`Done` statuses, agent-facing fields, credential gates, ProjectV2 fields, and a Goal Board view.
 - `codebase-onboarding-map`: creates a concise onboarding map from repo files, commands, conventions, and receipts.
 - `slack-standup-digest`: prepares Slack-ready status digests while keeping live delivery credential-gated.
 - `linear-ticket-handoff`: prepares Linear-ready issue text while keeping live issue creation credential-gated.
@@ -37,7 +37,7 @@ Use `goal-maker extend <id>` when deciding whether to activate an extension. The
 Catalog entries may include lightweight fields that help agents decide when and how to use an extension:
 
 - `use_when`: human-readable triggers for when an agent should consider the extension.
-- `activation`: the Goal Maker lifecycle phase where the extension fits, such as `final_audit`, `publish_handoff`, `user_requested`, `before_worker`, `after_worker`, or `blocked_task`.
+- `activation`: the GoalBuddy lifecycle phase where the extension fits, such as `final_audit`, `publish_handoff`, `user_requested`, `before_worker`, `after_worker`, or `blocked_task`.
 - `outputs`: artifacts or results the extension is expected to produce.
 - `requires_approval`: whether an agent should ask before using the extension.
 - `safe_by_default`: whether the extension can run locally without credentials, destructive changes, or external side effects.

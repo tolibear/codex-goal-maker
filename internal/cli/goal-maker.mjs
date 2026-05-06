@@ -17,10 +17,15 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, "../..");
-const skillSource = join(packageRoot, "goal-maker");
+const canonicalProductName = "GoalBuddy";
+const canonicalCliName = "goalbuddy";
+const canonicalSkillName = "goalbuddy";
+const legacyCliName = "goal-maker";
+const legacySkillName = "goal-maker";
+const skillSource = join(packageRoot, canonicalSkillName);
 const packageInfo = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
 const defaultCodexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
-const defaultCatalogUrl = "https://raw.githubusercontent.com/tolibear/goal-maker/main/extend/catalog.json";
+const defaultCatalogUrl = "https://raw.githubusercontent.com/tolibear/goalbuddy/main/extend/catalog.json";
 const requiredAgentFiles = [
   "goal_judge.toml",
   "goal_scout.toml",
@@ -39,6 +44,7 @@ const command = args[0] === "--help" || args[0] === "-h"
   : args[0] && !args[0].startsWith("-")
     ? args[0]
     : "install";
+const invokedAs = invokedCommandName();
 
 main().catch((error) => {
   console.error(error.message);
@@ -46,6 +52,7 @@ main().catch((error) => {
 });
 
 async function main() {
+  maybePrintLegacyNotice();
   switch (command) {
     case "install":
     case "update":
@@ -70,6 +77,23 @@ async function main() {
       usage();
       process.exit(2);
   }
+}
+
+function invokedCommandName() {
+  if (process.env.GOALBUDDY_INVOKED_AS) return process.env.GOALBUDDY_INVOKED_AS;
+  return basename(process.argv[1] || "");
+}
+
+function invokedThroughLegacyName() {
+  return invokedAs === legacyCliName;
+}
+
+function maybePrintLegacyNotice() {
+  if (!invokedThroughLegacyName() || hasFlag("--json")) return;
+  console.error(`${legacyCliName} has been rebranded to ${canonicalCliName}.`);
+  console.error(`Use: npx ${canonicalCliName}`);
+  console.error(`${legacyCliName} remains available temporarily for compatibility.`);
+  console.error("");
 }
 
 function optionValue(name) {
@@ -102,25 +126,29 @@ function positionalArgs() {
 }
 
 function usage() {
-  console.log(`Codex Goal Maker
+  console.log(`Codex ${canonicalProductName}
 
 Usage:
-  goal-maker install [--codex-home <path>] [--force] [--json]
-  goal-maker update [--codex-home <path>] [--json]
-  goal-maker agents [--codex-home <path>] [--force]
-  goal-maker doctor [--codex-home <path>] [--goal-ready]
-  goal-maker extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
-  goal-maker extend <id> [--catalog-url <url-or-path>] [--json]
-  goal-maker extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
-  goal-maker extend install --all [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
-  goal-maker extend doctor [<id>] [--codex-home <path>] [--json]
+  ${canonicalCliName} install [--codex-home <path>] [--force] [--json]
+  ${canonicalCliName} update [--codex-home <path>] [--json]
+  ${canonicalCliName} agents [--codex-home <path>] [--force]
+  ${canonicalCliName} doctor [--codex-home <path>] [--goal-ready]
+  ${canonicalCliName} extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
+  ${canonicalCliName} extend <id> [--catalog-url <url-or-path>] [--json]
+  ${canonicalCliName} extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
+  ${canonicalCliName} extend install --all [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
+  ${canonicalCliName} extend doctor [<id>] [--codex-home <path>] [--json]
 
 Default:
-  goal-maker  Installs the skill and bundled agent definitions.
+  ${canonicalCliName}  Installs the skill and bundled agent definitions.
+
+Compatibility:
+  ${legacyCliName} remains a temporary alias and prints the new npx command for human-facing use.
 
 Environment:
   CODEX_HOME                         Overrides the default ~/.codex target.
-  GOAL_MAKER_EXTEND_CATALOG_URL      Overrides the default GitHub-hosted extension catalog.
+  GOALBUDDY_EXTEND_CATALOG_URL       Overrides the default GitHub-hosted extension catalog.
+  GOAL_MAKER_EXTEND_CATALOG_URL      Legacy fallback for the extension catalog.
 `);
 }
 
@@ -130,14 +158,17 @@ function codexHome() {
 
 function installSkill({ force = true, quiet = false } = {}) {
   const target = installedSkillRoot();
+  const legacyTarget = legacyInstalledSkillRoot();
   if (!existsSync(skillSource)) {
     console.error(`Skill payload not found: ${skillSource}`);
     process.exit(1);
   }
 
-  const previousMetadata = readInstallMetadata(target);
-  const previousFingerprint = existsSync(target) ? directoryFingerprint(target, { exclude: new Set(["extend", ".goal-maker-install.json"]) }) : "";
-  const preservedExtensions = preserveInstalledExtensions(target);
+  const previousMetadata = readInstallMetadata(target) || readInstallMetadata(legacyTarget);
+  const previousFingerprint = existsSync(target) ? directoryFingerprint(target, { exclude: installFingerprintExcludes() }) : "";
+  const preservedExtensions = preserveInstalledExtensions([target, legacyTarget]);
+  const extensionTempPath = preservedExtensions.tempPath;
+  const preservedExtensionIds = preservedExtensions.ids;
 
   mkdirSync(dirname(target), { recursive: true });
   if (existsSync(target)) {
@@ -152,21 +183,31 @@ function installSkill({ force = true, quiet = false } = {}) {
   cpSync(skillSource, target, {
     recursive: true,
   });
-  restoreInstalledExtensions(target, preservedExtensions.tempPath);
+  restoreInstalledExtensions(target, extensionTempPath);
   writeInstallMetadata(target, previousMetadata);
 
-  const currentFingerprint = directoryFingerprint(target, { exclude: new Set(["extend", ".goal-maker-install.json"]) });
+  mkdirSync(dirname(legacyTarget), { recursive: true });
+  rmSync(legacyTarget, { recursive: true, force: true });
+  cpSync(skillSource, legacyTarget, {
+    recursive: true,
+  });
+  restoreInstalledExtensions(legacyTarget, extensionTempPath);
+  writeInstallMetadata(legacyTarget, previousMetadata);
+  cleanupPreservedExtensions([extensionTempPath]);
+
+  const currentFingerprint = directoryFingerprint(target, { exclude: installFingerprintExcludes() });
   const status = previousFingerprint
     ? previousFingerprint === currentFingerprint ? "unchanged" : "updated"
     : "installed";
-  if (!quiet) console.log(`Installed Codex Goal Maker skill to ${target}`);
+  if (!quiet) console.log(`Installed Codex ${canonicalProductName} skill to ${target}`);
 
   return {
     status,
     path: target,
+    compatibility_path: legacyTarget,
     previous_version: previousMetadata?.package_version || "",
     current_version: packageInfo.version,
-    preserved_extensions: preservedExtensions.ids,
+    preserved_extensions: preservedExtensionIds,
   };
 }
 
@@ -221,8 +262,10 @@ async function installAll() {
 
 function doctor() {
   const skillPath = join(installedSkillRoot(), "SKILL.md");
+  const legacySkillPath = join(legacyInstalledSkillRoot(), "SKILL.md");
   const agentsPath = join(codexHome(), "agents");
   const installed = existsSync(skillPath);
+  const legacyInstalled = existsSync(legacySkillPath);
   const agents = existsSync(agentsPath)
     ? readdirSync(agentsPath).filter((file) => file.startsWith("goal_") && file.endsWith(".toml"))
     : [];
@@ -243,6 +286,8 @@ function doctor() {
     codex_home: codexHome(),
     skill_installed: installed,
     skill_path: skillPath,
+    compatibility_skill_installed: legacyInstalled,
+    compatibility_skill_path: legacySkillPath,
     installed_agents: agents,
     missing_agents: missingAgents,
     stale_agents: staleAgents,
@@ -328,24 +373,24 @@ async function extend() {
 }
 
 function extendUsage() {
-  console.log(`Goal Maker Extend
+  console.log(`${canonicalProductName} Extend
 
 Usage:
-  goal-maker extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
-  goal-maker extend <id> [--catalog-url <url-or-path>] [--json]
-  goal-maker extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
-  goal-maker extend install --all [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
-  goal-maker extend doctor [<id>] [--codex-home <path>] [--json]
+  ${canonicalCliName} extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
+  ${canonicalCliName} extend <id> [--catalog-url <url-or-path>] [--json]
+  ${canonicalCliName} extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
+  ${canonicalCliName} extend install --all [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
+  ${canonicalCliName} extend doctor [<id>] [--codex-home <path>] [--json]
 
 States:
   available   Listed in the catalog.
-  installed   Copied into the local Goal Maker skill install.
+  installed   Copied into the local ${canonicalProductName} skill install.
   enabled     Allowed by a goal or task. Not implemented by this command yet.
   configured  Required local env/provider settings are present.
 
 Catalog:
   Defaults to ${defaultCatalogUrl}
-  Override with --catalog-url or GOAL_MAKER_EXTEND_CATALOG_URL.
+  Override with --catalog-url, GOALBUDDY_EXTEND_CATALOG_URL, or legacy GOAL_MAKER_EXTEND_CATALOG_URL.
 `);
 }
 
@@ -381,9 +426,9 @@ async function extendCatalog() {
     console.log("");
   }
   console.log("View details:");
-  console.log(`  npx goal-maker extend ${extensions[0].id}`);
+  console.log(`  npx ${canonicalCliName} extend ${extensions[0].id}`);
   console.log("Install all:");
-  console.log("  npx goal-maker extend install --all");
+  console.log(`  npx ${canonicalCliName} extend install --all`);
 }
 
 async function extendDetails(id) {
@@ -430,10 +475,10 @@ async function extendDetails(id) {
   console.log(`  Use the ${extension.name || extension.id} extension for docs/goals/<slug>/goal.md and write its ${firstValue(extension.outputs, "artifact")} as Markdown.`);
   console.log("");
   console.log("Install:");
-  console.log(`  npx goal-maker extend install ${extension.id}`);
+  console.log(`  npx ${canonicalCliName} extend install ${extension.id}`);
   console.log("");
   console.log("Preview install:");
-  console.log(`  npx goal-maker extend install ${extension.id} --dry-run`);
+  console.log(`  npx ${canonicalCliName} extend install ${extension.id} --dry-run`);
 }
 
 function printListSection(title, values) {
@@ -464,7 +509,7 @@ async function extendInstall() {
     return;
   }
 
-  if (!id) throw new Error("Missing extension id. Usage: goal-maker extend install <id>");
+  if (!id) throw new Error(`Missing extension id. Usage: ${canonicalCliName} extend install <id>`);
   const extension = catalog.extensions.find((candidate) => candidate.id === id);
   if (!extension) {
     printExtensionNotFound(id, catalog.extensions);
@@ -599,7 +644,11 @@ function extendDoctor() {
 }
 
 function installedSkillRoot() {
-  return join(codexHome(), "skills", "goal-maker");
+  return join(codexHome(), "skills", canonicalSkillName);
+}
+
+function legacyInstalledSkillRoot() {
+  return join(codexHome(), "skills", legacySkillName);
 }
 
 function extendRoot() {
@@ -613,6 +662,7 @@ function extensionTarget(id) {
 function catalogUrl() {
   return optionValue("--catalog-url")
     || optionValue("--catalog")
+    || process.env.GOALBUDDY_EXTEND_CATALOG_URL
     || process.env.GOAL_MAKER_EXTEND_CATALOG_URL
     || defaultCatalogUrl;
 }
@@ -638,7 +688,7 @@ function printExtensionNotFound(id, extensions) {
   }
   console.error("");
   console.error("Try:");
-  console.error("  npx goal-maker extend");
+  console.error(`  npx ${canonicalCliName} extend`);
 }
 
 function validateCatalogExtension(extension) {
@@ -735,37 +785,65 @@ function listFiles(root, { exclude = new Set(), prefix = "" } = {}) {
   return files;
 }
 
-function preserveInstalledExtensions(target) {
-  const source = join(target, "extend");
-  if (!existsSync(source)) return { tempPath: "", ids: [] };
-  const ids = readdirSync(source, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
-  const tempPath = `${target}.extend-${process.pid}-${Date.now()}`;
-  renameSync(source, tempPath);
-  return { tempPath, ids };
+function preserveInstalledExtensions(targets) {
+  const ids = [];
+  const tempPath = join(codexHome(), `.goalbuddy-preserved-extend-${process.pid}-${Date.now()}`);
+  let hasExtensions = false;
+  for (const target of targets) {
+    const source = join(target, "extend");
+    if (!existsSync(source)) continue;
+    mkdirSync(tempPath, { recursive: true });
+    for (const entry of readdirSync(source, { withFileTypes: true })) {
+      const from = join(source, entry.name);
+      const to = join(tempPath, entry.name);
+      cpSync(from, to, { recursive: true, force: true });
+      if (entry.isDirectory()) ids.push(entry.name);
+      hasExtensions = true;
+    }
+    rmSync(source, { recursive: true, force: true });
+  }
+  return { tempPath: hasExtensions ? tempPath : "", ids: uniqueSorted(ids) };
 }
 
 function restoreInstalledExtensions(target, tempPath) {
   if (!tempPath) return;
   rmSync(join(target, "extend"), { recursive: true, force: true });
   mkdirSync(target, { recursive: true });
-  renameSync(tempPath, join(target, "extend"));
+  cpSync(tempPath, join(target, "extend"), { recursive: true });
+}
+
+function cleanupPreservedExtensions(paths) {
+  for (const path of uniqueSorted(paths.filter(Boolean))) {
+    rmSync(path, { recursive: true, force: true });
+  }
+}
+
+function uniqueSorted(values) {
+  return [...new Set(values)].sort();
+}
+
+function installFingerprintExcludes() {
+  return new Set(["extend", ".goalbuddy-install.json", ".goal-maker-install.json"]);
 }
 
 function installMetadataPath(target) {
+  return join(target, ".goalbuddy-install.json");
+}
+
+function legacyInstallMetadataPath(target) {
   return join(target, ".goal-maker-install.json");
 }
 
 function readInstallMetadata(target) {
-  const path = installMetadataPath(target);
-  if (!existsSync(path)) return null;
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch {
-    return null;
+  for (const path of [installMetadataPath(target), legacyInstallMetadataPath(target)]) {
+    if (!existsSync(path)) continue;
+    try {
+      return JSON.parse(readFileSync(path, "utf8"));
+    } catch {
+      return null;
+    }
   }
+  return null;
 }
 
 function writeInstallMetadata(target, previousMetadata) {
@@ -797,7 +875,7 @@ async function extensionDiscoverySummary() {
         installed: extension.state.installed,
         configured: extension.state.configured,
         use_when: extension.use_when,
-        next_command: `goal-maker extend ${extension.id}`,
+        next_command: `${canonicalCliName} extend ${extension.id}`,
       })),
       recommended: extensions
         .filter((extension) => extension.safe_by_default && !extension.state.installed)
@@ -808,7 +886,7 @@ async function extensionDiscoverySummary() {
           activation: extension.activation,
           summary: extension.summary,
           use_when: extension.use_when.slice(0, 1),
-          next_command: `goal-maker extend ${extension.id}`,
+          next_command: `${canonicalCliName} extend ${extension.id}`,
         })),
     };
   } catch (error) {
@@ -830,9 +908,10 @@ function printInstallReport(report) {
     ? ` ${report.package.previous_version} -> ${report.package.current_version}`
     : ` ${report.package.current_version}`;
   console.log("");
-  console.log(`${verb} Goal Maker${previous}`);
+  console.log(`${verb} ${canonicalProductName}${previous}`);
   console.log("");
   console.log(`Skill: ${report.skill.status} at ${report.skill.path}`);
+  console.log(`Compatibility skill: ${report.skill.compatibility_path}`);
   const agentSummary = summarizeStatuses(report.agents);
   console.log(`Agents: ${agentSummary}`);
   if (report.skill.preserved_extensions.length) {
@@ -858,8 +937,9 @@ function printInstallReport(report) {
 
   console.log("");
   console.log("Next:");
-  console.log("  $goal-maker");
-  console.log("  goal-maker extend");
+  console.log("  $goalbuddy");
+  console.log(`  ${canonicalCliName} extend`);
+  console.log(`  ${legacyCliName} remains a temporary compatibility alias.`);
 }
 
 function summarizeStatuses(items) {
@@ -874,7 +954,7 @@ function summarizeStatuses(items) {
 
 function assertSkillInstalledForExtensionInstall() {
   if (!existsSync(join(installedSkillRoot(), "SKILL.md"))) {
-    throw new Error(`Goal Maker skill is not installed at ${installedSkillRoot()}. Run: npx goal-maker`);
+    throw new Error(`${canonicalProductName} skill is not installed at ${installedSkillRoot()}. Run: npx ${canonicalCliName}`);
   }
 }
 

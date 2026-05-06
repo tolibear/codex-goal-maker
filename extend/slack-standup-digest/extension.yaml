@@ -3,7 +3,7 @@ name: Slack standup digest
 kind: integration
 version: 0.1.0
 source_of_truth: local
-description: Prepare a Slack-ready status digest from Goal Maker receipts while treating live delivery as credential-gated and approval-required.
+description: Prepare a Slack-ready status digest from GoalBuddy receipts while treating live delivery as credential-gated and approval-required.
 use_when:
   - A team wants an async Slack-ready update from a long-running goal.
   - A blocked task needs owner-visible context.

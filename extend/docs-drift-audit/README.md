@@ -1,6 +1,6 @@
 # Docs Drift Audit
 
-Catch documentation drift before a Goal Maker run claims completion.
+Catch documentation drift before a GoalBuddy run claims completion.
 
 This extension is local-first. It helps compare the original request, changed files, commands, exported surfaces, and README/docs references so the PM can identify stale or missing documentation. It does not rewrite docs automatically.
 

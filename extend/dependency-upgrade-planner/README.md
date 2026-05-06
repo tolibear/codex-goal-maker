@@ -2,7 +2,7 @@
 
 Plan dependency updates before changing package manifests or lockfiles.
 
-This extension is local-first. It helps a Goal Maker run evaluate candidate dependency upgrades, runtime policy, migration notes, verification commands, and rollback options. It does not edit dependency files or contact a package registry by default.
+This extension is local-first. It helps a GoalBuddy run evaluate candidate dependency upgrades, runtime policy, migration notes, verification commands, and rollback options. It does not edit dependency files or contact a package registry by default.
 
 ## Use When
 

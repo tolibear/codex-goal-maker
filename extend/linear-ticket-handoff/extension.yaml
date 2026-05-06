@@ -3,7 +3,7 @@ name: Linear ticket handoff
 kind: integration
 version: 0.1.0
 source_of_truth: local
-description: Prepare Linear-ready issue text from Goal Maker receipts while treating live issue creation as credential-gated and approval-required.
+description: Prepare Linear-ready issue text from GoalBuddy receipts while treating live issue creation as credential-gated and approval-required.
 use_when:
   - A goal produces follow-up work that should become an issue.
   - A blocked task needs owner or team tracking.

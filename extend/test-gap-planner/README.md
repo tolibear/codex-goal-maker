@@ -1,8 +1,8 @@
 # Test Gap Planner
 
-Turn a changed diff and Goal Maker receipts into a focused test plan.
+Turn a changed diff and GoalBuddy receipts into a focused test plan.
 
-This extension is local-first. It helps a Goal Maker run identify behavior that changed, tests that already ran, edge cases that remain weakly covered, and the smallest next tests worth adding. It does not write tests automatically.
+This extension is local-first. It helps a GoalBuddy run identify behavior that changed, tests that already ran, edge cases that remain weakly covered, and the smallest next tests worth adding. It does not write tests automatically.
 
 ## Use When
 

@@ -6,6 +6,7 @@ export const GITHUB_PROJECT_FIELDS = {
   owner: "Owner",
   goalRole: "Goal Role",
   agentResponsible: "Agent Responsible",
+  agentLane: "Agent Lane",
   credentialGate: "Credential Gate",
   parentId: "Parent ID",
   dependsOn: "Depends On",
@@ -15,10 +16,47 @@ export const GITHUB_PROJECT_FIELDS = {
   updated: "Goal Updated",
 };
 
+export const GITHUB_PROJECT_VIEWS = {
+  board: {
+    name: "Goal Board",
+    layout: "board",
+    graphqlLayout: "BOARD_LAYOUT",
+    fields: [
+      "priority",
+      "status",
+      "workType",
+      "owner",
+      "goalRole",
+      "agentResponsible",
+      "agentLane",
+      "credentialGate",
+    ],
+  },
+  agentWorkboard: {
+    name: "Agent Workboard",
+    layout: "board",
+    graphqlLayout: "BOARD_LAYOUT",
+    fields: [
+      "agentLane",
+      "agentResponsible",
+      "goalRole",
+      "status",
+      "workType",
+      "owner",
+      "taskId",
+      "priority",
+      "receiptSummary",
+      "verify",
+      "allowedFiles",
+      "updated",
+    ],
+  },
+};
+
 const STATUS_OPTIONS = [
-  { name: "Todo", color: "GRAY", description: "Task is waiting." },
-  { name: "In Progress", color: "YELLOW", description: "Task is currently active." },
   { name: "Blocked", color: "RED", description: "Task is blocked." },
+  { name: "In Progress", color: "YELLOW", description: "Task is currently active." },
+  { name: "Todo", color: "GRAY", description: "Task is waiting." },
   { name: "Done", color: "GREEN", description: "Task is complete." },
 ];
 
@@ -35,6 +73,14 @@ const PRIORITY_OPTIONS = [
   { name: "P1", color: "ORANGE", description: "Important current-tranche work." },
   { name: "P2", color: "YELLOW", description: "Useful but not first-order." },
   { name: "P3", color: "GRAY", description: "Parking lot or follow-up." },
+];
+
+const AGENT_LANE_OPTIONS = [
+  { name: "PM", color: "GREEN", description: "GoalBuddy PM coordination work." },
+  { name: "Scout", color: "BLUE", description: "GoalBuddy evidence mapping work." },
+  { name: "Judge", color: "PURPLE", description: "GoalBuddy decision and audit work." },
+  { name: "Worker", color: "ORANGE", description: "GoalBuddy bounded implementation work." },
+  { name: "User", color: "GRAY", description: "Owner-gated or human action work." },
 ];
 
 const TEXT_FIELD_SPECS = [
@@ -55,6 +101,7 @@ const SINGLE_SELECT_FIELD_SPECS = [
   ["status", GITHUB_PROJECT_FIELDS.status, STATUS_OPTIONS],
   ["priority", GITHUB_PROJECT_FIELDS.priority, PRIORITY_OPTIONS],
   ["workType", GITHUB_PROJECT_FIELDS.workType, TYPE_OPTIONS],
+  ["agentLane", GITHUB_PROJECT_FIELDS.agentLane, AGENT_LANE_OPTIONS],
 ];
 
 export class GitHubProjectsError extends Error {
@@ -311,38 +358,37 @@ export async function executeGitHubProjectSync({ client, project, fields, tasks,
   return operations;
 }
 
-export async function ensureGoalBoardView({ client, project, fields }) {
-  const existing = (project.views?.nodes || []).find((view) => view.name === "Goal Board" && view.layout === "BOARD_LAYOUT");
-  if (existing) return existing;
-
+export async function ensureGoalProjectViews({ client, project, fields }) {
   const owner = project.owner;
   if (!owner?.login || !project.number) {
-    throw new GitHubProjectsError("Cannot create Goal Board view without project owner and number.");
+    throw new GitHubProjectsError("Cannot create GitHub Project views without project owner and number.");
   }
 
   const ownerPath = owner.__typename === "Organization"
     ? `orgs/${owner.login}`
     : `users/${owner.login}`;
-  const visibleFields = [
-    fields.priority,
-    fields.status,
-    fields.workType,
-    fields.owner,
-    fields.goalRole,
-    fields.agentResponsible,
-    fields.credentialGate,
-  ]
-    .map((field) => field?.databaseId)
-    .filter(Boolean);
+  const existingViews = project.views?.nodes || [];
+  const ensured = {};
 
-  return client.rest(`${ownerPath}/projectsV2/${project.number}/views`, {
-    method: "POST",
-    body: {
-      name: "Goal Board",
-      layout: "board",
-      visible_fields: visibleFields,
-    },
-  });
+  for (const [key, spec] of Object.entries(GITHUB_PROJECT_VIEWS)) {
+    const existing = existingViews.find((view) => view.name === spec.name && view.layout === spec.graphqlLayout);
+    if (existing) {
+      ensured[key] = existing;
+      continue;
+    }
+
+    ensured[key] = await client.rest(`${ownerPath}/projectsV2/${project.number}/views`, {
+      method: "POST",
+      body: buildViewRequestBody(spec, fields),
+    });
+  }
+
+  return ensured;
+}
+
+export async function ensureGoalBoardView({ client, project, fields }) {
+  const views = await ensureGoalProjectViews({ client, project, fields });
+  return views.board;
 }
 
 export function buildFieldUpdates(task, fields) {
@@ -351,6 +397,7 @@ export function buildFieldUpdates(task, fields) {
     singleSelectUpdate(fields.status, projectStatusForTask(task.status)),
     singleSelectUpdate(fields.priority, priorityForTask(task)),
     singleSelectUpdate(fields.workType, workTypeForTask(task.type)),
+    singleSelectUpdate(fields.agentLane, agentLaneForTask(task)),
     textUpdate(fields.owner, task.assignee),
     textUpdate(fields.goalRole, task.goalRole),
     textUpdate(fields.agentResponsible, task.agentResponsible),
@@ -368,7 +415,7 @@ export function buildDraftIssueBody(task, board) {
   const lines = [
     `Mirrors ${board.sourcePath}.`,
     "",
-    "YAML remains the source of truth. Edit the Goal Maker board, then rerun the sync.",
+    "YAML remains the source of truth. Edit the GoalBuddy board, then rerun the sync.",
     "",
     `Task ID: ${task.id}`,
     `Status: ${task.status}`,
@@ -414,6 +461,7 @@ export function dryRunGitHubOperations(board) {
     goalRole: task.goalRole,
     agentResponsible: task.agentResponsible,
     credentialGate: task.credentialGate,
+    agentLane: agentLaneForTask(task),
   }));
 }
 
@@ -439,6 +487,33 @@ export function workTypeForTask(type) {
   if (type === "worker") return "Execution";
   if (type === "pm") return "Coordination";
   return "Coordination";
+}
+
+export function agentLaneForTask(task) {
+  const candidates = [
+    task.agentResponsible,
+    task.goalRole,
+    task.assignee,
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    if (["PM", "Scout", "Judge", "Worker"].includes(candidate)) return candidate;
+    if (candidate === "User" || candidate === "Owner") return "User";
+  }
+  return "User";
+}
+
+function buildViewRequestBody(spec, fields) {
+  return {
+    name: spec.name,
+    layout: spec.layout,
+    visible_fields: fieldDatabaseIds(spec.fields, fields),
+  };
+}
+
+function fieldDatabaseIds(fieldKeys = [], fields) {
+  return fieldKeys
+    .map((fieldKey) => fields[fieldKey]?.databaseId)
+    .filter(Boolean);
 }
 
 function indexFieldsByName(fields) {

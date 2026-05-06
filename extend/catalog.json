@@ -6,8 +6,8 @@
       "name": "GitHub PR workflow",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Prepare receipt-aligned commit boundaries and GitHub pull request handoff text from Goal Maker receipts without requiring GitHub credentials.",
-      "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, verification output, and commit boundaries into PR-ready Markdown while keeping state.yaml authoritative.",
+      "summary": "Prepare receipt-aligned commit boundaries and GitHub pull request handoff text from GoalBuddy receipts without requiring GitHub credentials.",
+      "description": "A local-first workflow for turning a GoalBuddy board, receipts, changed files, verification output, and commit boundaries into PR-ready Markdown while keeping state.yaml authoritative.",
       "source": "extend/github-pr-workflow",
       "docs": "README.md",
       "use_when": [
@@ -57,12 +57,12 @@
         {
           "path": "README.md",
           "url": "github-pr-workflow/README.md",
-          "sha256": "0cda5b3a9f4aca73cb2ffa15ae5126d22345c5f4c2eba36d51aaac237dfe22d5"
+          "sha256": "8d7540f1ac17737cd87adb7589673ede757b1904436281048286f1c5582e12f9"
         },
         {
           "path": "extension.yaml",
           "url": "github-pr-workflow/extension.yaml",
-          "sha256": "75a207a6f8a62574860afa1cc42de464ef511920540c302f78130f0175930845"
+          "sha256": "4f034dd76ef09a01a213a434266b2f9f932c958fce367ce2edacc665f02adebd"
         }
       ]
     },
@@ -71,21 +71,22 @@
       "name": "GitHub Projects",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Mirror Goal Maker state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, and a Goal Board view.",
+      "summary": "Mirror GoalBuddy state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, a Goal Board view, and an Agent Workboard.",
       "description": "A cataloged one-way GitHub Projects sync extension that ports PR #1 into the extension system while keeping state.yaml authoritative and live GitHub writes credential-gated.",
       "source": "extend/github-projects",
       "docs": "README.md",
       "use_when": [
-        "A long-running Goal Maker board needs stakeholder visibility in GitHub Projects.",
+        "A long-running GoalBuddy board needs stakeholder visibility in GitHub Projects.",
         "The team wants one-way sync from state.yaml into ProjectV2 draft issues.",
         "The PM needs a safe dry-run plan before using GitHub credentials.",
-        "Goal Maker receipts, verification commands, allowed files, owners, role/agent fields, credential gates, and dependencies should appear in a GitHub board."
+        "GoalBuddy receipts, verification commands, allowed files, owners, role/agent fields, credential gates, and dependencies should appear in a GitHub board."
       ],
       "activation": "publish_handoff",
       "outputs": [
         "GitHub Projects dry-run plan",
         "GitHub ProjectV2 draft issue sync",
-        "Goal Board ProjectV2 view"
+        "Goal Board ProjectV2 view",
+        "Agent Workboard ProjectV2 view"
       ],
       "requires_approval": true,
       "safe_by_default": false,
@@ -106,7 +107,7 @@
       "writes": [
         "GitHub ProjectV2 draft issues",
         "GitHub ProjectV2 fields",
-        "GitHub ProjectV2 board view"
+        "GitHub ProjectV2 board and agent workboard views"
       ],
       "side_effects": [
         "Live sync creates or updates GitHub Project draft issues, fields, and views."
@@ -128,37 +129,37 @@
         {
           "path": "README.md",
           "url": "github-projects/README.md",
-          "sha256": "95d1359d87f9c40f664c6abeb74c5001d8f85a77dffb1ac220f11a055d4f6c4c"
+          "sha256": "3eece6edf1461af8f66a719d68eaf2f90274a2f20c5c157fa4375901825ef938"
         },
         {
           "path": "extension.yaml",
           "url": "github-projects/extension.yaml",
-          "sha256": "ef14824725943353cf38f34cd8ce1d10745f7433b831811e31a4dd9b406e2ad8"
+          "sha256": "9b8a4feee6b4e478848eaafebec02709e7c93731a984b1cc685187492dd40f81"
         },
         {
           "path": "scripts/sync-github-project.mjs",
           "url": "github-projects/scripts/sync-github-project.mjs",
-          "sha256": "cb381f5bc282d68e1fe8cb7abe1727e3bf1ef44eb16994274b28d30fec1806a5"
+          "sha256": "49f5cb204fdc9daf29fce834634e45320c92cfc8723c596b1c3b522b14dd28a2"
         },
         {
           "path": "scripts/lib/goal-state.mjs",
           "url": "github-projects/scripts/lib/goal-state.mjs",
-          "sha256": "ea394983b7a641e47565932a53657caf3cd51e5f142cd2910dcfeff36c6b62a8"
+          "sha256": "aa57bd697b2d127367bbecfd3fabd7c75b4f86546340fff669aa37a47310ee9e"
         },
         {
           "path": "scripts/lib/github-projects.mjs",
           "url": "github-projects/scripts/lib/github-projects.mjs",
-          "sha256": "c1dacdd1624230407d1c056a0b683f915b369c7075beef5795c9611f71f2693b"
+          "sha256": "904f9127693d1a6e20b0e5f0545da885234e35228ec62b77d2218ed283be3d78"
         },
         {
           "path": "test/github-projects.test.mjs",
           "url": "github-projects/test/github-projects.test.mjs",
-          "sha256": "2484c20743c1b379ca45dadbf8923bd3d5502071ba8986b5f8c52fefb66101a8"
+          "sha256": "eb19b94546493815cbc39b68f1d369962185b51eb68b48135cab8db3fbc24b26"
         },
         {
           "path": "examples/goal-board-sync/state.yaml",
           "url": "github-projects/examples/goal-board-sync/state.yaml",
-          "sha256": "33ab718d27b839fe7b8f7b94a69b796304845c93f2fdddf97308bb05b9d1732e"
+          "sha256": "f47e5ee9748f36921500f4833ecade3255af344ffadad2750904db1bf48131be"
         }
       ]
     },
@@ -168,7 +169,7 @@
       "kind": "review",
       "version": "0.1.0",
       "summary": "Prepare a local risk review brief for AI-assisted or agent-produced diffs before PR handoff.",
-      "description": "A local-first review workflow for mapping changed files, Goal Maker receipts, verification evidence, and residual risk into a focused human-review brief.",
+      "description": "A local-first review workflow for mapping changed files, GoalBuddy receipts, verification evidence, and residual risk into a focused human-review brief.",
       "source": "extend/ai-diff-risk-review",
       "docs": "README.md",
       "use_when": [
@@ -216,7 +217,7 @@
         {
           "path": "README.md",
           "url": "ai-diff-risk-review/README.md",
-          "sha256": "1878273f05dbd6f748e322e489fcb6f8a7f68f7d62c6143de91027f94ecb2a96"
+          "sha256": "1fadcea22c40ad72dc60f792ab3846ae84d8394dc1d3c4493c957b8ac5ab7abb"
         },
         {
           "path": "extension.yaml",
@@ -280,7 +281,7 @@
         {
           "path": "README.md",
           "url": "ci-failure-triage/README.md",
-          "sha256": "58f01fcf202e0b0bf03060c2288f159ac455621d0a4141367868db394c60d25f"
+          "sha256": "da21eb0da0e4cc00f9e6d84e087788aa13f202473f05bebadaac7846b8ce8e75"
         },
         {
           "path": "extension.yaml",
@@ -346,7 +347,7 @@
         {
           "path": "README.md",
           "url": "docs-drift-audit/README.md",
-          "sha256": "a435e26524a0ccc368bd2834d8710a2ae9bf085d7049052519aa1a48122dd020"
+          "sha256": "afbabaa2240f0531bef43c708a59bfc8d63905f77ada76daba373ef2617fa311"
         },
         {
           "path": "extension.yaml",
@@ -409,7 +410,7 @@
         {
           "path": "README.md",
           "url": "test-gap-planner/README.md",
-          "sha256": "6db96f92a7a6320a42f07182d3975318165a67a37742974add94e7b548ffc916"
+          "sha256": "0294822395c7b60317baad12d3b7b7445ee354282a4416df7b79f0b41ee871ed"
         },
         {
           "path": "extension.yaml",
@@ -475,7 +476,7 @@
         {
           "path": "README.md",
           "url": "release-readiness/README.md",
-          "sha256": "b84c214f629b647231118a78763086e2648116b830084444bb25346654026d4a"
+          "sha256": "13adfbfad58c943559cb2fe320737cce50cf465e539fa80097429dab5b50335b"
         },
         {
           "path": "extension.yaml",
@@ -540,7 +541,7 @@
         {
           "path": "README.md",
           "url": "dependency-upgrade-planner/README.md",
-          "sha256": "adb779a3cbdcde5e04c981186083f217e559874c7b65b440da5bffeedaabbaae"
+          "sha256": "063af8b2bbc876091841df25c7652b6cd602f62ddf1907977bede79ccfa3cd06"
         },
         {
           "path": "extension.yaml",
@@ -605,7 +606,7 @@
         {
           "path": "README.md",
           "url": "security-review-brief/README.md",
-          "sha256": "7c53aae1b23119987809ef17e223f52174ce0fe85529c49cec7cfc78c17c52c9"
+          "sha256": "033202523327cd59b3db5ff0141a30530e63c970d3e00a71b079b565387f0498"
         },
         {
           "path": "extension.yaml",
@@ -619,7 +620,7 @@
       "name": "Codebase onboarding map",
       "kind": "documentation",
       "version": "0.1.0",
-      "summary": "Create a concise local onboarding map from repo files, commands, conventions, examples, and Goal Maker receipts.",
+      "summary": "Create a concise local onboarding map from repo files, commands, conventions, examples, and GoalBuddy receipts.",
       "description": "A local-first documentation workflow for helping developers and agents understand a repository before implementation or review.",
       "source": "extend/codebase-onboarding-map",
       "docs": "README.md",
@@ -670,12 +671,12 @@
         {
           "path": "README.md",
           "url": "codebase-onboarding-map/README.md",
-          "sha256": "b0c458697cb68fc04ab63d31906fdad7b686ce3c7e191958b48b37fb354966bd"
+          "sha256": "de36a636ccb6448514f4e4a0c68e5e20b5eb7698178bbe375e008d10348a1fbe"
         },
         {
           "path": "extension.yaml",
           "url": "codebase-onboarding-map/extension.yaml",
-          "sha256": "46fa6b6078082b18afdaab82ab52d2384f6ba5f80acd740cb1bfa78db6231b00"
+          "sha256": "af7a3a413c918194c72defe4c35c9e4a7ff76a158119c91f5e2dae2a36c608c2"
         }
       ]
     },
@@ -684,7 +685,7 @@
       "name": "Slack standup digest",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Prepare a Slack-ready status digest from Goal Maker receipts while treating live delivery as credential-gated and approval-required.",
+      "summary": "Prepare a Slack-ready status digest from GoalBuddy receipts while treating live delivery as credential-gated and approval-required.",
       "description": "A local-first team communication workflow that produces Slack-ready status text and keeps live Slack delivery separate from board truth.",
       "source": "extend/slack-standup-digest",
       "docs": "README.md",
@@ -735,12 +736,12 @@
         {
           "path": "README.md",
           "url": "slack-standup-digest/README.md",
-          "sha256": "23a0e63fa5746835788481681d75b9e6e9701fab43908b9014deadb819abe643"
+          "sha256": "e02b7bb574b11442f65c704c4fe632f5f16fc1734a1daaebdd93a2bedc214ed2"
         },
         {
           "path": "extension.yaml",
           "url": "slack-standup-digest/extension.yaml",
-          "sha256": "4f05716707820b60c4f4c3f94d0e7367b0edf7058b464f308da084b95d5b9e9a"
+          "sha256": "16980197d2e22be43d6305e987f2051e5e6f9d7ab2e69a1af4ec4f0bd6d4bee7"
         }
       ]
     },
@@ -749,7 +750,7 @@
       "name": "Linear ticket handoff",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Prepare Linear-ready issue text from Goal Maker receipts while treating live issue creation as credential-gated and approval-required.",
+      "summary": "Prepare Linear-ready issue text from GoalBuddy receipts while treating live issue creation as credential-gated and approval-required.",
       "description": "A local-first ticket handoff workflow that converts receipts, blockers, verification, and acceptance criteria into Linear-ready issue text.",
       "source": "extend/linear-ticket-handoff",
       "docs": "README.md",
@@ -801,12 +802,12 @@
         {
           "path": "README.md",
           "url": "linear-ticket-handoff/README.md",
-          "sha256": "2abce4632aae6326b6c626706dd03e3a81ac2321d057ec58480fc34243f040b0"
+          "sha256": "c6e3c442ad17648154a1c2dacddeb42e5a31ac9ef2bbacfa6b969c97d690b2ca"
         },
         {
           "path": "extension.yaml",
           "url": "linear-ticket-handoff/extension.yaml",
-          "sha256": "072d092be9d58c3b9e181eba182e234435e9370318169228796316a1fdc4d3f4"
+          "sha256": "91c05cb57641638f1c03c7514f06438a515822c295355e9a65657b18ae1aca16"
         }
       ]
     }

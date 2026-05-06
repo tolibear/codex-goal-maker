@@ -2,7 +2,7 @@
 
 Turn failing checks into a compact diagnosis and next verification plan.
 
-This extension is local-first. It helps a Goal Maker run summarize failed commands, CI logs, recent Worker receipts, and changed files into likely causes and next steps. It does not connect to a CI provider by default.
+This extension is local-first. It helps a GoalBuddy run summarize failed commands, CI logs, recent Worker receipts, and changed files into likely causes and next steps. It does not connect to a CI provider by default.
 
 ## Use When
 

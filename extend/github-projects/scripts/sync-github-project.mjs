@@ -3,10 +3,11 @@ import { resolve } from "node:path";
 import { loadGoalBoard } from "./lib/goal-state.mjs";
 import {
   GITHUB_PROJECT_FIELDS,
+  GITHUB_PROJECT_VIEWS,
   GitHubProjectsClient,
   dryRunGitHubOperations,
-  ensureGoalBoardView,
   ensureGoalProjectFields,
+  ensureGoalProjectViews,
   executeGitHubProjectSync,
   loadProject,
 } from "./lib/github-projects.mjs";
@@ -49,7 +50,7 @@ async function main() {
     number: projectRef.number,
   });
   const fields = await ensureGoalProjectFields(client, project);
-  const boardView = await ensureGoalBoardView({ client, project, fields });
+  const projectViews = await ensureGoalProjectViews({ client, project, fields });
   const operations = await executeGitHubProjectSync({
     client,
     project,
@@ -61,9 +62,12 @@ async function main() {
   const created = operations.filter((operation) => operation.type === "create").length;
   const updated = operations.filter((operation) => operation.type === "update").length;
   console.log(`Synced ${board.tasks.length} tasks to GitHub Project "${project.title}": ${created} created, ${updated} updated.`);
-  const boardUrl = boardView.html_url || (project.url && boardView.number ? `${project.url}/views/${boardView.number}` : "");
-  if (boardUrl) {
-    console.log(`Board view: ${boardUrl}`);
+  for (const [key, view] of Object.entries(projectViews)) {
+    const spec = GITHUB_PROJECT_VIEWS[key];
+    const viewUrl = view.html_url || (project.url && view.number ? `${project.url}/views/${view.number}` : "");
+    if (viewUrl) {
+      console.log(`${spec.name} view: ${viewUrl}`);
+    }
   }
   if (project.url) {
     console.log(project.url);
@@ -160,6 +164,11 @@ function printDryRun(board) {
       title: board.title,
       slug: board.slug,
       fields: Object.values(GITHUB_PROJECT_FIELDS),
+      views: Object.values(GITHUB_PROJECT_VIEWS).map((view) => ({
+        name: view.name,
+        layout: view.layout,
+        visible_fields: view.fields.map((field) => GITHUB_PROJECT_FIELDS[field]),
+      })),
       view: "Goal Board",
       status_mapping: {
         queued: "Todo",
@@ -174,8 +183,8 @@ function printDryRun(board) {
 
   console.log(`Dry run for ${board.title} (${board.slug})`);
   console.log(`Source: ${board.sourcePath}`);
-  console.log("GitHub Project fields that will be ensured: Task ID, Status, Priority, Work Type, Owner, Goal Role, Agent Responsible, Credential Gate, Parent ID, Depends On, Receipt Summary, Verify, Allowed Files, Goal Updated");
-  console.log("GitHub Project view that will be ensured: Goal Board (Board layout)");
+  console.log("GitHub Project fields that will be ensured: Task ID, Status, Priority, Work Type, Owner, Goal Role, Agent Responsible, Agent Lane, Credential Gate, Parent ID, Depends On, Receipt Summary, Verify, Allowed Files, Goal Updated");
+  console.log("GitHub Project views that will be ensured: Goal Board (Board layout), Agent Workboard (Board layout with Agent Lane visible)");
   console.log("Status mapping: queued -> Todo, active -> In Progress, blocked -> Blocked, done -> Done");
   for (const operation of dryRunGitHubOperations(board)) {
     console.log(`UPSERT ${operation.taskId} ${operation.status} -> ${operation.projectStatus} ${operation.priority} ${operation.typeLabel} ${operation.title}`);

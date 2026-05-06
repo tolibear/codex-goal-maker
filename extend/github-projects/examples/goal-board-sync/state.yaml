@@ -4,7 +4,7 @@ goal:
   title: "Goal board sync MVP"
   slug: "goal-board-sync-mvp"
   kind: specific
-  tranche: "Mirror a Goal Maker board into an external Kanban surface."
+  tranche: "Mirror a GoalBuddy board into an external Kanban surface."
   status: active
 
 rules:
@@ -32,7 +32,7 @@ tasks:
       - "Field mapping"
     receipt:
       result: done
-      summary: "The board sync can read Goal Maker state.yaml and mirror tasks into an external board."
+      summary: "The board sync can read GoalBuddy state.yaml and mirror tasks into an external board."
   - id: T002
     type: worker
     assignee: Worker

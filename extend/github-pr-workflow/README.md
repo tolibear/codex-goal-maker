@@ -1,12 +1,12 @@
 # GitHub PR Workflow
 
-Prepare receipt-aligned commit boundaries and GitHub pull request handoff text from a Goal Maker board without making GitHub the source of truth.
+Prepare receipt-aligned commit boundaries and GitHub pull request handoff text from a GoalBuddy board without making GitHub the source of truth.
 
 This extension is intentionally local-first. It helps a goal run turn `state.yaml` receipts, verification commands, commit boundaries, and the current diff into PR-ready context. It does not create a pull request, edit GitHub issues, or sync board state back from GitHub.
 
 ## Use When
 
-- A Goal Maker run is ready for a pull request.
+- A GoalBuddy run is ready for a pull request.
 - Reviewers need the original request, completed task receipts, changed files, and verification in one place.
 - The branch should be decomposed into commits that map to completed Worker or PM receipts.
 - The team wants a repeatable handoff format without requiring GitHub credentials during goal execution.
@@ -28,7 +28,7 @@ A review-ready branch and Markdown PR handoff with:
 - PR title
 - Summary
 - Goal context
-- Commit plan mapped to Goal Maker receipts
+- Commit plan mapped to GoalBuddy receipts
 - Changed files
 - Verification
 - Review notes
