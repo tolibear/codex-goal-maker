@@ -113,6 +113,8 @@ npx goal-maker
 npx goal-maker update
 ```
 
+`install` and `update` print a compact summary of the skill, agent files, preserved installed extensions, and extension catalog recommendations. Use `--json` when an agent or script needs structured output.
+
 Repair only the agent definitions:
 
 ```bash
@@ -139,6 +141,7 @@ Discover optional extensions from the GitHub-hosted catalog:
 npx goal-maker extend
 npx goal-maker extend github-pr-workflow
 npx goal-maker extend install github-pr-workflow --dry-run
+npx goal-maker extend install --all --dry-run
 ```
 
 Use a non-default Codex home:
@@ -151,7 +154,7 @@ npx goal-maker install --codex-home /path/to/.codex
 
 The npm package is the stable core. Extensions live under `extend/` and move through the GitHub-hosted `extend/catalog.json`, so users do not need a new npm release for every optional integration.
 
-`goal-maker extend` reads the catalog and shows available extensions plus local install/configuration state. `goal-maker extend <id>` shows what an extension reads, writes, and requires. `goal-maker extend install <id>` copies a pinned, checksum-verified extension into the local Goal Maker install.
+`goal-maker extend` reads the catalog and shows available extensions plus operational state such as activation, install/configuration status, approval requirements, safe-by-default status, and missing environment variables. `goal-maker extend <id>` shows what an extension reads, writes, requires, supports, and a local-use prompt. `goal-maker extend install <id>` copies a pinned, checksum-verified extension into the local Goal Maker install. `goal-maker extend install --all` installs every cataloged extension.
 
 Extensions are not board truth. They may publish, report, intake, or add role guidance, but `state.yaml` remains authoritative.
 
@@ -162,8 +165,10 @@ The first cataloged extension, `github-pr-workflow`, prepares receipt-aligned co
 After `$goal-maker` creates or repairs the board, start `/goal` with the printed command:
 
 ```text
-/goal Follow docs/goals/<slug>/goal.md continuously through successive safe verified implementation slices until the full original outcome is complete. Do not stop after planning, Judge selection, a single verified slice, missing credentials, missing owner input, missing production access, or a blocked execute path. After each Worker slice is verified and audited, immediately advance the board to the next highest-leverage safe Worker slice and continue in the same run. If a slice is blocked by credentials, input, production access, destructive operations, or policy, mark that exact slice blocked with a receipt, create the smallest safe follow-up or workaround task, and continue all other local, non-destructive work.
+/goal Follow docs/goals/<slug>/goal.md.
 ```
+
+The detailed run instructions live in that goal's `goal.md`, so the kickoff prompt can stay short while the board carries the full stop rule, intake, and PM loop.
 
 By default, Goal Maker treats broad goals as requests for continuous work, not plan-only or one-slice exercises. Missing credentials or owner input are blockers for specific tasks, not reasons to stop the goal. A queued or active Worker task blocks `goal.status: done`; finish it, block it with a receipt, or replace it with a smaller safe Worker task before final audit. For continuous execution boards, a final audit must prove the full original outcome is complete, not merely that the latest slice passed.
 

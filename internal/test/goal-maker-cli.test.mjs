@@ -194,6 +194,105 @@ test("extend shows catalog entries and reports local install state", () => {
   }
 });
 
+test("extend human output shows extension names, descriptions, and next commands", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+
+    const list = runGoalMaker(["extend", "--catalog-url", catalogPath, "--codex-home", codexHome]);
+    assert.equal(list.status, 0, list.stderr || list.stdout);
+    assert.match(list.stdout, /Available extensions/);
+    assert.match(list.stdout, /GitHub Projects publishing/);
+    assert.match(list.stdout, /Publish a one-way Goal Maker board view to GitHub Projects\./);
+    assert.match(list.stdout, /kind: publish \| activation: publish_handoff/);
+    assert.match(list.stdout, /state: available \| configured: no/);
+    assert.match(list.stdout, /safe by default: no \| requires approval: yes/);
+    assert.match(list.stdout, /missing env: GITHUB_TOKEN/);
+    assert.match(list.stdout, /npx goal-maker extend install --all/);
+    assert.match(list.stdout, /npx goal-maker extend publish-github-projects/);
+    assert.doesNotMatch(list.stdout, /publish-github-projects\tpublish/);
+
+    const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome]);
+    assert.equal(details.status, 0, details.stderr || details.stdout);
+    assert.match(details.stdout, /Status: available/);
+    assert.match(details.stdout, /Configured: no/);
+    assert.match(details.stdout, /ID: publish-github-projects/);
+    assert.match(details.stdout, /Kind: publish/);
+    assert.match(details.stdout, /Version: 0\.1\.0/);
+    assert.match(details.stdout, /Activation: publish_handoff/);
+    assert.match(details.stdout, /Safe by default: no/);
+    assert.match(details.stdout, /Requires approval: yes/);
+    assert.match(details.stdout, /Use when:/);
+    assert.match(details.stdout, /Outputs:/);
+    assert.match(details.stdout, /Auth env:/);
+    assert.match(details.stdout, /Supports:/);
+    assert.match(details.stdout, /Local use prompt:/);
+    assert.match(details.stdout, /npx goal-maker extend install publish-github-projects/);
+    assert.match(details.stdout, /npx goal-maker extend install publish-github-projects --dry-run/);
+    assert.doesNotMatch(details.stdout, /files:/);
+
+    const missing = runGoalMaker(["extend", "missing-extension", "--catalog-url", catalogPath, "--codex-home", codexHome]);
+    assert.equal(missing.status, 1, missing.stderr || missing.stdout);
+    assert.match(missing.stderr, /Extension not found: missing-extension/);
+    assert.match(missing.stderr, /Available extensions:/);
+    assert.match(missing.stderr, /publish-github-projects/);
+    assert.match(missing.stderr, /npx goal-maker extend/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("extend installs all catalog extensions", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+
+    const installCore = runGoalMaker(["install", "--codex-home", codexHome]);
+    assert.equal(installCore.status, 0, installCore.stderr || installCore.stdout);
+
+    const dryRun = runGoalMaker(["extend", "install", "--all", "--catalog-url", catalogPath, "--codex-home", codexHome, "--dry-run", "--json"]);
+    assert.equal(dryRun.status, 0, dryRun.stderr || dryRun.stdout);
+    const dryRunReport = JSON.parse(dryRun.stdout);
+    assert.equal(dryRunReport.dry_run, true);
+    assert.equal(dryRunReport.extensions.length, 1);
+    assert.equal(dryRunReport.extensions[0].extension.id, "publish-github-projects");
+
+    const install = runGoalMaker(["extend", "install", "--all", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+    const installReport = JSON.parse(install.stdout);
+    assert.equal(installReport.installed, true);
+    assert.equal(installReport.count, 1);
+    assert.deepEqual(installReport.extensions.map((extension) => extension.id), ["publish-github-projects"]);
+
+    const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
+    assert.equal(details.status, 0, details.stderr || details.stdout);
+    assert.equal(JSON.parse(details.stdout).extension.state.installed, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("install reports extension discovery in json mode", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+    const result = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.command, "install");
+    assert.equal(report.skill.status, "installed");
+    assert.equal(report.extensions.available_count, 1);
+    assert.equal(report.extensions.available[0].id, "publish-github-projects");
+    assert.equal(report.extensions.recommended.length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("extend installs a catalog extension with checksum verification", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
@@ -217,6 +316,33 @@ test("extend installs a catalog extension with checksum verification", () => {
     const doctor = runGoalMaker(["extend", "doctor", "publish-github-projects", "--codex-home", codexHome, "--json"]);
     assert.equal(doctor.status, 1, doctor.stderr || doctor.stdout);
     assert.deepEqual(JSON.parse(doctor.stdout).extensions[0].issues, ["missing env: GITHUB_TOKEN"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("update preserves installed extensions and reports unchanged files", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+
+    const installCore = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    assert.equal(installCore.status, 0, installCore.stderr || installCore.stdout);
+
+    const installExtension = runGoalMaker(["extend", "install", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
+    assert.equal(installExtension.status, 0, installExtension.stderr || installExtension.stdout);
+
+    const update = runGoalMaker(["update", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    assert.equal(update.status, 0, update.stderr || update.stdout);
+    const report = JSON.parse(update.stdout);
+    assert.equal(report.command, "update");
+    assert.equal(report.skill.status, "unchanged");
+    assert.deepEqual(report.skill.preserved_extensions, ["publish-github-projects"]);
+
+    const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
+    assert.equal(details.status, 0, details.stderr || details.stdout);
+    assert.equal(JSON.parse(details.stdout).extension.state.installed, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

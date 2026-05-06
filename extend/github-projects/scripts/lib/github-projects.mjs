@@ -4,6 +4,9 @@ export const GITHUB_PROJECT_FIELDS = {
   priority: "Priority",
   workType: "Work Type",
   owner: "Owner",
+  goalRole: "Goal Role",
+  agentResponsible: "Agent Responsible",
+  credentialGate: "Credential Gate",
   parentId: "Parent ID",
   dependsOn: "Depends On",
   receiptSummary: "Receipt Summary",
@@ -37,6 +40,9 @@ const PRIORITY_OPTIONS = [
 const TEXT_FIELD_SPECS = [
   ["taskId", GITHUB_PROJECT_FIELDS.taskId],
   ["owner", GITHUB_PROJECT_FIELDS.owner],
+  ["goalRole", GITHUB_PROJECT_FIELDS.goalRole],
+  ["agentResponsible", GITHUB_PROJECT_FIELDS.agentResponsible],
+  ["credentialGate", GITHUB_PROJECT_FIELDS.credentialGate],
   ["parentId", GITHUB_PROJECT_FIELDS.parentId],
   ["dependsOn", GITHUB_PROJECT_FIELDS.dependsOn],
   ["receiptSummary", GITHUB_PROJECT_FIELDS.receiptSummary],
@@ -322,6 +328,9 @@ export async function ensureGoalBoardView({ client, project, fields }) {
     fields.status,
     fields.workType,
     fields.owner,
+    fields.goalRole,
+    fields.agentResponsible,
+    fields.credentialGate,
   ]
     .map((field) => field?.databaseId)
     .filter(Boolean);
@@ -343,6 +352,9 @@ export function buildFieldUpdates(task, fields) {
     singleSelectUpdate(fields.priority, priorityForTask(task)),
     singleSelectUpdate(fields.workType, workTypeForTask(task.type)),
     textUpdate(fields.owner, task.assignee),
+    textUpdate(fields.goalRole, task.goalRole),
+    textUpdate(fields.agentResponsible, task.agentResponsible),
+    textUpdate(fields.credentialGate, task.credentialGate),
     textUpdate(fields.parentId, task.parentId),
     textUpdate(fields.dependsOn, task.dependsOn.join(", ")),
     textUpdate(fields.receiptSummary, task.receiptSummary),
@@ -363,6 +375,9 @@ export function buildDraftIssueBody(task, board) {
     `Priority: ${priorityForTask(task)}`,
     `Work type: ${workTypeForTask(task.type)}`,
     `Owner: ${task.assignee || "unassigned"}`,
+    `Goal role: ${task.goalRole || "unassigned"}`,
+    `Agent responsible: ${task.agentResponsible || "unassigned"}`,
+    `Credential gate: ${task.credentialGate || "None"}`,
     "",
     "Objective:",
     task.objective || "None",
@@ -396,6 +411,9 @@ export function dryRunGitHubOperations(board) {
     projectStatus: projectStatusForTask(task.status),
     priority: priorityForTask(task),
     typeLabel: workTypeForTask(task.type),
+    goalRole: task.goalRole,
+    agentResponsible: task.agentResponsible,
+    credentialGate: task.credentialGate,
   }));
 }
 

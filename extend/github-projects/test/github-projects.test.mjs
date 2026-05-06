@@ -25,6 +25,9 @@ describe("goal state parsing", () => {
     assert.equal(board.tasks[0].title, "Map external board API requirements");
     assert.equal(board.tasks[1].priority, "P1");
     assert.equal(board.tasks[0].receiptSummary, "The board sync can read Goal Maker state.yaml and mirror tasks into an external board.");
+    assert.equal(board.tasks[0].goalRole, "Scout");
+    assert.equal(board.tasks[1].agentResponsible, "Worker");
+    assert.equal(board.tasks[1].credentialGate, "Credentials");
     assert.equal(board.tasks[1].parentId, "T001");
     assert.deepEqual(board.tasks[1].dependsOn, ["T001"]);
     assert.deepEqual(board.tasks[1].verify, [
@@ -99,6 +102,9 @@ describe("GitHub Projects mapping", () => {
       priority: { id: "F_priority", name: GITHUB_PROJECT_FIELDS.priority, options: [{ id: "O_p1", name: "P1" }] },
       workType: { id: "F_type", name: GITHUB_PROJECT_FIELDS.workType, options: [{ id: "O_execution", name: "Execution" }] },
       owner: { id: "F_owner" },
+      goalRole: { id: "F_goal_role" },
+      agentResponsible: { id: "F_agent" },
+      credentialGate: { id: "F_gate" },
       parentId: { id: "F_parent" },
       dependsOn: { id: "F_depends" },
       receiptSummary: { id: "F_receipt" },
@@ -111,6 +117,9 @@ describe("GitHub Projects mapping", () => {
       status: "active",
       type: "worker",
       assignee: "Worker",
+      goalRole: "Worker",
+      agentResponsible: "Worker",
+      credentialGate: "None",
       receiptSummary: "",
       verify: ["npm test"],
       allowedFiles: ["scripts/**"],
@@ -120,13 +129,16 @@ describe("GitHub Projects mapping", () => {
     };
 
     const updates = buildFieldUpdates(task, fields);
-    assert.equal(updates.length, 11);
+    assert.equal(updates.length, 14);
     assert.deepEqual(updates.find((update) => update.fieldId === "F_status").value, {
       singleSelectOptionId: "O_progress",
     });
     assert.deepEqual(updates.find((update) => update.fieldId === "F_task").value, {
       text: "T002",
     });
+    assert.deepEqual(updates.find((update) => update.fieldId === "F_goal_role").value, { text: "Worker" });
+    assert.deepEqual(updates.find((update) => update.fieldId === "F_agent").value, { text: "Worker" });
+    assert.deepEqual(updates.find((update) => update.fieldId === "F_gate").value, { text: "None" });
     assert.deepEqual(updates.find((update) => update.fieldId === "F_parent").value, { text: "T001" });
     assert.deepEqual(updates.find((update) => update.fieldId === "F_depends").value, { text: "T001" });
   });
@@ -177,6 +189,9 @@ describe("GitHub Projects mapping", () => {
         priority: { databaseId: 3 },
         workType: { databaseId: 4 },
         owner: { databaseId: 5 },
+        goalRole: { databaseId: 10 },
+        agentResponsible: { databaseId: 11 },
+        credentialGate: { databaseId: 12 },
         receiptSummary: { databaseId: 6 },
         verify: { databaseId: 7 },
         allowedFiles: { databaseId: 8 },
@@ -187,7 +202,7 @@ describe("GitHub Projects mapping", () => {
     assert.equal(view.html_url, "https://github.com/users/example/projects/1/views/2");
     assert.equal(restCalls[0].path, "users/example/projectsV2/1/views");
     assert.equal(restCalls[0].options.body.layout, "board");
-    assert.deepEqual(restCalls[0].options.body.visible_fields, [3, 2, 4, 5]);
+    assert.deepEqual(restCalls[0].options.body.visible_fields, [3, 2, 4, 5, 10, 11, 12]);
   });
 
   it("maps Goal Maker task statuses to native GitHub board statuses", () => {

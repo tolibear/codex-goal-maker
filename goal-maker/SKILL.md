@@ -1,6 +1,6 @@
 ---
 name: goal-maker
-description: Use for broad, long-running, stalled, or unhealthy Codex work that needs autonomous task discovery, role-tagged Scout/Judge/Worker delegation, one active task, durable receipts, and a PM-owned rolling board.
+description: Use for broad, long-running, stalled, vague, detailed, planned, or unhealthy Codex work that needs a structured /goal intake, autonomous task discovery, role-tagged Scout/Judge/Worker delegation, one active task, durable receipts, and a PM-owned rolling board that maximizes the chance of a successful goal run.
 ---
 
 # Goal Maker
@@ -12,31 +12,123 @@ Goal Maker is for autonomous, long-running Codex work where the PM thread may ne
 The loop is:
 
 ```text
-vague goal -> discovery -> task board -> one active task -> receipt -> board update -> repeat
+raw user intent -> intake compiler -> discovery/plan validation/execution board -> one active task -> receipt -> board update -> repeat
 ```
+
+## Intake Compiler
+
+Before creating, repairing, or running a board, privately translate the user's input into a Goal Intake. The input may be vague, specific, or detailed with an existing plan. Do not dump the intake to the user unless they ask for it.
+
+Extract:
+
+- original request: the shortest faithful user wording;
+- interpreted outcome: what must become true;
+- input shape: `vague | specific | existing_plan | recovery | audit`;
+- audience or beneficiary;
+- non-goals and hard constraints;
+- authority: `requested | approved | inferred | needs_approval | blocked`;
+- proof type: `test | demo | artifact | metric | review | source_backed_answer | decision`;
+- completion proof: the observable signal for full outcome completion;
+- likely misfire: how `/goal` could succeed at the wrong thing;
+- blind spots: important risks, choices, or success dimensions the user may not have named yet;
+- existing plan facts: user-provided steps, files, constraints, or sequencing that must be preserved but still validated.
+
+Ask before board creation when the request is vague, strategic, improvement-oriented, or open-ended and the user has not explicitly said to use defaults. Ask one guided question at a time with 2-3 options and a recommended default, then wait. Continue the diagnostic intake until the user's answers are sufficient to choose the board shape. Do not create or repair `docs/goals/<slug>/` until the diagnostic intake is complete or the user explicitly accepts defaults.
+
+For vague or strategic goals, one answer is rarely enough. After each answer, reflect what it implies, name one likely blind spot, and ask the next material question. The goal is to help the user discover what they mean, not merely collect a form value.
+
+Proceed with labeled assumptions and seed a safe board only when at least one is true:
+
+- the user provides a specific outcome and enough completion proof to choose the first phase;
+- the user provides an existing plan or concrete artifact to validate;
+- the request is clearly recovery or audit with a target path, error, failing command, or stale board;
+- the user says to proceed, use defaults, or prepare the board now.
+
+If a missing answer materially changes outcome, authority, scope, risk, owner, completion proof, or board-handling choice, ask even if the user provided details.
+
+Examples:
+
+- Vague input: start with Scout, then Judge, bounded Worker, final audit.
+- Specific input with incomplete evidence: start with Scout or Judge before Worker.
+- Existing plan: preserve the plan as facts, start with PM or Judge plan validation, then queue bounded Worker slices from the validated plan.
+- Recovery: start with Scout evidence mapping or Judge triage before writes.
+- Audit: keep the board read-only unless the user approves follow-up execution.
+
+The intake compiler is an internal strut for `/goal`: it exists to make the first board correct, not to create process theater.
+
+## Guided Intake Surface
+
+For interactive vague or improvement-oriented input, run a diagnostic intake. Show only the current turn of the diagnostic, not the private intake:
+
+```markdown
+I read this as: [one-sentence interpreted outcome].
+
+One possible blind spot: [a risk, unstated choice, or success dimension the user may not have named].
+
+[One material question?]
+
+1. [Recommended direction] (Recommended) - [when it wins]
+2. [Second direction] - [when it wins]
+3. [Third direction, only if genuinely useful] - [when it wins]
+
+My default would be [option] because [short reason].
+```
+
+Stop after each question. Do not create files, repair an existing board, run checks, or print `/goal` until the diagnostic intake is complete. Do not dump the private intake.
+
+Minimum diagnostic ladder for vague, strategic, or improvement-oriented goals:
+
+1. Intent target: what kind of improvement or outcome matters most?
+2. Success proof: what evidence would convince the user this worked?
+3. Scope and non-goals: what should remain untouched or explicitly out of scope?
+4. Board handling: reuse an existing board, create a fresh board, or inspect first?
+
+Ask these one at a time. Skip a step only when the user's words already answer it clearly. After the user answers one step, do not assume the remaining steps; ask the next unresolved material question.
+
+For "make Goal Maker better", a good first question is which improvement target matters most: intake clarity, board/execution reliability, completion proof/eval coverage, or user experience during long-running goals. A good second question asks what proof would convince the user it improved. A good third question asks whether to reuse an existing board, create a fresh board, or inspect first.
+
+## Direct `/goal` Entry
+
+When `/goal` is invoked with raw user intent instead of an existing `docs/goals/<slug>/goal.md` path, run the Intake Compiler before doing implementation work. The PM should not treat raw `/goal` text as an execution plan until it has:
+
+- classified the input shape;
+- preserved any existing plan facts;
+- identified the likely misfire and at least one blind spot;
+- recorded authority and proof;
+- answered or explicitly defaulted the diagnostic ladder for vague/strategic input;
+- selected the safest first active task;
+- either asked the required guided intake question or written `goal.md` and `state.yaml` from a sufficiently clear intake.
+
+If the raw input is detailed and already contains a plan, the first board task should validate and operationalize that plan rather than rediscovering from scratch. If the raw input is vague, run the diagnostic intake before creating the board unless the user explicitly says to use defaults. If the raw input is blocked by authority, policy, destructive action, credentials, or ambiguous completion proof, ask one guided question with options or create the smallest safe read-only task only after the user chooses to proceed.
+
+The target is not literal certainty. It is the highest practical likelihood of a successful goal run: preserve the user's intent, avoid the likely misfire, pick the earliest responsible phase, require proof, and keep advancing safe work until a final audit proves the full outcome.
 
 ## What `$goal-maker` Does
 
-When invoked directly, prepare or repair the board and stop for user choice.
+When invoked directly, run intake first. For vague, strategic, improvement-oriented, or open-ended input, run the diagnostic intake and stop before creating or repairing the board until enough material answers are known. For sufficiently clear, planned, recovery, audit, or explicitly-defaulted input, prepare or repair the board and stop for user choice.
 
 Do:
 
 - clarify or infer the goal title and slug;
-- classify the goal as `specific`, `open_ended`, `recovery`, or `audit`;
+- run the Intake Compiler;
+- ask diagnostic intake questions when clarity would materially improve the board;
+- classify the goal as `specific`, `open_ended`, `existing_plan`, `recovery`, or `audit`;
 - create or repair `docs/goals/<slug>/`;
 - create `goal.md`, `state.yaml`, and `notes/`;
-- seed a role-tagged task board;
+- seed a role-tagged task board that matches the input shape;
 - make the first active task safe;
 - verify Scout, Worker, and Judge agents are installed or explain what is missing;
-- print the exact command `/goal Follow docs/goals/<slug>/goal.md continuously through successive safe verified implementation slices until the full original outcome is complete. Do not stop after planning, Judge selection, a single verified slice, missing credentials, missing owner input, missing production access, or a blocked execute path. After each Worker slice is verified and audited, immediately advance the board to the next highest-leverage safe Worker slice and continue in the same run. If a slice is blocked by credentials, input, production access, destructive operations, or policy, mark that exact slice blocked with a receipt, create the smallest safe follow-up or workaround task, and continue all other local, non-destructive work.`;
+- print the exact command `/goal Follow docs/goals/<slug>/goal.md.`;
 - ask whether to start now, refine `goal.md`, or stop.
 
 Do not:
 
 - start `/goal` automatically;
+- create or repair a board from vague/open-ended input before diagnostic intake is complete;
 - create `evidence.jsonl`, `units/`, or `artifacts/` for new v2 goals;
 - edit implementation files before the board exists;
-- invent implementation tasks from vibes when a Scout or Judge task is needed first;
+- invent implementation tasks from vibes when the intake requires Scout, Judge, or plan validation first;
+- discard a user-provided plan; preserve it as facts and validate it before execution;
 - treat `goal.md` as board truth when it conflicts with `state.yaml`.
 
 ## Default Bias: Users Want Work Done
@@ -59,7 +151,7 @@ Missing owner input, credentials, production access, destructive-operation permi
 
 ## When To Use
 
-Use this skill for goals that are broad, multi-hour, ambiguous, high-risk, already stale, already red, or likely to need Scout/Judge/Worker delegation.
+Use this skill for goals that are broad, multi-hour, ambiguous, high-risk, already planned, already stale, already red, or likely to need Scout/Judge/Worker delegation.
 
 For a one-change task, do not create a Goal Maker board.
 
@@ -100,9 +192,12 @@ Use:
 The charter answers:
 
 ```text
+What did the user originally ask for?
 What are we trying to improve?
+What input shape did the intake identify?
 What constraints are non-negotiable?
-Is this goal specific, open-ended, recovery, or audit?
+Is this goal specific, open-ended, existing-plan, recovery, or audit?
+What likely misfire must the PM avoid?
 What counts as enough for the current tranche?
 ```
 
@@ -141,6 +236,8 @@ The PM owns the board. Scout, Judge, and Worker return receipts; they do not sel
 ## Seed Boards
 
 If the goal is vague, the first active task is Scout, but the seeded board should still lead toward execution. Queue Judge selection, a bounded Worker slot, and a final audit.
+
+If the user provides an existing plan, do not ignore it and do not execute it blindly. Preserve the plan in `goal.intake.existing_plan_facts`, make the first active task PM or Judge validation, and queue Worker slices only after the plan is checked for evidence, risk, allowed files, verification, and stop conditions.
 
 Example open-ended seed:
 
@@ -191,6 +288,8 @@ tasks:
 ```
 
 If the goal is specific but evidence is incomplete, start with Scout. If risk or priority is unclear, queue Judge before Worker. If evidence is adequate and implementation is bounded, the first active task may be Worker.
+
+If the goal is audit, keep the active task read-only. Queue execution only if the user asks for fixes or approves follow-up implementation.
 
 ## Task Rules
 
@@ -381,5 +480,5 @@ Default final task:
 ## Default `/goal` Shape
 
 ```text
-/goal Follow docs/goals/<slug>/goal.md continuously through successive safe verified implementation slices until the full original outcome is complete. Do not stop after planning, Judge selection, a single verified slice, missing credentials, missing owner input, missing production access, or a blocked execute path. After each Worker slice is verified and audited, immediately advance the board to the next highest-leverage safe Worker slice and continue in the same run. If a slice is blocked by credentials, input, production access, destructive operations, or policy, mark that exact slice blocked with a receipt, create the smallest safe follow-up or workaround task, and continue all other local, non-destructive work.
+/goal Follow docs/goals/<slug>/goal.md.
 ```

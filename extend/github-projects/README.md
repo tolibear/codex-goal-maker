@@ -18,7 +18,7 @@ The live sync ensures a GitHub Project has:
 - Draft issues keyed by `Task ID`, so reruns update existing cards instead of duplicating them.
 - Status mapping: `queued -> Todo`, `active -> In Progress`, `blocked -> Blocked`, `done -> Done`.
 - Single-select fields for `Status`, `Priority`, and `Work Type`.
-- Text fields for `Task ID`, `Owner`, `Parent ID`, `Depends On`, `Receipt Summary`, `Verify`, `Allowed Files`, and `Goal Updated`.
+- Text fields for `Task ID`, `Owner`, `Goal Role`, `Agent Responsible`, `Credential Gate`, `Parent ID`, `Depends On`, `Receipt Summary`, `Verify`, `Allowed Files`, and `Goal Updated`.
 - A `Goal Board` board-layout view with useful visible fields.
 
 ## Inputs

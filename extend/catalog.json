@@ -79,7 +79,7 @@
         "A long-running Goal Maker board needs stakeholder visibility in GitHub Projects.",
         "The team wants one-way sync from state.yaml into ProjectV2 draft issues.",
         "The PM needs a safe dry-run plan before using GitHub credentials.",
-        "Goal Maker receipts, verification commands, allowed files, owners, and dependencies should appear in a GitHub board."
+        "Goal Maker receipts, verification commands, allowed files, owners, role/agent fields, credential gates, and dependencies should appear in a GitHub board."
       ],
       "activation": "publish_handoff",
       "outputs": [
@@ -128,32 +128,32 @@
         {
           "path": "README.md",
           "url": "github-projects/README.md",
-          "sha256": "2e6529440652629dcf44173828899b8144e089f804c2e53725254d9ba1d58ad1"
+          "sha256": "95d1359d87f9c40f664c6abeb74c5001d8f85a77dffb1ac220f11a055d4f6c4c"
         },
         {
           "path": "extension.yaml",
           "url": "github-projects/extension.yaml",
-          "sha256": "127660de4fce721cd2f55fc71e655fa91c80de14a773901827bb53ab44ed5387"
+          "sha256": "ef14824725943353cf38f34cd8ce1d10745f7433b831811e31a4dd9b406e2ad8"
         },
         {
           "path": "scripts/sync-github-project.mjs",
           "url": "github-projects/scripts/sync-github-project.mjs",
-          "sha256": "f5bab9d6ea01b42d26ff3b0f3e37e74ee510c18ffc4dd63bf4264bef4ccd030b"
+          "sha256": "cb381f5bc282d68e1fe8cb7abe1727e3bf1ef44eb16994274b28d30fec1806a5"
         },
         {
           "path": "scripts/lib/goal-state.mjs",
           "url": "github-projects/scripts/lib/goal-state.mjs",
-          "sha256": "438e966de8b9a525c5f36b8851450308311ea78ec3dc10ee7bf39d8cacf6b625"
+          "sha256": "ea394983b7a641e47565932a53657caf3cd51e5f142cd2910dcfeff36c6b62a8"
         },
         {
           "path": "scripts/lib/github-projects.mjs",
           "url": "github-projects/scripts/lib/github-projects.mjs",
-          "sha256": "1e3c48e385c9ce8aacf53a756b01633958a2f9363eb01e076ec0bd80a8f79a72"
+          "sha256": "c1dacdd1624230407d1c056a0b683f915b369c7075beef5795c9611f71f2693b"
         },
         {
           "path": "test/github-projects.test.mjs",
           "url": "github-projects/test/github-projects.test.mjs",
-          "sha256": "71dfc18bf14d6b0a032ff2c58343ad2cf65d98969239a4bf48bc09116d68b08c"
+          "sha256": "2484c20743c1b379ca45dadbf8923bd3d5502071ba8986b5f8c52fefb66101a8"
         },
         {
           "path": "examples/goal-board-sync/state.yaml",

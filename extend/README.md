@@ -6,10 +6,14 @@ The npm package reads the GitHub-hosted catalog at `extend/catalog.json`, so add
 
 Each extension folder should contain the files referenced by `extend/catalog.json`. Keep catalog entries checksum-pinned so `goal-maker extend install <id>` can verify downloads before copying them into a local Codex install.
 
+Use `goal-maker extend install --all` to install every cataloged extension into the active Goal Maker skill install. Use `--dry-run` first when testing catalog changes.
+
+Use `goal-maker extend <id>` when deciding whether to activate an extension. The detail view includes lifecycle activation, safety and approval state, missing env vars, reads/writes, outputs, support flags, and a local-use prompt.
+
 ## Extensions
 
 - `github-pr-workflow`: prepares receipt-aligned commit boundaries and GitHub pull request handoff text while keeping `state.yaml` authoritative.
-- `github-projects`: mirrors Goal Maker boards into GitHub Projects with dry-run planning, draft issue upserts, ProjectV2 fields, and a Goal Board view.
+- `github-projects`: mirrors Goal Maker boards into GitHub Projects with dry-run planning, draft issue upserts, `Todo`/`In Progress`/`Blocked`/`Done` statuses, agent-facing fields, credential gates, ProjectV2 fields, and a Goal Board view.
 - `codebase-onboarding-map`: creates a concise onboarding map from repo files, commands, conventions, and receipts.
 - `slack-standup-digest`: prepares Slack-ready status digests while keeping live delivery credential-gated.
 - `linear-ticket-handoff`: prepares Linear-ready issue text while keeping live issue creation credential-gated.

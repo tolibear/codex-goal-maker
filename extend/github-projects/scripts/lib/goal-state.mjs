@@ -83,6 +83,9 @@ function normalizeTask(task, index) {
     priority: normalizePriority(task.priority, status),
     type: cleanText(task.type || "pm"),
     assignee: cleanText(task.assignee || ""),
+    goalRole: goalRoleForTask(task),
+    agentResponsible: cleanText(task.assignee || ""),
+    credentialGate: credentialGateForTask(task),
     receiptSummary: summarizeReceipt(task.receipt),
     allowedFiles: normalizeStringList(task.allowed_files),
     verify: normalizeStringList(task.verify),
@@ -90,6 +93,33 @@ function normalizeTask(task, index) {
     dependsOn: normalizeStringList(task.depends_on || task.blocked_by),
     updatedLabel: task.receipt ? `receipt:${cleanText(task.receipt.result || "present")}` : "receipt:none",
   };
+}
+
+function goalRoleForTask(task) {
+  const assignee = cleanText(task.assignee);
+  if (assignee) return assignee;
+
+  const type = cleanText(task.type).toLowerCase();
+  if (type === "scout") return "Scout";
+  if (type === "judge") return "Judge";
+  if (type === "worker") return "Worker";
+  return "PM";
+}
+
+function credentialGateForTask(task) {
+  const text = [
+    ...normalizeStringList(task.inputs),
+    ...normalizeStringList(task.constraints),
+    ...normalizeStringList(task.stop_if),
+    cleanText(task.objective),
+  ].join(" ").toLowerCase();
+
+  if (/slack/.test(text)) return "Slack token";
+  if (/linear/.test(text)) return "Linear API key";
+  if (/credential|token|api key|secret/.test(text)) return "Credentials";
+  if (/approval|approve/.test(text)) return "Approval";
+  if (/external|production|github|project/.test(text)) return "External access";
+  return "None";
 }
 
 function normalizePriority(priority, status) {

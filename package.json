@@ -1,6 +1,6 @@
 {
   "name": "goal-maker",
-  "version": "0.2.7",
+  "version": "0.2.9",
   "description": "Turn open-ended Codex goals into a Scout/Judge/Worker board with receipts, verification, and optional extensions.",
   "type": "module",
   "bin": {
