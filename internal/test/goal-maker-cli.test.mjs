@@ -194,6 +194,25 @@ test("extend shows catalog entries and reports local install state", () => {
   }
 });
 
+test("install reports extension discovery in json mode", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+    const result = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.command, "install");
+    assert.equal(report.skill.status, "installed");
+    assert.equal(report.extensions.available_count, 1);
+    assert.equal(report.extensions.available[0].id, "publish-github-projects");
+    assert.equal(report.extensions.recommended.length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("extend installs a catalog extension with checksum verification", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
@@ -217,6 +236,33 @@ test("extend installs a catalog extension with checksum verification", () => {
     const doctor = runGoalMaker(["extend", "doctor", "publish-github-projects", "--codex-home", codexHome, "--json"]);
     assert.equal(doctor.status, 1, doctor.stderr || doctor.stdout);
     assert.deepEqual(JSON.parse(doctor.stdout).extensions[0].issues, ["missing env: GITHUB_TOKEN"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("update preserves installed extensions and reports unchanged files", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+
+    const installCore = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    assert.equal(installCore.status, 0, installCore.stderr || installCore.stdout);
+
+    const installExtension = runGoalMaker(["extend", "install", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
+    assert.equal(installExtension.status, 0, installExtension.stderr || installExtension.stdout);
+
+    const update = runGoalMaker(["update", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    assert.equal(update.status, 0, update.stderr || update.stdout);
+    const report = JSON.parse(update.stdout);
+    assert.equal(report.command, "update");
+    assert.equal(report.skill.status, "unchanged");
+    assert.deepEqual(report.skill.preserved_extensions, ["publish-github-projects"]);
+
+    const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
+    assert.equal(details.status, 0, details.stderr || details.stdout);
+    assert.equal(JSON.parse(details.stdout).extension.state.installed, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

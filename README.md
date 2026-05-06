@@ -113,6 +113,8 @@ npx goal-maker
 npx goal-maker update
 ```
 
+`install` and `update` print a compact summary of the skill, agent files, preserved installed extensions, and extension catalog recommendations. Use `--json` when an agent or script needs structured output.
+
 Repair only the agent definitions:
 
 ```bash

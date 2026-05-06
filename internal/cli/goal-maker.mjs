@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, "../..");
 const skillSource = join(packageRoot, "goal-maker");
+const packageInfo = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
 const defaultCodexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
 const defaultCatalogUrl = "https://raw.githubusercontent.com/tolibear/goal-maker/main/extend/catalog.json";
 const requiredAgentFiles = [
@@ -48,7 +49,7 @@ async function main() {
   switch (command) {
     case "install":
     case "update":
-      installAll();
+      await installAll();
       break;
     case "agents":
       installAgents();
@@ -104,8 +105,8 @@ function usage() {
   console.log(`Codex Goal Maker
 
 Usage:
-  goal-maker install [--codex-home <path>] [--force]
-  goal-maker update [--codex-home <path>]
+  goal-maker install [--codex-home <path>] [--force] [--json]
+  goal-maker update [--codex-home <path>] [--json]
   goal-maker agents [--codex-home <path>] [--force]
   goal-maker doctor [--codex-home <path>] [--goal-ready]
   goal-maker extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
@@ -126,12 +127,16 @@ function codexHome() {
   return resolve(optionValue("--codex-home") || defaultCodexHome);
 }
 
-function installSkill({ force = true } = {}) {
+function installSkill({ force = true, quiet = false } = {}) {
   const target = installedSkillRoot();
   if (!existsSync(skillSource)) {
     console.error(`Skill payload not found: ${skillSource}`);
     process.exit(1);
   }
+
+  const previousMetadata = readInstallMetadata(target);
+  const previousFingerprint = existsSync(target) ? directoryFingerprint(target, { exclude: new Set(["extend", ".goal-maker-install.json"]) }) : "";
+  const preservedExtensions = preserveInstalledExtensions(target);
 
   mkdirSync(dirname(target), { recursive: true });
   if (existsSync(target)) {
@@ -146,30 +151,71 @@ function installSkill({ force = true } = {}) {
   cpSync(skillSource, target, {
     recursive: true,
   });
-  console.log(`Installed Codex Goal Maker skill to ${target}`);
+  restoreInstalledExtensions(target, preservedExtensions.tempPath);
+  writeInstallMetadata(target, previousMetadata);
+
+  const currentFingerprint = directoryFingerprint(target, { exclude: new Set(["extend", ".goal-maker-install.json"]) });
+  const status = previousFingerprint
+    ? previousFingerprint === currentFingerprint ? "unchanged" : "updated"
+    : "installed";
+  if (!quiet) console.log(`Installed Codex Goal Maker skill to ${target}`);
+
+  return {
+    status,
+    path: target,
+    previous_version: previousMetadata?.package_version || "",
+    current_version: packageInfo.version,
+    preserved_extensions: preservedExtensions.ids,
+  };
 }
 
-function installAgents() {
+function installAgents({ quiet = false } = {}) {
   const source = join(skillSource, "agents");
   const target = join(codexHome(), "agents");
   const force = hasFlag("--force") || command === "update" || command === "install";
   mkdirSync(target, { recursive: true });
 
+  const results = [];
   for (const file of readdirSync(source)) {
     if (!file.startsWith("goal_") || !file.endsWith(".toml")) continue;
     const dest = join(target, file);
+    const sourceHash = sha256(readFileSync(join(source, file)));
+    const previousHash = existsSync(dest) ? sha256(readFileSync(dest)) : "";
     if (existsSync(dest) && !force) {
-      console.log(`skip existing ${dest} (use --force to overwrite)`);
+      if (!quiet) console.log(`skip existing ${dest} (use --force to overwrite)`);
+      results.push({ file, status: "skipped", path: dest });
       continue;
     }
     cpSync(join(source, file), dest);
-    console.log(`installed ${dest}`);
+    const status = previousHash ? previousHash === sourceHash ? "unchanged" : "updated" : "installed";
+    if (!quiet) console.log(`installed ${dest}`);
+    results.push({ file, status, path: dest });
   }
+  return results;
 }
 
-function installAll() {
-  installSkill({ force: true });
-  installAgents();
+async function installAll() {
+  const quiet = true;
+  const report = {
+    command,
+    package: {
+      name: packageInfo.name,
+      current_version: packageInfo.version,
+    },
+    codex_home: codexHome(),
+    skill: installSkill({ force: true, quiet }),
+    agents: installAgents({ quiet }),
+    extensions: await extensionDiscoverySummary(),
+    warnings: [],
+  };
+
+  report.package.previous_version = report.skill.previous_version;
+
+  if (hasFlag("--json")) {
+    printJson(report);
+  } else {
+    printInstallReport(report);
+  }
 }
 
 function doctor() {
@@ -522,7 +568,11 @@ function resolveResourceUrl(base, value) {
 async function readResource(location) {
   if (/^https?:\/\//.test(location)) {
     if (!globalThis.fetch) throw new Error("This Node runtime does not provide fetch.");
-    const response = await globalThis.fetch(location);
+    const response = await globalThis.fetch(location, {
+      headers: {
+        "accept-encoding": "identity",
+      },
+    });
     if (!response.ok) throw new Error(`Failed to fetch ${location}: HTTP ${response.status}`);
     return Buffer.from(await response.arrayBuffer());
   }
@@ -532,6 +582,172 @@ async function readResource(location) {
 
 function sha256(content) {
   return createHash("sha256").update(content).digest("hex");
+}
+
+function directoryFingerprint(root, { exclude = new Set() } = {}) {
+  if (!existsSync(root)) return "";
+  const hash = createHash("sha256");
+  for (const file of listFiles(root, { exclude })) {
+    hash.update(file);
+    hash.update("\0");
+    hash.update(readFileSync(join(root, file)));
+    hash.update("\0");
+  }
+  return hash.digest("hex");
+}
+
+function listFiles(root, { exclude = new Set(), prefix = "" } = {}) {
+  const entries = readdirSync(join(root, prefix), { withFileTypes: true })
+    .filter((entry) => !exclude.has(prefix ? `${prefix}/${entry.name}` : entry.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const files = [];
+  for (const entry of entries) {
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      files.push(...listFiles(root, { exclude, prefix: relative }));
+    } else if (entry.isFile()) {
+      files.push(relative);
+    }
+  }
+  return files;
+}
+
+function preserveInstalledExtensions(target) {
+  const source = join(target, "extend");
+  if (!existsSync(source)) return { tempPath: "", ids: [] };
+  const ids = readdirSync(source, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  const tempPath = `${target}.extend-${process.pid}-${Date.now()}`;
+  renameSync(source, tempPath);
+  return { tempPath, ids };
+}
+
+function restoreInstalledExtensions(target, tempPath) {
+  if (!tempPath) return;
+  rmSync(join(target, "extend"), { recursive: true, force: true });
+  mkdirSync(target, { recursive: true });
+  renameSync(tempPath, join(target, "extend"));
+}
+
+function installMetadataPath(target) {
+  return join(target, ".goal-maker-install.json");
+}
+
+function readInstallMetadata(target) {
+  const path = installMetadataPath(target);
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function writeInstallMetadata(target, previousMetadata) {
+  writeFileSync(installMetadataPath(target), `${JSON.stringify({
+    package_name: packageInfo.name,
+    package_version: packageInfo.version,
+    previous_package_version: previousMetadata?.package_version || "",
+    installed_at: new Date().toISOString(),
+  }, null, 2)}\n`);
+}
+
+async function extensionDiscoverySummary() {
+  try {
+    const catalog = await loadCatalog();
+    const extensions = catalog.extensions.map(extensionWithLocalState);
+    return {
+      catalog_url: catalog.url,
+      catalog_version: catalog.version || null,
+      available_count: extensions.length,
+      installed_count: extensions.filter((extension) => extension.state.installed).length,
+      available: extensions.map((extension) => ({
+        id: extension.id,
+        name: extension.name,
+        kind: extension.kind,
+        version: extension.version,
+        summary: extension.summary,
+        activation: extension.activation,
+        safe_by_default: extension.safe_by_default,
+        installed: extension.state.installed,
+        configured: extension.state.configured,
+        use_when: extension.use_when,
+        next_command: `goal-maker extend ${extension.id}`,
+      })),
+      recommended: extensions
+        .filter((extension) => extension.safe_by_default && !extension.state.installed)
+        .map((extension) => ({
+          id: extension.id,
+          kind: extension.kind,
+          activation: extension.activation,
+          summary: extension.summary,
+          use_when: extension.use_when.slice(0, 1),
+          next_command: `goal-maker extend ${extension.id}`,
+        })),
+    };
+  } catch (error) {
+    return {
+      catalog_url: catalogUrl(),
+      catalog_version: null,
+      available_count: 0,
+      installed_count: 0,
+      available: [],
+      recommended: [],
+      error: error.message,
+    };
+  }
+}
+
+function printInstallReport(report) {
+  const verb = report.command === "update" ? "Updated" : "Installed";
+  const previous = report.package.previous_version && report.package.previous_version !== report.package.current_version
+    ? ` ${report.package.previous_version} -> ${report.package.current_version}`
+    : ` ${report.package.current_version}`;
+  console.log("");
+  console.log(`${verb} Goal Maker${previous}`);
+  console.log("");
+  console.log(`Skill: ${report.skill.status} at ${report.skill.path}`);
+  const agentSummary = summarizeStatuses(report.agents);
+  console.log(`Agents: ${agentSummary}`);
+  if (report.skill.preserved_extensions.length) {
+    console.log(`Preserved extensions: ${report.skill.preserved_extensions.join(", ")}`);
+  }
+
+  if (report.extensions.error) {
+    console.log("");
+    console.log(`Extensions: unavailable (${report.extensions.error})`);
+  } else {
+    console.log("");
+    console.log(`Extensions: ${report.extensions.available_count} available from ${report.extensions.catalog_url}`);
+    if (report.extensions.recommended.length) {
+      console.log("");
+      console.log("Recommended:");
+      for (const extension of report.extensions.recommended.slice(0, 3)) {
+        const safe = extension.safe_by_default === false ? "" : " safe";
+        console.log(`  ${extension.id}  ${extension.kind}${safe}`);
+        if (extension.summary) console.log(`    ${extension.summary}`);
+        if (extension.use_when[0]) console.log(`    Use when: ${extension.use_when[0]}`);
+        console.log(`    Try: ${extension.next_command}`);
+      }
+    }
+  }
+
+  console.log("");
+  console.log("Next:");
+  console.log("  $goal-maker");
+  console.log("  goal-maker extend");
+}
+
+function summarizeStatuses(items) {
+  const counts = items.reduce((memo, item) => {
+    memo[item.status] = (memo[item.status] || 0) + 1;
+    return memo;
+  }, {});
+  return Object.entries(counts)
+    .map(([status, count]) => `${count} ${status}`)
+    .join(", ");
 }
 
 function assertSkillInstalledForExtensionInstall() {
