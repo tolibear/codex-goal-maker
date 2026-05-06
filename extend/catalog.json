@@ -6,17 +6,19 @@
       "name": "GitHub PR workflow",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Prepare GitHub pull request handoff text from Goal Maker receipts without requiring GitHub credentials.",
-      "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, and verification output into PR-ready Markdown while keeping state.yaml authoritative.",
+      "summary": "Prepare GitHub pull request handoff text and receipt-aligned commit boundaries from Goal Maker receipts without requiring GitHub credentials.",
+      "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, verification output, and commit boundaries into PR-ready Markdown while keeping state.yaml authoritative.",
       "source": "extend/github-pr-workflow",
       "docs": "README.md",
       "use_when": [
         "The goal produced code changes intended for GitHub review.",
         "The user asks to push, open a PR, or prepare review context.",
-        "The board has Worker receipts and verification commands worth summarizing."
+        "The board has Worker receipts and verification commands worth summarizing.",
+        "The branch should be decomposed into commits that map to completed Worker or PM receipts."
       ],
       "activation": "publish_handoff",
       "outputs": [
+        "Receipt-aligned commit plan",
         "PR handoff Markdown"
       ],
       "requires_approval": false,
@@ -32,9 +34,11 @@
         "docs/goals/<slug>/state.yaml",
         "docs/goals/<slug>/notes",
         "git status --short",
-        "git diff --stat"
+        "git diff --stat",
+        "git log --oneline <base>..HEAD"
       ],
       "writes": [
+        "Receipt-aligned local commits",
         "PR handoff Markdown"
       ],
       "side_effects": [
@@ -53,12 +57,12 @@
         {
           "path": "README.md",
           "url": "github-pr-workflow/README.md",
-          "sha256": "4cbc9eb4f905a759d461bb83e6c4b1fce5387ee8a5e84c7712f2f371965764ce"
+          "sha256": "51c84f737fbe73c321e7ca726767cb63c5b3e31f4099e758211ff0d3340d7625"
         },
         {
           "path": "extension.yaml",
           "url": "github-pr-workflow/extension.yaml",
-          "sha256": "641e998bd6453e1a9160b2fdabf3a251bbfd4f9354e62a61b789e15d8e6f147e"
+          "sha256": "75a207a6f8a62574860afa1cc42de464ef511920540c302f78130f0175930845"
         }
       ]
     },
