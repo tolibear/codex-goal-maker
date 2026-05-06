@@ -254,6 +254,265 @@
           "sha256": "c386535282d0bdb95b4a7f257c1ba60fa607b58425ccb58da4665590f8c620d4"
         }
       ]
+    },
+    {
+      "id": "test-gap-planner",
+      "name": "Test gap planner",
+      "kind": "planning",
+      "version": "0.1.0",
+      "summary": "Identify weak test coverage and propose the smallest useful next tests from a diff, receipts, and verification output.",
+      "description": "A local-first planning workflow for mapping changed behavior to existing test evidence, missing edge cases, and focused next tests.",
+      "source": "extend/test-gap-planner",
+      "docs": "README.md",
+      "use_when": [
+        "A Worker slice changed behavior but verification coverage is uncertain.",
+        "The PM needs test evidence before audit or PR handoff.",
+        "A contributor wants a focused test plan before writing tests."
+      ],
+      "activation": "after_worker",
+      "outputs": [
+        "Test gap plan Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "tests",
+          "verification"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "tests",
+        "git diff --stat",
+        "git diff",
+        "verification output"
+      ],
+      "writes": [
+        "Test gap plan Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "test-gap-planner/README.md",
+          "sha256": "6db96f92a7a6320a42f07182d3975318165a67a37742974add94e7b548ffc916"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "test-gap-planner/extension.yaml",
+          "sha256": "13ad34e58a785851766ea149760d07daae320a87fa001ac93b0a75d2786238ac"
+        }
+      ]
+    },
+    {
+      "id": "release-readiness",
+      "name": "Release readiness",
+      "kind": "audit",
+      "version": "0.1.0",
+      "summary": "Produce a local release readiness brief covering scope, package metadata, verification, docs, examples, and publish blockers.",
+      "description": "A local-first release gate for package, CLI, extension, and release-facing documentation changes before publish or PR handoff.",
+      "source": "extend/release-readiness",
+      "docs": "README.md",
+      "use_when": [
+        "A goal changes package contents, CLI behavior, extension catalog entries, or release-facing docs.",
+        "The PM needs a pre-release gate before publishing or PR handoff.",
+        "Reviewers need release scope, verification, docs, and rollback notes in one place."
+      ],
+      "activation": "final_audit",
+      "outputs": [
+        "Release readiness brief"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "release",
+          "package",
+          "extensions"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "package.json",
+        "README.md",
+        "changelog",
+        "git diff --stat",
+        "verification output"
+      ],
+      "writes": [
+        "Release readiness Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "live_publish": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "release-readiness/README.md",
+          "sha256": "b84c214f629b647231118a78763086e2648116b830084444bb25346654026d4a"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "release-readiness/extension.yaml",
+          "sha256": "c4842964dcf5a257b6ab9149fcd90f4a4eb4c9abc794f29732cdae3f12ff8cab"
+        }
+      ]
+    },
+    {
+      "id": "dependency-upgrade-planner",
+      "name": "Dependency upgrade planner",
+      "kind": "planning",
+      "version": "0.1.0",
+      "summary": "Plan dependency upgrades with policy fit, migration risk, verification commands, and rollback notes before manifests change.",
+      "description": "A local-first planning workflow for dependency, toolchain, or lockfile changes that keeps project dependency policy visible.",
+      "source": "extend/dependency-upgrade-planner",
+      "docs": "README.md",
+      "use_when": [
+        "A goal proposes dependency, toolchain, or lockfile changes.",
+        "The repo has a dependency policy that must be preserved.",
+        "The PM needs a bounded upgrade plan before implementation."
+      ],
+      "activation": "before_worker",
+      "outputs": [
+        "Dependency upgrade plan Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "dependencies",
+          "toolchain",
+          "package"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "package manifests",
+        "lockfiles",
+        "dependency policy docs",
+        "supplied release notes",
+        "verification output"
+      ],
+      "writes": [
+        "Dependency upgrade plan Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "network_required": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "dependency-upgrade-planner/README.md",
+          "sha256": "adb779a3cbdcde5e04c981186083f217e559874c7b65b440da5bffeedaabbaae"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "dependency-upgrade-planner/extension.yaml",
+          "sha256": "087c4507dd984cbea28ebaa4c1fbad4a98094e20a499ec063f0554809434bdc2"
+        }
+      ]
+    },
+    {
+      "id": "security-review-brief",
+      "name": "Security review brief",
+      "kind": "review",
+      "version": "0.1.0",
+      "summary": "Prepare a local security review brief for changed auth, secrets, input, file, network, dependency, or public API surfaces.",
+      "description": "A local-first review workflow for identifying security-sensitive changed surfaces and focused reviewer questions.",
+      "source": "extend/security-review-brief",
+      "docs": "README.md",
+      "use_when": [
+        "A Worker slice touches auth, permissions, secrets, user input, file operations, dependency handling, or public APIs.",
+        "The PM needs explicit security evidence before audit or PR handoff.",
+        "Reviewers need focused security questions for a PR."
+      ],
+      "activation": "after_worker",
+      "outputs": [
+        "Security review brief"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "security",
+          "code_review",
+          "pull_request"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "security policy docs",
+        "git diff --stat",
+        "git diff",
+        "verification output"
+      ],
+      "writes": [
+        "Security review Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "external_scanner": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "security-review-brief/README.md",
+          "sha256": "7c53aae1b23119987809ef17e223f52174ce0fe85529c49cec7cfc78c17c52c9"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "security-review-brief/extension.yaml",
+          "sha256": "8c20f1fc34936a7fd1e1a6ec659caf94e25a2dc5a00c1c6785d60de88cf95633"
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,33 @@
+id: dependency-upgrade-planner
+name: Dependency upgrade planner
+kind: planning
+version: 0.1.0
+source_of_truth: local
+description: Plan dependency upgrades with policy fit, migration risk, verification commands, and rollback notes before manifests change.
+use_when:
+  - A goal proposes dependency, toolchain, or lockfile changes.
+  - The repo has a dependency policy that must be preserved.
+  - The PM needs a bounded upgrade plan before implementation.
+activation: before_worker
+outputs:
+  - Dependency upgrade plan Markdown
+requires_approval: false
+safe_by_default: true
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - package manifests
+  - lockfiles
+  - dependency policy docs
+  - supplied release notes
+  - verification output
+writes:
+  - Dependency upgrade plan Markdown
+side_effects:
+  - none by default
+auth:
+  env: []
+supports:
+  dry_run: true
+  network_required: false
+  credentials_required: false
