@@ -359,22 +359,30 @@ async function extendCatalog() {
     return;
   }
 
-  console.log(`Extensions from ${catalog.url}`);
+  console.log("Available extensions");
   if (extensions.length === 0) {
+    console.log("");
     console.log(kind ? `No ${kind} extensions found.` : "No extensions found.");
     return;
   }
+  console.log("");
   for (const extension of extensions) {
-    const state = extension.state.installed
-      ? extension.state.configured ? "installed/configured" : "installed/unconfigured"
-      : "available";
-    console.log(`${extension.id}\t${extension.kind}\t${state}\t${extension.name || extension.summary || ""}`);
+    console.log(extension.name || extension.id);
+    if (extension.summary) console.log(`  ${extension.summary}`);
+    console.log("");
   }
+  console.log("View details:");
+  console.log(`  npx goal-maker extend ${extensions[0].id}`);
 }
 
 async function extendDetails(id) {
   const catalog = await loadCatalog();
-  const extension = findCatalogExtension(catalog, id);
+  const extension = catalog.extensions.find((candidate) => candidate.id === id);
+  if (!extension) {
+    printExtensionNotFound(id, catalog.extensions);
+    process.exit(1);
+  }
+  validateCatalogExtension(extension);
   const detailed = extensionWithLocalState(extension);
 
   if (hasFlag("--json")) {
@@ -382,25 +390,34 @@ async function extendDetails(id) {
     return;
   }
 
-  console.log(`${extension.id} (${extension.kind})`);
   console.log(extension.name || extension.summary || "");
-  if (extension.summary && extension.summary !== extension.name) console.log(extension.summary);
-  if (extension.version) console.log(`version: ${extension.version}`);
-  if (extension.source) console.log(`source: ${extension.source}`);
-  if (extension.auth?.env?.length) console.log(`auth env: ${extension.auth.env.join(", ")}`);
-  if (extension.files?.length) console.log(`files: ${extension.files.length}`);
-  if (extension.docs) console.log(`docs: ${extension.docs}`);
-  console.log(`state: ${detailed.state.installed ? "installed" : "available"}${detailed.state.configured ? ", configured" : ""}`);
-  if (!detailed.state.configured && detailed.state.missing_env.length) {
-    console.log(`missing env: ${detailed.state.missing_env.join(", ")}`);
+  console.log("");
+  if (extension.summary && extension.summary !== extension.name) {
+    console.log(extension.summary);
+    console.log("");
   }
+  console.log(`Status: ${detailed.state.installed ? "installed" : "available"}`);
+  if (!detailed.state.configured && detailed.state.missing_env.length) {
+    console.log(`Missing env: ${detailed.state.missing_env.join(", ")}`);
+  }
+  console.log("");
+  console.log("Install:");
+  console.log(`  npx goal-maker extend install ${extension.id}`);
+  console.log("");
+  console.log("Preview install:");
+  console.log(`  npx goal-maker extend install ${extension.id} --dry-run`);
 }
 
 async function extendInstall() {
   const id = positional(2);
   if (!id) throw new Error("Missing extension id. Usage: goal-maker extend install <id>");
   const catalog = await loadCatalog();
-  const extension = findCatalogExtension(catalog, id);
+  const extension = catalog.extensions.find((candidate) => candidate.id === id);
+  if (!extension) {
+    printExtensionNotFound(id, catalog.extensions);
+    process.exit(1);
+  }
+  validateCatalogExtension(extension);
   const target = extensionTarget(extension.id);
   const plan = installPlan(catalog, extension, target);
 
@@ -511,11 +528,18 @@ async function loadCatalog() {
   return { ...catalog, url };
 }
 
-function findCatalogExtension(catalog, id) {
-  const extension = catalog.extensions.find((candidate) => candidate.id === id);
-  if (!extension) throw new Error(`Extension not found in catalog: ${id}`);
-  validateCatalogExtension(extension);
-  return extension;
+function printExtensionNotFound(id, extensions) {
+  console.error(`Extension not found: ${id}`);
+  if (extensions.length) {
+    console.error("");
+    console.error("Available extensions:");
+    for (const extension of extensions) {
+      console.error(`  ${extension.id}`);
+    }
+  }
+  console.error("");
+  console.error("Try:");
+  console.error("  npx goal-maker extend");
 }
 
 function validateCatalogExtension(extension) {
@@ -680,6 +704,7 @@ async function extensionDiscoverySummary() {
         .filter((extension) => extension.safe_by_default && !extension.state.installed)
         .map((extension) => ({
           id: extension.id,
+          name: extension.name,
           kind: extension.kind,
           activation: extension.activation,
           summary: extension.summary,
@@ -725,11 +750,9 @@ function printInstallReport(report) {
       console.log("");
       console.log("Recommended:");
       for (const extension of report.extensions.recommended.slice(0, 3)) {
-        const safe = extension.safe_by_default === false ? "" : " safe";
-        console.log(`  ${extension.id}  ${extension.kind}${safe}`);
+        console.log(`  ${extension.name || extension.id}`);
         if (extension.summary) console.log(`    ${extension.summary}`);
-        if (extension.use_when[0]) console.log(`    Use when: ${extension.use_when[0]}`);
-        console.log(`    Try: ${extension.next_command}`);
+        console.log(`    Details: npx ${extension.next_command}`);
       }
     }
   }

@@ -194,6 +194,39 @@ test("extend shows catalog entries and reports local install state", () => {
   }
 });
 
+test("extend human output shows extension names, descriptions, and next commands", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+
+    const list = runGoalMaker(["extend", "--catalog-url", catalogPath, "--codex-home", codexHome]);
+    assert.equal(list.status, 0, list.stderr || list.stdout);
+    assert.match(list.stdout, /Available extensions/);
+    assert.match(list.stdout, /GitHub Projects publishing/);
+    assert.match(list.stdout, /Publish a one-way Goal Maker board view to GitHub Projects\./);
+    assert.match(list.stdout, /npx goal-maker extend publish-github-projects/);
+    assert.doesNotMatch(list.stdout, /publish-github-projects\tpublish/);
+
+    const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome]);
+    assert.equal(details.status, 0, details.stderr || details.stdout);
+    assert.match(details.stdout, /Status: available/);
+    assert.match(details.stdout, /npx goal-maker extend install publish-github-projects/);
+    assert.match(details.stdout, /npx goal-maker extend install publish-github-projects --dry-run/);
+    assert.doesNotMatch(details.stdout, /version:/);
+    assert.doesNotMatch(details.stdout, /files:/);
+
+    const missing = runGoalMaker(["extend", "missing-extension", "--catalog-url", catalogPath, "--codex-home", codexHome]);
+    assert.equal(missing.status, 1, missing.stderr || missing.stdout);
+    assert.match(missing.stderr, /Extension not found: missing-extension/);
+    assert.match(missing.stderr, /Available extensions:/);
+    assert.match(missing.stderr, /publish-github-projects/);
+    assert.match(missing.stderr, /npx goal-maker extend/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("install reports extension discovery in json mode", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
