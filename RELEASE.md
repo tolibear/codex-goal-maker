@@ -21,13 +21,13 @@ The workflow path in this repo is:
 Or configure the same trust relationship from the npm CLI:
 
 ```bash
-npx --yes -p npm@latest npm trust github goalbuddy \
+npx --yes npm@11.13.0 trust github goalbuddy \
   --repo tolibear/goalbuddy \
   --file npm-publish.yml \
   --yes
 ```
 
-This command requires npm owner authentication and may print an `EOTP` browser/OTP URL. Complete that npm authentication step, then rerun the command if needed.
+This command requires npm owner authentication and may print an `EOTP` browser/OTP URL. Complete that npm authentication step, then rerun the same command if needed. The `npx --yes npm@11.13.0 trust ...` form is intentional; using `npx -p npm@latest npm trust ...` can resolve to an older global npm binary that does not expose the `trust` command.
 
 After the trusted publisher works, use npm package settings to require 2FA and disallow tokens for publishing. Keep `goal-maker` published during the migration window.
 
