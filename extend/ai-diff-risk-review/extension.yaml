@@ -1,0 +1,32 @@
+id: ai-diff-risk-review
+name: AI diff risk review
+kind: review
+version: 0.1.0
+source_of_truth: local
+description: Prepare a local risk review brief for AI-assisted or agent-produced diffs before PR handoff.
+use_when:
+  - A Worker slice produced AI-assisted code or documentation changes.
+  - The PM needs to identify residual risk before review or PR handoff.
+  - Verification passed but human reviewers need a focused risk map.
+activation: after_worker
+outputs:
+  - AI diff risk review brief
+requires_approval: false
+safe_by_default: true
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+  - git diff --stat
+  - git diff
+  - verification output
+writes:
+  - Review brief Markdown
+side_effects:
+  - none by default
+auth:
+  env: []
+supports:
+  dry_run: true
+  live_github: false
+  credentials_required: false

@@ -1,0 +1,32 @@
+id: ci-failure-triage
+name: CI failure triage
+kind: recovery
+version: 0.1.0
+source_of_truth: local
+description: Summarize failing checks, logs, changed files, and receipts into a recovery-focused CI failure triage brief.
+use_when:
+  - A verification command, build, test, lint, or CI check failed.
+  - The PM needs a recovery task instead of continuing feature work.
+  - A reviewer needs concise failure context and next diagnostic commands.
+activation: blocked_task
+outputs:
+  - CI failure triage brief
+requires_approval: false
+safe_by_default: true
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+  - failing command output
+  - local logs
+  - git diff --stat
+writes:
+  - Failure triage Markdown
+side_effects:
+  - none by default
+auth:
+  env: []
+supports:
+  dry_run: true
+  live_ci: false
+  credentials_required: false

@@ -61,6 +61,199 @@
           "sha256": "641e998bd6453e1a9160b2fdabf3a251bbfd4f9354e62a61b789e15d8e6f147e"
         }
       ]
+    },
+    {
+      "id": "ai-diff-risk-review",
+      "name": "AI diff risk review",
+      "kind": "review",
+      "version": "0.1.0",
+      "summary": "Prepare a local risk review brief for AI-assisted or agent-produced diffs before PR handoff.",
+      "description": "A local-first review workflow for mapping changed files, Goal Maker receipts, verification evidence, and residual risk into a focused human-review brief.",
+      "source": "extend/ai-diff-risk-review",
+      "docs": "README.md",
+      "use_when": [
+        "A Worker slice produced AI-assisted code or documentation changes.",
+        "The PM needs to identify residual risk before review or PR handoff.",
+        "Verification passed but human reviewers need a focused risk map."
+      ],
+      "activation": "after_worker",
+      "outputs": [
+        "AI diff risk review brief"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "code_review",
+          "pull_request"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "git diff --stat",
+        "git diff",
+        "verification output"
+      ],
+      "writes": [
+        "Review brief Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "live_github": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "ai-diff-risk-review/README.md",
+          "sha256": "1878273f05dbd6f748e322e489fcb6f8a7f68f7d62c6143de91027f94ecb2a96"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "ai-diff-risk-review/extension.yaml",
+          "sha256": "44f7417ae6aae0e8593038c4a1f5393bfa42eaa98385bd9b93c6b35c6ec2a8ef"
+        }
+      ]
+    },
+    {
+      "id": "ci-failure-triage",
+      "name": "CI failure triage",
+      "kind": "recovery",
+      "version": "0.1.0",
+      "summary": "Summarize failing checks, logs, changed files, and receipts into a recovery-focused CI failure triage brief.",
+      "description": "A local-first recovery workflow for turning failed verification or CI output into suspected causes, next commands, blocked external checks, and a recommended board update.",
+      "source": "extend/ci-failure-triage",
+      "docs": "README.md",
+      "use_when": [
+        "A verification command, build, test, lint, or CI check failed.",
+        "The PM needs a recovery task instead of continuing feature work.",
+        "A reviewer needs concise failure context and next diagnostic commands."
+      ],
+      "activation": "blocked_task",
+      "outputs": [
+        "CI failure triage brief"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "ci",
+          "verification",
+          "recovery"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "failing command output",
+        "local logs",
+        "git diff --stat"
+      ],
+      "writes": [
+        "Failure triage Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "live_ci": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "ci-failure-triage/README.md",
+          "sha256": "58f01fcf202e0b0bf03060c2288f159ac455621d0a4141367868db394c60d25f"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "ci-failure-triage/extension.yaml",
+          "sha256": "55c1b0ce2161647dc56c4ecdbf0be51bd46e6512a8dc3606a8af0d261cb51b67"
+        }
+      ]
+    },
+    {
+      "id": "docs-drift-audit",
+      "name": "Docs drift audit",
+      "kind": "audit",
+      "version": "0.1.0",
+      "summary": "Compare changed behavior, receipts, and documentation surfaces to catch stale docs before completion or PR handoff.",
+      "description": "A local-first audit workflow for checking whether README, docs, examples, and extension manifests still match the changed behavior and receipts.",
+      "source": "extend/docs-drift-audit",
+      "docs": "README.md",
+      "use_when": [
+        "A Worker slice changed user-facing behavior, commands, extension metadata, or examples.",
+        "The PM needs documentation coverage evidence before final audit.",
+        "A PR handoff should explain docs updates or intentional docs non-changes."
+      ],
+      "activation": "final_audit",
+      "outputs": [
+        "Docs drift audit Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "documentation",
+          "examples",
+          "extensions"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "README.md",
+        "docs",
+        "examples",
+        "extend",
+        "git diff --stat",
+        "git diff"
+      ],
+      "writes": [
+        "Docs drift audit Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "docs-drift-audit/README.md",
+          "sha256": "a435e26524a0ccc368bd2834d8710a2ae9bf085d7049052519aa1a48122dd020"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "docs-drift-audit/extension.yaml",
+          "sha256": "c386535282d0bdb95b4a7f257c1ba60fa607b58425ccb58da4665590f8c620d4"
+        }
+      ]
     }
   ]
 }
