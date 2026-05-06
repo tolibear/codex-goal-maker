@@ -1,0 +1,22 @@
+id: github-pr-workflow
+name: GitHub PR workflow
+kind: integration
+version: 0.1.0
+source_of_truth: local
+description: Prepare GitHub pull request handoff text from Goal Maker receipts without requiring GitHub credentials.
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+  - git status --short
+  - git diff --stat
+writes:
+  - PR handoff Markdown
+side_effects:
+  - none by default
+auth:
+  env: []
+supports:
+  dry_run: true
+  live_github: false
+  credentials_required: false

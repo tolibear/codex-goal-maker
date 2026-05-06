@@ -137,8 +137,8 @@ Discover optional extensions from the GitHub-hosted catalog:
 
 ```bash
 npx goal-maker extend
-npx goal-maker extend publish-github-projects
-npx goal-maker extend install publish-github-projects --dry-run
+npx goal-maker extend github-pr-workflow
+npx goal-maker extend install github-pr-workflow --dry-run
 ```
 
 Use a non-default Codex home:
@@ -155,7 +155,7 @@ The npm package is the stable core. Extensions live under `extend/` and move thr
 
 Extensions are not board truth. They may publish, report, intake, or add role guidance, but `state.yaml` remains authoritative.
 
-The catalog is intentionally empty until real extensions are ready to ship.
+The first cataloged extension, `github-pr-workflow`, prepares GitHub PR handoff text from goal receipts without requiring GitHub credentials or making GitHub authoritative.
 
 ## Running A Goal
 
@@ -175,7 +175,7 @@ node ~/.codex/skills/goal-maker/scripts/check-goal-state.mjs docs/goals/<slug>/s
 
 ## Example
 
-See `examples/improve-goal-maker/` for a small completed reliability run, and `examples/extend-catalog-workflow/` for a larger run that moves from product framing through implementation and repo cleanup.
+See `examples/improve-goal-maker/` for a small completed reliability run, `examples/extend-catalog-workflow/` for a larger run that moves from product framing through implementation and repo cleanup, and `examples/github-pr-workflow-extension/pr-handoff.md` for an extension-generated PR handoff artifact.
 
 ## Repo Contents
 
