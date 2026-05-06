@@ -3,7 +3,7 @@ name: GitHub Projects
 kind: integration
 version: 0.1.0
 source_of_truth: local
-description: Mirror GoalBuddy state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, a Goal Board view, and an Agent Workboard.
+description: Mirror GoalBuddy state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, and one Goal Board view.
 use_when:
   - A long-running GoalBuddy board needs stakeholder visibility in GitHub Projects.
   - The team wants one-way sync from state.yaml into ProjectV2 draft issues.
@@ -14,7 +14,6 @@ outputs:
   - GitHub Projects dry-run plan
   - GitHub ProjectV2 draft issue sync
   - Goal Board ProjectV2 view
-  - Agent Workboard ProjectV2 view
 requires_approval: true
 safe_by_default: false
 reads:
@@ -25,7 +24,7 @@ reads:
 writes:
   - GitHub ProjectV2 draft issues
   - GitHub ProjectV2 fields
-  - GitHub ProjectV2 board and agent workboard views
+  - GitHub ProjectV2 Goal Board view
 side_effects:
   - Live sync creates or updates GitHub Project draft issues, fields, and views.
 auth:

@@ -71,7 +71,7 @@
       "name": "GitHub Projects",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Mirror GoalBuddy state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, a Goal Board view, and an Agent Workboard.",
+      "summary": "Mirror GoalBuddy state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, and one Goal Board view.",
       "description": "A cataloged one-way GitHub Projects sync extension that ports PR #1 into the extension system while keeping state.yaml authoritative and live GitHub writes credential-gated.",
       "source": "extend/github-projects",
       "docs": "README.md",
@@ -85,8 +85,7 @@
       "outputs": [
         "GitHub Projects dry-run plan",
         "GitHub ProjectV2 draft issue sync",
-        "Goal Board ProjectV2 view",
-        "Agent Workboard ProjectV2 view"
+        "Goal Board ProjectV2 view"
       ],
       "requires_approval": true,
       "safe_by_default": false,
@@ -107,7 +106,7 @@
       "writes": [
         "GitHub ProjectV2 draft issues",
         "GitHub ProjectV2 fields",
-        "GitHub ProjectV2 board and agent workboard views"
+        "GitHub ProjectV2 Goal Board view"
       ],
       "side_effects": [
         "Live sync creates or updates GitHub Project draft issues, fields, and views."
@@ -129,17 +128,17 @@
         {
           "path": "README.md",
           "url": "github-projects/README.md",
-          "sha256": "3eece6edf1461af8f66a719d68eaf2f90274a2f20c5c157fa4375901825ef938"
+          "sha256": "4c3eb5b46369f6a08d836614d41d883b24c96113e21cb937c6d28dca286fd15f"
         },
         {
           "path": "extension.yaml",
           "url": "github-projects/extension.yaml",
-          "sha256": "9b8a4feee6b4e478848eaafebec02709e7c93731a984b1cc685187492dd40f81"
+          "sha256": "e20028c8463f79152a2e0187a54c99350f088705abad68daa52ee7b82f06c36b"
         },
         {
           "path": "scripts/sync-github-project.mjs",
           "url": "github-projects/scripts/sync-github-project.mjs",
-          "sha256": "49f5cb204fdc9daf29fce834634e45320c92cfc8723c596b1c3b522b14dd28a2"
+          "sha256": "ddca3c7bb6fe0d9d1dd2950c3f1b5f4566236676f19e60538ccb265623a66ca8"
         },
         {
           "path": "scripts/lib/goal-state.mjs",
@@ -149,12 +148,12 @@
         {
           "path": "scripts/lib/github-projects.mjs",
           "url": "github-projects/scripts/lib/github-projects.mjs",
-          "sha256": "904f9127693d1a6e20b0e5f0545da885234e35228ec62b77d2218ed283be3d78"
+          "sha256": "fc07c09743f72d85afc694a03fa5925f38d51d6d92869e0e171d53e3fa532aa0"
         },
         {
           "path": "test/github-projects.test.mjs",
           "url": "github-projects/test/github-projects.test.mjs",
-          "sha256": "eb19b94546493815cbc39b68f1d369962185b51eb68b48135cab8db3fbc24b26"
+          "sha256": "a5484437c852feaa93a0d1357758ad0673c4fdc180138df3da33a6b934f6af40"
         },
         {
           "path": "examples/goal-board-sync/state.yaml",

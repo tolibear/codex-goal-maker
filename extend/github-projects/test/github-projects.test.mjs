@@ -175,14 +175,14 @@ describe("GitHub Projects mapping", () => {
     assert.match(body, /extend\/github-projects\/examples\/goal-board-sync\/state\.yaml/);
   });
 
-  it("creates default GitHub Project views with visible fields when missing", async () => {
+  it("creates only the Goal Board GitHub Project view with visible fields when missing", async () => {
     const restCalls = [];
     const views = await ensureGoalProjectViews({
       client: {
         rest: async (path, options) => {
           restCalls.push({ path, options });
           return {
-            html_url: `https://github.com/users/example/projects/1/views/${options.body.name === "Goal Board" ? "2" : "3"}`,
+            html_url: "https://github.com/users/example/projects/1/views/2",
           };
         },
       },
@@ -209,22 +209,16 @@ describe("GitHub Projects mapping", () => {
     });
 
     assert.equal(views.board.html_url, "https://github.com/users/example/projects/1/views/2");
-    assert.equal(views.agentWorkboard.html_url, "https://github.com/users/example/projects/1/views/3");
+    assert.equal(views.agentWorkboard, undefined);
+    assert.equal(restCalls.length, 1);
     assert.equal(restCalls[0].path, "users/example/projectsV2/1/views");
-    assert.equal(restCalls[1].path, "users/example/projectsV2/1/views");
     assert.equal(restCalls[0].options.body.layout, "board");
-    assert.equal(restCalls[1].options.body.layout, "board");
     assert.equal(restCalls[0].options.body.name, GITHUB_PROJECT_VIEWS.board.name);
-    assert.equal(restCalls[1].options.body.name, GITHUB_PROJECT_VIEWS.agentWorkboard.name);
     assert.deepEqual(restCalls[0].options.body.visible_fields, [3, 2, 4, 5, 10, 11, 13, 12]);
-    assert.deepEqual(restCalls[1].options.body.visible_fields, [13, 11, 10, 2, 4, 5, 1, 3, 6, 7, 8, 9]);
     assert.equal(restCalls[0].options.body.group_by, undefined);
-    assert.equal(restCalls[1].options.body.group_by, undefined);
-    assert.equal(restCalls[1].options.body.vertical_group_by, undefined);
-    assert.equal(restCalls[1].options.body.sort_by, undefined);
   });
 
-  it("reuses existing default GitHub Project views", async () => {
+  it("reuses an existing Goal Board view without creating extra views", async () => {
     const views = await ensureGoalProjectViews({
       client: {
         rest: async () => {
@@ -245,7 +239,7 @@ describe("GitHub Projects mapping", () => {
     });
 
     assert.equal(views.board.id, "PVTV_board");
-    assert.equal(views.agentWorkboard.id, "PVTV_agent");
+    assert.equal(views.agentWorkboard, undefined);
   });
 
   it("maps GoalBuddy task statuses to native GitHub board statuses", () => {

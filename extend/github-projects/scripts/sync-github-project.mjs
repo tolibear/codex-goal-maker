@@ -184,7 +184,7 @@ function printDryRun(board) {
   console.log(`Dry run for ${board.title} (${board.slug})`);
   console.log(`Source: ${board.sourcePath}`);
   console.log("GitHub Project fields that will be ensured: Task ID, Status, Priority, Work Type, Owner, Goal Role, Agent Responsible, Agent Lane, Credential Gate, Parent ID, Depends On, Receipt Summary, Verify, Allowed Files, Goal Updated");
-  console.log("GitHub Project views that will be ensured: Goal Board (Board layout), Agent Workboard (Board layout with Agent Lane visible)");
+  console.log("GitHub Project views that will be ensured: Goal Board (Board layout)");
   console.log("Status mapping: queued -> Todo, active -> In Progress, blocked -> Blocked, done -> Done");
   for (const operation of dryRunGitHubOperations(board)) {
     console.log(`UPSERT ${operation.taskId} ${operation.status} -> ${operation.projectStatus} ${operation.priority} ${operation.typeLabel} ${operation.title}`);

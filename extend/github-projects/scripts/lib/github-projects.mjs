@@ -32,25 +32,6 @@ export const GITHUB_PROJECT_VIEWS = {
       "credentialGate",
     ],
   },
-  agentWorkboard: {
-    name: "Agent Workboard",
-    layout: "board",
-    graphqlLayout: "BOARD_LAYOUT",
-    fields: [
-      "agentLane",
-      "agentResponsible",
-      "goalRole",
-      "status",
-      "workType",
-      "owner",
-      "taskId",
-      "priority",
-      "receiptSummary",
-      "verify",
-      "allowedFiles",
-      "updated",
-    ],
-  },
 };
 
 const STATUS_OPTIONS = [

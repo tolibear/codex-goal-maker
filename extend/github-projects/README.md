@@ -20,9 +20,10 @@ The live sync ensures a GitHub Project has:
 - Single-select fields for `Status`, `Priority`, `Work Type`, and `Agent Lane`.
 - Text fields for `Task ID`, `Owner`, `Goal Role`, `Agent Responsible`, `Credential Gate`, `Parent ID`, `Depends On`, `Receipt Summary`, `Verify`, `Allowed Files`, and `Goal Updated`.
 - A `Goal Board` board-layout view for PM flow.
-- An `Agent Workboard` board-layout view with `Agent Lane`, `Status`, and `Priority` visible on cards.
 
-The extension does not promise custom board grouping or sort order. GitHub's public Project views REST API currently accepts `name`, `layout`, `filter`, and `visible_fields` when creating a view, and GraphQL exposes grouping/sort fields for reading but not a public mutation for saving them. Because that display state cannot be written reliably through the public API, the sync only creates supported fields, cards, and views.
+The sync only creates or reuses `Goal Board`. It does not create a default Table view, an `Agent Workboard`, or extra role-specific views. GitHub may still show views that already existed on the Project.
+
+The extension does not promise custom board grouping or sort order. GitHub's public Project views REST API currently accepts `name`, `layout`, `filter`, and `visible_fields` when creating a view, and GraphQL exposes grouping/sort fields for reading but not a public mutation for saving them. Because that display state cannot be written reliably through the public API, the sync only creates supported fields, cards, and the single `Goal Board` view.
 
 ## Inputs
 
