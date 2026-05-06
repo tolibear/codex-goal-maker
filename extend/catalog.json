@@ -6,17 +6,19 @@
       "name": "GitHub PR workflow",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Prepare GitHub pull request handoff text from Goal Maker receipts without requiring GitHub credentials.",
-      "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, and verification output into PR-ready Markdown while keeping state.yaml authoritative.",
+      "summary": "Prepare GitHub pull request handoff text and receipt-aligned commit boundaries from Goal Maker receipts without requiring GitHub credentials.",
+      "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, verification output, and commit boundaries into PR-ready Markdown while keeping state.yaml authoritative.",
       "source": "extend/github-pr-workflow",
       "docs": "README.md",
       "use_when": [
         "The goal produced code changes intended for GitHub review.",
         "The user asks to push, open a PR, or prepare review context.",
-        "The board has Worker receipts and verification commands worth summarizing."
+        "The board has Worker receipts and verification commands worth summarizing.",
+        "The branch should be decomposed into commits that map to completed Worker or PM receipts."
       ],
       "activation": "publish_handoff",
       "outputs": [
+        "Receipt-aligned commit plan",
         "PR handoff Markdown"
       ],
       "requires_approval": false,
@@ -32,9 +34,11 @@
         "docs/goals/<slug>/state.yaml",
         "docs/goals/<slug>/notes",
         "git status --short",
-        "git diff --stat"
+        "git diff --stat",
+        "git log --oneline <base>..HEAD"
       ],
       "writes": [
+        "Receipt-aligned local commits",
         "PR handoff Markdown"
       ],
       "side_effects": [
@@ -53,12 +57,660 @@
         {
           "path": "README.md",
           "url": "github-pr-workflow/README.md",
-          "sha256": "4cbc9eb4f905a759d461bb83e6c4b1fce5387ee8a5e84c7712f2f371965764ce"
+          "sha256": "51c84f737fbe73c321e7ca726767cb63c5b3e31f4099e758211ff0d3340d7625"
         },
         {
           "path": "extension.yaml",
           "url": "github-pr-workflow/extension.yaml",
-          "sha256": "641e998bd6453e1a9160b2fdabf3a251bbfd4f9354e62a61b789e15d8e6f147e"
+          "sha256": "75a207a6f8a62574860afa1cc42de464ef511920540c302f78130f0175930845"
+        }
+      ]
+    },
+    {
+      "id": "ai-diff-risk-review",
+      "name": "AI diff risk review",
+      "kind": "review",
+      "version": "0.1.0",
+      "summary": "Prepare a local risk review brief for AI-assisted or agent-produced diffs before PR handoff.",
+      "description": "A local-first review workflow for mapping changed files, Goal Maker receipts, verification evidence, and residual risk into a focused human-review brief.",
+      "source": "extend/ai-diff-risk-review",
+      "docs": "README.md",
+      "use_when": [
+        "A Worker slice produced AI-assisted code or documentation changes.",
+        "The PM needs to identify residual risk before review or PR handoff.",
+        "Verification passed but human reviewers need a focused risk map."
+      ],
+      "activation": "after_worker",
+      "outputs": [
+        "AI diff risk review brief"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "code_review",
+          "pull_request"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "git diff --stat",
+        "git diff",
+        "verification output"
+      ],
+      "writes": [
+        "Review brief Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "live_github": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "ai-diff-risk-review/README.md",
+          "sha256": "1878273f05dbd6f748e322e489fcb6f8a7f68f7d62c6143de91027f94ecb2a96"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "ai-diff-risk-review/extension.yaml",
+          "sha256": "44f7417ae6aae0e8593038c4a1f5393bfa42eaa98385bd9b93c6b35c6ec2a8ef"
+        }
+      ]
+    },
+    {
+      "id": "ci-failure-triage",
+      "name": "CI failure triage",
+      "kind": "recovery",
+      "version": "0.1.0",
+      "summary": "Summarize failing checks, logs, changed files, and receipts into a recovery-focused CI failure triage brief.",
+      "description": "A local-first recovery workflow for turning failed verification or CI output into suspected causes, next commands, blocked external checks, and a recommended board update.",
+      "source": "extend/ci-failure-triage",
+      "docs": "README.md",
+      "use_when": [
+        "A verification command, build, test, lint, or CI check failed.",
+        "The PM needs a recovery task instead of continuing feature work.",
+        "A reviewer needs concise failure context and next diagnostic commands."
+      ],
+      "activation": "blocked_task",
+      "outputs": [
+        "CI failure triage brief"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "ci",
+          "verification",
+          "recovery"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "failing command output",
+        "local logs",
+        "git diff --stat"
+      ],
+      "writes": [
+        "Failure triage Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "live_ci": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "ci-failure-triage/README.md",
+          "sha256": "58f01fcf202e0b0bf03060c2288f159ac455621d0a4141367868db394c60d25f"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "ci-failure-triage/extension.yaml",
+          "sha256": "55c1b0ce2161647dc56c4ecdbf0be51bd46e6512a8dc3606a8af0d261cb51b67"
+        }
+      ]
+    },
+    {
+      "id": "docs-drift-audit",
+      "name": "Docs drift audit",
+      "kind": "audit",
+      "version": "0.1.0",
+      "summary": "Compare changed behavior, receipts, and documentation surfaces to catch stale docs before completion or PR handoff.",
+      "description": "A local-first audit workflow for checking whether README, docs, examples, and extension manifests still match the changed behavior and receipts.",
+      "source": "extend/docs-drift-audit",
+      "docs": "README.md",
+      "use_when": [
+        "A Worker slice changed user-facing behavior, commands, extension metadata, or examples.",
+        "The PM needs documentation coverage evidence before final audit.",
+        "A PR handoff should explain docs updates or intentional docs non-changes."
+      ],
+      "activation": "final_audit",
+      "outputs": [
+        "Docs drift audit Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "documentation",
+          "examples",
+          "extensions"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "README.md",
+        "docs",
+        "examples",
+        "extend",
+        "git diff --stat",
+        "git diff"
+      ],
+      "writes": [
+        "Docs drift audit Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "docs-drift-audit/README.md",
+          "sha256": "a435e26524a0ccc368bd2834d8710a2ae9bf085d7049052519aa1a48122dd020"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "docs-drift-audit/extension.yaml",
+          "sha256": "c386535282d0bdb95b4a7f257c1ba60fa607b58425ccb58da4665590f8c620d4"
+        }
+      ]
+    },
+    {
+      "id": "test-gap-planner",
+      "name": "Test gap planner",
+      "kind": "planning",
+      "version": "0.1.0",
+      "summary": "Identify weak test coverage and propose the smallest useful next tests from a diff, receipts, and verification output.",
+      "description": "A local-first planning workflow for mapping changed behavior to existing test evidence, missing edge cases, and focused next tests.",
+      "source": "extend/test-gap-planner",
+      "docs": "README.md",
+      "use_when": [
+        "A Worker slice changed behavior but verification coverage is uncertain.",
+        "The PM needs test evidence before audit or PR handoff.",
+        "A contributor wants a focused test plan before writing tests."
+      ],
+      "activation": "after_worker",
+      "outputs": [
+        "Test gap plan Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "tests",
+          "verification"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "tests",
+        "git diff --stat",
+        "git diff",
+        "verification output"
+      ],
+      "writes": [
+        "Test gap plan Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "test-gap-planner/README.md",
+          "sha256": "6db96f92a7a6320a42f07182d3975318165a67a37742974add94e7b548ffc916"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "test-gap-planner/extension.yaml",
+          "sha256": "13ad34e58a785851766ea149760d07daae320a87fa001ac93b0a75d2786238ac"
+        }
+      ]
+    },
+    {
+      "id": "release-readiness",
+      "name": "Release readiness",
+      "kind": "audit",
+      "version": "0.1.0",
+      "summary": "Produce a local release readiness brief covering scope, package metadata, verification, docs, examples, and publish blockers.",
+      "description": "A local-first release gate for package, CLI, extension, and release-facing documentation changes before publish or PR handoff.",
+      "source": "extend/release-readiness",
+      "docs": "README.md",
+      "use_when": [
+        "A goal changes package contents, CLI behavior, extension catalog entries, or release-facing docs.",
+        "The PM needs a pre-release gate before publishing or PR handoff.",
+        "Reviewers need release scope, verification, docs, and rollback notes in one place."
+      ],
+      "activation": "final_audit",
+      "outputs": [
+        "Release readiness brief"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "release",
+          "package",
+          "extensions"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "package.json",
+        "README.md",
+        "changelog",
+        "git diff --stat",
+        "verification output"
+      ],
+      "writes": [
+        "Release readiness Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "live_publish": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "release-readiness/README.md",
+          "sha256": "b84c214f629b647231118a78763086e2648116b830084444bb25346654026d4a"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "release-readiness/extension.yaml",
+          "sha256": "c4842964dcf5a257b6ab9149fcd90f4a4eb4c9abc794f29732cdae3f12ff8cab"
+        }
+      ]
+    },
+    {
+      "id": "dependency-upgrade-planner",
+      "name": "Dependency upgrade planner",
+      "kind": "planning",
+      "version": "0.1.0",
+      "summary": "Plan dependency upgrades with policy fit, migration risk, verification commands, and rollback notes before manifests change.",
+      "description": "A local-first planning workflow for dependency, toolchain, or lockfile changes that keeps project dependency policy visible.",
+      "source": "extend/dependency-upgrade-planner",
+      "docs": "README.md",
+      "use_when": [
+        "A goal proposes dependency, toolchain, or lockfile changes.",
+        "The repo has a dependency policy that must be preserved.",
+        "The PM needs a bounded upgrade plan before implementation."
+      ],
+      "activation": "before_worker",
+      "outputs": [
+        "Dependency upgrade plan Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "dependencies",
+          "toolchain",
+          "package"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "package manifests",
+        "lockfiles",
+        "dependency policy docs",
+        "supplied release notes",
+        "verification output"
+      ],
+      "writes": [
+        "Dependency upgrade plan Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "network_required": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "dependency-upgrade-planner/README.md",
+          "sha256": "adb779a3cbdcde5e04c981186083f217e559874c7b65b440da5bffeedaabbaae"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "dependency-upgrade-planner/extension.yaml",
+          "sha256": "087c4507dd984cbea28ebaa4c1fbad4a98094e20a499ec063f0554809434bdc2"
+        }
+      ]
+    },
+    {
+      "id": "security-review-brief",
+      "name": "Security review brief",
+      "kind": "review",
+      "version": "0.1.0",
+      "summary": "Prepare a local security review brief for changed auth, secrets, input, file, network, dependency, or public API surfaces.",
+      "description": "A local-first review workflow for identifying security-sensitive changed surfaces and focused reviewer questions.",
+      "source": "extend/security-review-brief",
+      "docs": "README.md",
+      "use_when": [
+        "A Worker slice touches auth, permissions, secrets, user input, file operations, dependency handling, or public APIs.",
+        "The PM needs explicit security evidence before audit or PR handoff.",
+        "Reviewers need focused security questions for a PR."
+      ],
+      "activation": "after_worker",
+      "outputs": [
+        "Security review brief"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "security",
+          "code_review",
+          "pull_request"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "security policy docs",
+        "git diff --stat",
+        "git diff",
+        "verification output"
+      ],
+      "writes": [
+        "Security review Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "external_scanner": false,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "security-review-brief/README.md",
+          "sha256": "7c53aae1b23119987809ef17e223f52174ce0fe85529c49cec7cfc78c17c52c9"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "security-review-brief/extension.yaml",
+          "sha256": "8c20f1fc34936a7fd1e1a6ec659caf94e25a2dc5a00c1c6785d60de88cf95633"
+        }
+      ]
+    },
+    {
+      "id": "codebase-onboarding-map",
+      "name": "Codebase onboarding map",
+      "kind": "documentation",
+      "version": "0.1.0",
+      "summary": "Create a concise local onboarding map from repo files, commands, conventions, examples, and Goal Maker receipts.",
+      "description": "A local-first documentation workflow for helping developers and agents understand a repository before implementation or review.",
+      "source": "extend/codebase-onboarding-map",
+      "docs": "README.md",
+      "use_when": [
+        "A developer or agent is starting work in an unfamiliar repo.",
+        "A broad goal needs an evidence-backed repo map before implementation.",
+        "Reviewers need package boundaries, commands, and conventions in one artifact."
+      ],
+      "activation": "before_worker",
+      "outputs": [
+        "Codebase onboarding map Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "documentation",
+          "onboarding",
+          "repo_map"
+        ]
+      },
+      "reads": [
+        "README.md",
+        "AGENTS.md",
+        "package manifests",
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs",
+        "examples",
+        "tests"
+      ],
+      "writes": [
+        "Codebase onboarding Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "codebase-onboarding-map/README.md",
+          "sha256": "b0c458697cb68fc04ab63d31906fdad7b686ce3c7e191958b48b37fb354966bd"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "codebase-onboarding-map/extension.yaml",
+          "sha256": "46fa6b6078082b18afdaab82ab52d2384f6ba5f80acd740cb1bfa78db6231b00"
+        }
+      ]
+    },
+    {
+      "id": "slack-standup-digest",
+      "name": "Slack standup digest",
+      "kind": "integration",
+      "version": "0.1.0",
+      "summary": "Prepare a Slack-ready status digest from Goal Maker receipts while treating live delivery as credential-gated and approval-required.",
+      "description": "A local-first team communication workflow that produces Slack-ready status text and keeps live Slack delivery separate from board truth.",
+      "source": "extend/slack-standup-digest",
+      "docs": "README.md",
+      "use_when": [
+        "A team wants an async Slack-ready update from a long-running goal.",
+        "A blocked task needs owner-visible context.",
+        "The PM needs to share progress without making Slack board truth."
+      ],
+      "activation": "publish_handoff",
+      "outputs": [
+        "Slack-ready standup digest Markdown"
+      ],
+      "requires_approval": true,
+      "safe_by_default": false,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "slack",
+          "team_status",
+          "blocked_task"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "git status --short",
+        "verification output"
+      ],
+      "writes": [
+        "Slack digest Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": [
+          "SLACK_BOT_TOKEN"
+        ]
+      },
+      "supports": {
+        "dry_run": true,
+        "live_slack": false,
+        "credentials_required": true
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "slack-standup-digest/README.md",
+          "sha256": "23a0e63fa5746835788481681d75b9e6e9701fab43908b9014deadb819abe643"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "slack-standup-digest/extension.yaml",
+          "sha256": "4f05716707820b60c4f4c3f94d0e7367b0edf7058b464f308da084b95d5b9e9a"
+        }
+      ]
+    },
+    {
+      "id": "linear-ticket-handoff",
+      "name": "Linear ticket handoff",
+      "kind": "integration",
+      "version": "0.1.0",
+      "summary": "Prepare Linear-ready issue text from Goal Maker receipts while treating live issue creation as credential-gated and approval-required.",
+      "description": "A local-first ticket handoff workflow that converts receipts, blockers, verification, and acceptance criteria into Linear-ready issue text.",
+      "source": "extend/linear-ticket-handoff",
+      "docs": "README.md",
+      "use_when": [
+        "A goal produces follow-up work that should become an issue.",
+        "A blocked task needs owner or team tracking.",
+        "The PM needs ticket-ready acceptance criteria from receipts and verification."
+      ],
+      "activation": "publish_handoff",
+      "outputs": [
+        "Linear-ready ticket handoff Markdown"
+      ],
+      "requires_approval": true,
+      "safe_by_default": false,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "linear",
+          "issue_tracker",
+          "blocked_task"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "git status --short",
+        "git diff --stat",
+        "verification output"
+      ],
+      "writes": [
+        "Linear ticket handoff Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": [
+          "LINEAR_API_KEY"
+        ]
+      },
+      "supports": {
+        "dry_run": true,
+        "live_linear": false,
+        "credentials_required": true
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "linear-ticket-handoff/README.md",
+          "sha256": "2abce4632aae6326b6c626706dd03e3a81ac2321d057ec58480fc34243f040b0"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "linear-ticket-handoff/extension.yaml",
+          "sha256": "072d092be9d58c3b9e181eba182e234435e9370318169228796316a1fdc4d3f4"
         }
       ]
     }

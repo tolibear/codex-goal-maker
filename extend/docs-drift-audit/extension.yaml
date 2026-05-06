@@ -1,0 +1,34 @@
+id: docs-drift-audit
+name: Docs drift audit
+kind: audit
+version: 0.1.0
+source_of_truth: local
+description: Compare changed behavior, receipts, and documentation surfaces to catch stale docs before completion or PR handoff.
+use_when:
+  - A Worker slice changed user-facing behavior, commands, extension metadata, or examples.
+  - The PM needs documentation coverage evidence before final audit.
+  - A PR handoff should explain docs updates or intentional docs non-changes.
+activation: final_audit
+outputs:
+  - Docs drift audit Markdown
+requires_approval: false
+safe_by_default: true
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+  - README.md
+  - docs
+  - examples
+  - extend
+  - git diff --stat
+  - git diff
+writes:
+  - Docs drift audit Markdown
+side_effects:
+  - none by default
+auth:
+  env: []
+supports:
+  dry_run: true
+  credentials_required: false

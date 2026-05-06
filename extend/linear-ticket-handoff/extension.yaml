@@ -1,0 +1,33 @@
+id: linear-ticket-handoff
+name: Linear ticket handoff
+kind: integration
+version: 0.1.0
+source_of_truth: local
+description: Prepare Linear-ready issue text from Goal Maker receipts while treating live issue creation as credential-gated and approval-required.
+use_when:
+  - A goal produces follow-up work that should become an issue.
+  - A blocked task needs owner or team tracking.
+  - The PM needs ticket-ready acceptance criteria from receipts and verification.
+activation: publish_handoff
+outputs:
+  - Linear-ready ticket handoff Markdown
+requires_approval: true
+safe_by_default: false
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+  - git status --short
+  - git diff --stat
+  - verification output
+writes:
+  - Linear ticket handoff Markdown
+side_effects:
+  - none by default
+auth:
+  env:
+    - LINEAR_API_KEY
+supports:
+  dry_run: true
+  live_linear: false
+  credentials_required: true

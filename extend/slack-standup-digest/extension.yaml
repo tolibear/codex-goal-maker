@@ -1,0 +1,32 @@
+id: slack-standup-digest
+name: Slack standup digest
+kind: integration
+version: 0.1.0
+source_of_truth: local
+description: Prepare a Slack-ready status digest from Goal Maker receipts while treating live delivery as credential-gated and approval-required.
+use_when:
+  - A team wants an async Slack-ready update from a long-running goal.
+  - A blocked task needs owner-visible context.
+  - The PM needs to share progress without making Slack board truth.
+activation: publish_handoff
+outputs:
+  - Slack-ready standup digest Markdown
+requires_approval: true
+safe_by_default: false
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+  - git status --short
+  - verification output
+writes:
+  - Slack digest Markdown
+side_effects:
+  - none by default
+auth:
+  env:
+    - SLACK_BOT_TOKEN
+supports:
+  dry_run: true
+  live_slack: false
+  credentials_required: true

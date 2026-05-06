@@ -1,0 +1,32 @@
+id: test-gap-planner
+name: Test gap planner
+kind: planning
+version: 0.1.0
+source_of_truth: local
+description: Identify weak test coverage and propose the smallest useful next tests from a diff, receipts, and verification output.
+use_when:
+  - A Worker slice changed behavior but verification coverage is uncertain.
+  - The PM needs test evidence before audit or PR handoff.
+  - A contributor wants a focused test plan before writing tests.
+activation: after_worker
+outputs:
+  - Test gap plan Markdown
+requires_approval: false
+safe_by_default: true
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+  - tests
+  - git diff --stat
+  - git diff
+  - verification output
+writes:
+  - Test gap plan Markdown
+side_effects:
+  - none by default
+auth:
+  env: []
+supports:
+  dry_run: true
+  credentials_required: false
