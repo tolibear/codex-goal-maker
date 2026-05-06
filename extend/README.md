@@ -16,3 +16,15 @@ Each extension folder should contain the files referenced by `extend/catalog.jso
 - Keep file URLs relative to `extend/catalog.json` unless they intentionally point elsewhere.
 - Keep every listed file checksum-pinned with SHA-256.
 - Keep credential-dependent live actions separate from local documentation and dry-run workflows.
+
+## Discovery Metadata
+
+Catalog entries may include lightweight fields that help agents decide when and how to use an extension:
+
+- `use_when`: human-readable triggers for when an agent should consider the extension.
+- `activation`: the Goal Maker lifecycle phase where the extension fits, such as `final_audit`, `publish_handoff`, `user_requested`, `before_worker`, `after_worker`, or `blocked_task`.
+- `outputs`: artifacts or results the extension is expected to produce.
+- `requires_approval`: whether an agent should ask before using the extension.
+- `safe_by_default`: whether the extension can run locally without credentials, destructive changes, or external side effects.
+
+These fields are advisory. They help agents discover optional extensions without making the extension authoritative. `state.yaml` remains board truth.

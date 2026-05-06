@@ -10,6 +10,17 @@
       "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, and verification output into PR-ready Markdown while keeping state.yaml authoritative.",
       "source": "extend/github-pr-workflow",
       "docs": "README.md",
+      "use_when": [
+        "The goal produced code changes intended for GitHub review.",
+        "The user asks to push, open a PR, or prepare review context.",
+        "The board has Worker receipts and verification commands worth summarizing."
+      ],
+      "activation": "publish_handoff",
+      "outputs": [
+        "PR handoff Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
       "applies_to": {
         "goal_state": "v2",
         "surfaces": [
@@ -47,7 +58,7 @@
         {
           "path": "extension.yaml",
           "url": "github-pr-workflow/extension.yaml",
-          "sha256": "a9382cf8d146508a3f5f8bc54672e3ef4c7e0840363529131673b95a03c99465"
+          "sha256": "641e998bd6453e1a9160b2fdabf3a251bbfd4f9354e62a61b789e15d8e6f147e"
         }
       ]
     }
