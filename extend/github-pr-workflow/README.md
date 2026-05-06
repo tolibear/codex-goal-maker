@@ -1,6 +1,6 @@
 # GitHub PR Workflow
 
-Prepare GitHub pull request handoff text from a Goal Maker board without making GitHub the source of truth.
+Prepare receipt-aligned commit boundaries and GitHub pull request handoff text from a Goal Maker board without making GitHub the source of truth.
 
 This extension is intentionally local-first. It helps a goal run turn `state.yaml` receipts, verification commands, commit boundaries, and the current diff into PR-ready context. It does not create a pull request, edit GitHub issues, or sync board state back from GitHub.
 

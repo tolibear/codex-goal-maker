@@ -6,7 +6,7 @@
       "name": "GitHub PR workflow",
       "kind": "integration",
       "version": "0.1.0",
-      "summary": "Prepare GitHub pull request handoff text and receipt-aligned commit boundaries from Goal Maker receipts without requiring GitHub credentials.",
+      "summary": "Prepare receipt-aligned commit boundaries and GitHub pull request handoff text from Goal Maker receipts without requiring GitHub credentials.",
       "description": "A local-first workflow for turning a Goal Maker board, receipts, changed files, verification output, and commit boundaries into PR-ready Markdown while keeping state.yaml authoritative.",
       "source": "extend/github-pr-workflow",
       "docs": "README.md",
@@ -57,7 +57,7 @@
         {
           "path": "README.md",
           "url": "github-pr-workflow/README.md",
-          "sha256": "51c84f737fbe73c321e7ca726767cb63c5b3e31f4099e758211ff0d3340d7625"
+          "sha256": "0cda5b3a9f4aca73cb2ffa15ae5126d22345c5f4c2eba36d51aaac237dfe22d5"
         },
         {
           "path": "extension.yaml",
