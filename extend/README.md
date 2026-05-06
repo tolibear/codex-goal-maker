@@ -6,9 +6,24 @@ The npm package reads the GitHub-hosted catalog at `extend/catalog.json`, so add
 
 Each extension folder should contain the files referenced by `extend/catalog.json`. Keep catalog entries checksum-pinned so `goal-maker extend install <id>` can verify downloads before copying them into a local Codex install.
 
+Use `goal-maker extend install --all` to install every cataloged extension into the active Goal Maker skill install. Use `--dry-run` first when testing catalog changes.
+
+Use `goal-maker extend <id>` when deciding whether to activate an extension. The detail view includes lifecycle activation, safety and approval state, missing env vars, reads/writes, outputs, support flags, and a local-use prompt.
+
 ## Extensions
 
 - `github-pr-workflow`: prepares GitHub pull request handoff text from Goal Maker receipts while keeping `state.yaml` authoritative.
+- `publish-github-projects`: publishes a GitHub Projects board view with Goal Maker task cards, agent fields, credential gates, and `Todo`/`In Progress`/`Blocked`/`Done` status mirroring.
+- `ai-diff-risk-review`: prepares a local risk review brief for AI-assisted or agent-produced diffs.
+- `ci-failure-triage`: summarizes failed checks, logs, changed files, and receipts into recovery-focused next steps.
+- `docs-drift-audit`: checks changed behavior and documentation surfaces for stale or missing docs before completion or PR handoff.
+- `test-gap-planner`: identifies weak test coverage and proposes the smallest useful next tests.
+- `release-readiness`: assembles release scope, verification, docs, packaging, and publish blockers.
+- `dependency-upgrade-planner`: plans dependency upgrades with policy fit, migration risk, verification, and rollback notes.
+- `security-review-brief`: prepares a focused local security review brief from changed files and receipts.
+- `codebase-onboarding-map`: creates a concise onboarding map from repo files, commands, conventions, and receipts.
+- `slack-standup-digest`: prepares Slack-ready status digests while keeping live delivery credential-gated.
+- `linear-ticket-handoff`: prepares Linear-ready issue text while keeping live issue creation credential-gated.
 
 ## Catalog Rules
 

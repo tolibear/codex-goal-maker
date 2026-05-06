@@ -112,6 +112,7 @@ Usage:
   goal-maker extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
   goal-maker extend <id> [--catalog-url <url-or-path>] [--json]
   goal-maker extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
+  goal-maker extend install --all [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
   goal-maker extend doctor [<id>] [--codex-home <path>] [--json]
 
 Default:
@@ -333,6 +334,7 @@ Usage:
   goal-maker extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
   goal-maker extend <id> [--catalog-url <url-or-path>] [--json]
   goal-maker extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
+  goal-maker extend install --all [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
   goal-maker extend doctor [<id>] [--codex-home <path>] [--json]
 
 States:
@@ -369,10 +371,19 @@ async function extendCatalog() {
   for (const extension of extensions) {
     console.log(extension.name || extension.id);
     if (extension.summary) console.log(`  ${extension.summary}`);
+    console.log(`  id: ${extension.id}`);
+    console.log(`  kind: ${extension.kind} | activation: ${extension.activation || "unspecified"}`);
+    console.log(`  state: ${extension.state.installed ? "installed" : "available"} | configured: ${extension.state.configured ? "yes" : "no"}`);
+    console.log(`  safe by default: ${extension.safe_by_default ? "yes" : "no"} | requires approval: ${extension.requires_approval ? "yes" : "no"}`);
+    if (extension.state.missing_env.length) {
+      console.log(`  missing env: ${extension.state.missing_env.join(", ")}`);
+    }
     console.log("");
   }
   console.log("View details:");
   console.log(`  npx goal-maker extend ${extensions[0].id}`);
+  console.log("Install all:");
+  console.log("  npx goal-maker extend install --all");
 }
 
 async function extendDetails(id) {
@@ -397,9 +408,26 @@ async function extendDetails(id) {
     console.log("");
   }
   console.log(`Status: ${detailed.state.installed ? "installed" : "available"}`);
+  console.log(`Configured: ${detailed.state.configured ? "yes" : "no"}`);
+  console.log(`ID: ${extension.id}`);
+  console.log(`Kind: ${extension.kind}`);
+  if (extension.version) console.log(`Version: ${extension.version}`);
+  console.log(`Activation: ${extension.activation || "unspecified"}`);
+  console.log(`Safe by default: ${extension.safe_by_default ? "yes" : "no"}`);
+  console.log(`Requires approval: ${extension.requires_approval ? "yes" : "no"}`);
   if (!detailed.state.configured && detailed.state.missing_env.length) {
     console.log(`Missing env: ${detailed.state.missing_env.join(", ")}`);
   }
+  printListSection("Use when", extension.use_when);
+  printListSection("Outputs", extension.outputs);
+  printListSection("Reads", extension.reads);
+  printListSection("Writes", extension.writes);
+  printListSection("Side effects", extension.side_effects);
+  printListSection("Auth env", extension.auth?.env);
+  printSupports(extension.supports);
+  console.log("");
+  console.log("Local use prompt:");
+  console.log(`  Use the ${extension.name || extension.id} extension for docs/goals/<slug>/goal.md and write its ${firstValue(extension.outputs, "artifact")} as Markdown.`);
   console.log("");
   console.log("Install:");
   console.log(`  npx goal-maker extend install ${extension.id}`);
@@ -408,28 +436,103 @@ async function extendDetails(id) {
   console.log(`  npx goal-maker extend install ${extension.id} --dry-run`);
 }
 
+function printListSection(title, values) {
+  if (!Array.isArray(values) || values.length === 0) return;
+  console.log("");
+  console.log(`${title}:`);
+  for (const value of values) console.log(`  - ${value}`);
+}
+
+function printSupports(supports) {
+  if (!supports || typeof supports !== "object") return;
+  const entries = Object.entries(supports);
+  if (entries.length === 0) return;
+  console.log("");
+  console.log("Supports:");
+  for (const [key, value] of entries) console.log(`  - ${key}: ${value}`);
+}
+
+function firstValue(values, fallback) {
+  return Array.isArray(values) && values.length ? values[0] : fallback;
+}
+
 async function extendInstall() {
   const id = positional(2);
-  if (!id) throw new Error("Missing extension id. Usage: goal-maker extend install <id>");
   const catalog = await loadCatalog();
+  if (hasFlag("--all")) {
+    await extendInstallAll(catalog);
+    return;
+  }
+
+  if (!id) throw new Error("Missing extension id. Usage: goal-maker extend install <id>");
   const extension = catalog.extensions.find((candidate) => candidate.id === id);
   if (!extension) {
     printExtensionNotFound(id, catalog.extensions);
     process.exit(1);
   }
+  const result = await installCatalogExtension(catalog, extension);
+
+  if (hasFlag("--dry-run")) {
+    if (hasFlag("--json")) {
+      printJson({ dry_run: true, extension: extensionWithLocalState(extension), target: result.target, files: result.plan });
+    } else {
+      console.log(`Would install ${extension.id} to ${result.target}`);
+      for (const file of result.plan) console.log(`  ${file.path}`);
+    }
+    return;
+  }
+
+  if (hasFlag("--json")) {
+    printJson({ installed: true, extension: extension.id, target: result.target });
+  } else {
+    console.log(`Installed ${extension.id} to ${result.target}`);
+  }
+}
+
+async function extendInstallAll(catalog) {
+  const results = [];
+  for (const extension of catalog.extensions) {
+    results.push(await installCatalogExtension(catalog, extension));
+  }
+
+  if (hasFlag("--dry-run")) {
+    if (hasFlag("--json")) {
+      printJson({
+        dry_run: true,
+        extensions: results.map(({ extension, target, plan }) => ({
+          extension: extensionWithLocalState(extension),
+          target,
+          files: plan,
+        })),
+      });
+    } else {
+      console.log(`Would install ${results.length} extensions`);
+      for (const { extension, target, plan } of results) {
+        console.log(`${extension.id} -> ${target}`);
+        for (const file of plan) console.log(`  ${file.path}`);
+      }
+    }
+    return;
+  }
+
+  if (hasFlag("--json")) {
+    printJson({
+      installed: true,
+      count: results.length,
+      extensions: results.map(({ extension, target }) => ({ id: extension.id, target })),
+    });
+  } else {
+    console.log(`Installed ${results.length} extensions`);
+    for (const { extension, target } of results) console.log(`  ${extension.id} -> ${target}`);
+  }
+}
+
+async function installCatalogExtension(catalog, extension) {
   validateCatalogExtension(extension);
   const target = extensionTarget(extension.id);
   const plan = installPlan(catalog, extension, target);
 
-  if (hasFlag("--dry-run")) {
-    if (hasFlag("--json")) {
-      printJson({ dry_run: true, extension: extensionWithLocalState(extension), target, files: plan });
-    } else {
-      console.log(`Would install ${extension.id} to ${target}`);
-      for (const file of plan) console.log(`  ${file.path}`);
-    }
-    return;
-  }
+  if (hasFlag("--dry-run")) return { extension, target, plan };
 
   assertSkillInstalledForExtensionInstall();
   if (existsSync(target) && !hasFlag("--force")) {
@@ -470,11 +573,7 @@ async function extendInstall() {
     throw error;
   }
 
-  if (hasFlag("--json")) {
-    printJson({ installed: true, extension: extension.id, target });
-  } else {
-    console.log(`Installed ${extension.id} to ${target}`);
-  }
+  return { extension, target, plan };
 }
 
 function extendDoctor() {

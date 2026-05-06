@@ -141,6 +141,7 @@ Discover optional extensions from the GitHub-hosted catalog:
 npx goal-maker extend
 npx goal-maker extend github-pr-workflow
 npx goal-maker extend install github-pr-workflow --dry-run
+npx goal-maker extend install --all --dry-run
 ```
 
 Use a non-default Codex home:
@@ -153,11 +154,11 @@ npx goal-maker install --codex-home /path/to/.codex
 
 The npm package is the stable core. Extensions live under `extend/` and move through the GitHub-hosted `extend/catalog.json`, so users do not need a new npm release for every optional integration.
 
-`goal-maker extend` reads the catalog and shows available extensions plus local install/configuration state. `goal-maker extend <id>` shows what an extension reads, writes, and requires. `goal-maker extend install <id>` copies a pinned, checksum-verified extension into the local Goal Maker install.
+`goal-maker extend` reads the catalog and shows available extensions plus operational state such as activation, install/configuration status, approval requirements, safe-by-default status, and missing environment variables. `goal-maker extend <id>` shows what an extension reads, writes, requires, supports, and a local-use prompt. `goal-maker extend install <id>` copies a pinned, checksum-verified extension into the local Goal Maker install. `goal-maker extend install --all` installs every cataloged extension.
 
 Extensions are not board truth. They may publish, report, intake, or add role guidance, but `state.yaml` remains authoritative.
 
-The first cataloged extension, `github-pr-workflow`, prepares GitHub PR handoff text from goal receipts without requiring GitHub credentials or making GitHub authoritative.
+The first cataloged extension, `github-pr-workflow`, prepares GitHub PR handoff text from goal receipts without requiring GitHub credentials or making GitHub authoritative. The catalog also includes GitHub Projects board publishing, local-first review, recovery, planning, documentation, audit, and credential-gated handoff extensions such as `publish-github-projects`, `ai-diff-risk-review`, `ci-failure-triage`, `docs-drift-audit`, `test-gap-planner`, `release-readiness`, `dependency-upgrade-planner`, `security-review-brief`, `codebase-onboarding-map`, `slack-standup-digest`, and `linear-ticket-handoff`.
 
 ## Running A Goal
 

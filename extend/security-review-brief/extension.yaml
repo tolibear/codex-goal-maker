@@ -1,0 +1,33 @@
+id: security-review-brief
+name: Security review brief
+kind: review
+version: 0.1.0
+source_of_truth: local
+description: Prepare a local security review brief for changed auth, secrets, input, file, network, dependency, or public API surfaces.
+use_when:
+  - A Worker slice touches auth, permissions, secrets, user input, file operations, dependency handling, or public APIs.
+  - The PM needs explicit security evidence before audit or PR handoff.
+  - Reviewers need focused security questions for a PR.
+activation: after_worker
+outputs:
+  - Security review brief
+requires_approval: false
+safe_by_default: true
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+  - security policy docs
+  - git diff --stat
+  - git diff
+  - verification output
+writes:
+  - Security review Markdown
+side_effects:
+  - none by default
+auth:
+  env: []
+supports:
+  dry_run: true
+  external_scanner: false
+  credentials_required: false

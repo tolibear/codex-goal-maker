@@ -1,0 +1,33 @@
+id: codebase-onboarding-map
+name: Codebase onboarding map
+kind: documentation
+version: 0.1.0
+source_of_truth: local
+description: Create a concise local onboarding map from repo files, commands, conventions, examples, and Goal Maker receipts.
+use_when:
+  - A developer or agent is starting work in an unfamiliar repo.
+  - A broad goal needs an evidence-backed repo map before implementation.
+  - Reviewers need package boundaries, commands, and conventions in one artifact.
+activation: before_worker
+outputs:
+  - Codebase onboarding map Markdown
+requires_approval: false
+safe_by_default: true
+reads:
+  - README.md
+  - AGENTS.md
+  - package manifests
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs
+  - examples
+  - tests
+writes:
+  - Codebase onboarding Markdown
+side_effects:
+  - none by default
+auth:
+  env: []
+supports:
+  dry_run: true
+  credentials_required: false

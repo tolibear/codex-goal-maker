@@ -205,15 +205,31 @@ test("extend human output shows extension names, descriptions, and next commands
     assert.match(list.stdout, /Available extensions/);
     assert.match(list.stdout, /GitHub Projects publishing/);
     assert.match(list.stdout, /Publish a one-way Goal Maker board view to GitHub Projects\./);
+    assert.match(list.stdout, /kind: publish \| activation: publish_handoff/);
+    assert.match(list.stdout, /state: available \| configured: no/);
+    assert.match(list.stdout, /safe by default: no \| requires approval: yes/);
+    assert.match(list.stdout, /missing env: GITHUB_TOKEN/);
+    assert.match(list.stdout, /npx goal-maker extend install --all/);
     assert.match(list.stdout, /npx goal-maker extend publish-github-projects/);
     assert.doesNotMatch(list.stdout, /publish-github-projects\tpublish/);
 
     const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome]);
     assert.equal(details.status, 0, details.stderr || details.stdout);
     assert.match(details.stdout, /Status: available/);
+    assert.match(details.stdout, /Configured: no/);
+    assert.match(details.stdout, /ID: publish-github-projects/);
+    assert.match(details.stdout, /Kind: publish/);
+    assert.match(details.stdout, /Version: 0\.1\.0/);
+    assert.match(details.stdout, /Activation: publish_handoff/);
+    assert.match(details.stdout, /Safe by default: no/);
+    assert.match(details.stdout, /Requires approval: yes/);
+    assert.match(details.stdout, /Use when:/);
+    assert.match(details.stdout, /Outputs:/);
+    assert.match(details.stdout, /Auth env:/);
+    assert.match(details.stdout, /Supports:/);
+    assert.match(details.stdout, /Local use prompt:/);
     assert.match(details.stdout, /npx goal-maker extend install publish-github-projects/);
     assert.match(details.stdout, /npx goal-maker extend install publish-github-projects --dry-run/);
-    assert.doesNotMatch(details.stdout, /version:/);
     assert.doesNotMatch(details.stdout, /files:/);
 
     const missing = runGoalMaker(["extend", "missing-extension", "--catalog-url", catalogPath, "--codex-home", codexHome]);
@@ -222,6 +238,37 @@ test("extend human output shows extension names, descriptions, and next commands
     assert.match(missing.stderr, /Available extensions:/);
     assert.match(missing.stderr, /publish-github-projects/);
     assert.match(missing.stderr, /npx goal-maker extend/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("extend installs all catalog extensions", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+
+    const installCore = runGoalMaker(["install", "--codex-home", codexHome]);
+    assert.equal(installCore.status, 0, installCore.stderr || installCore.stdout);
+
+    const dryRun = runGoalMaker(["extend", "install", "--all", "--catalog-url", catalogPath, "--codex-home", codexHome, "--dry-run", "--json"]);
+    assert.equal(dryRun.status, 0, dryRun.stderr || dryRun.stdout);
+    const dryRunReport = JSON.parse(dryRun.stdout);
+    assert.equal(dryRunReport.dry_run, true);
+    assert.equal(dryRunReport.extensions.length, 1);
+    assert.equal(dryRunReport.extensions[0].extension.id, "publish-github-projects");
+
+    const install = runGoalMaker(["extend", "install", "--all", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+    const installReport = JSON.parse(install.stdout);
+    assert.equal(installReport.installed, true);
+    assert.equal(installReport.count, 1);
+    assert.deepEqual(installReport.extensions.map((extension) => extension.id), ["publish-github-projects"]);
+
+    const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
+    assert.equal(details.status, 0, details.stderr || details.stdout);
+    assert.equal(JSON.parse(details.stdout).extension.state.installed, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

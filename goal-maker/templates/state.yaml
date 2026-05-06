@@ -6,9 +6,20 @@ version: 2
 goal:
   title: "<Goal title>"
   slug: "<goal-slug>"
-  kind: open_ended # specific | open_ended | recovery | audit
+  kind: open_ended # specific | open_ended | existing_plan | recovery | audit
   tranche: "<continuous execution: complete successive safe verified slices until the full original outcome is complete>"
   status: active # active | blocked | done
+  intake:
+    original_request: "<shortest faithful user request>"
+    interpreted_outcome: "<one sentence>"
+    input_shape: vague # vague | specific | existing_plan | recovery | audit
+    audience: unknown
+    authority: requested # requested | approved | inferred | needs_approval | blocked
+    proof_type: artifact # test | demo | artifact | metric | review | source_backed_answer | decision
+    completion_proof: "<observable signal that proves the full original outcome is complete>"
+    likely_misfire: "<how Goal Maker could succeed at the wrong thing>"
+    blind_spots_considered: []
+    existing_plan_facts: []
 
 rules:
   pm_owns_state: true
@@ -20,6 +31,8 @@ rules:
   queued_required_worker_blocks_completion: true
   continuous_until_full_outcome: true
   missing_input_or_credentials_do_not_stop_goal: true
+  preserve_and_validate_existing_plan: true
+  intake_misfire_must_be_audited: true
 
 agents:
   scout: installed

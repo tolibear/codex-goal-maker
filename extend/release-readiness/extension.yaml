@@ -1,0 +1,34 @@
+id: release-readiness
+name: Release readiness
+kind: audit
+version: 0.1.0
+source_of_truth: local
+description: Produce a local release readiness brief covering scope, package metadata, verification, docs, examples, and publish blockers.
+use_when:
+  - A goal changes package contents, CLI behavior, extension catalog entries, or release-facing docs.
+  - The PM needs a pre-release gate before publishing or PR handoff.
+  - Reviewers need release scope, verification, docs, and rollback notes in one place.
+activation: final_audit
+outputs:
+  - Release readiness brief
+requires_approval: false
+safe_by_default: true
+reads:
+  - docs/goals/<slug>/goal.md
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+  - package.json
+  - README.md
+  - changelog
+  - git diff --stat
+  - verification output
+writes:
+  - Release readiness Markdown
+side_effects:
+  - none by default
+auth:
+  env: []
+supports:
+  dry_run: true
+  live_publish: false
+  credentials_required: false
