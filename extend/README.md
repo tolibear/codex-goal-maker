@@ -9,6 +9,9 @@ Each extension folder should contain the files referenced by `extend/catalog.jso
 ## Extensions
 
 - `github-pr-workflow`: prepares GitHub pull request handoff text from Goal Maker receipts while keeping `state.yaml` authoritative.
+- `codebase-onboarding-map`: creates a concise onboarding map from repo files, commands, conventions, and receipts.
+- `slack-standup-digest`: prepares Slack-ready status digests while keeping live delivery credential-gated.
+- `linear-ticket-handoff`: prepares Linear-ready issue text while keeping live issue creation credential-gated.
 - `test-gap-planner`: identifies weak test coverage and proposes the smallest useful next tests.
 - `release-readiness`: assembles release scope, verification, docs, packaging, and publish blockers.
 - `dependency-upgrade-planner`: plans dependency upgrades with policy fit, migration risk, verification, and rollback notes.

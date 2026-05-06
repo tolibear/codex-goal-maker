@@ -513,6 +513,202 @@
           "sha256": "8c20f1fc34936a7fd1e1a6ec659caf94e25a2dc5a00c1c6785d60de88cf95633"
         }
       ]
+    },
+    {
+      "id": "codebase-onboarding-map",
+      "name": "Codebase onboarding map",
+      "kind": "documentation",
+      "version": "0.1.0",
+      "summary": "Create a concise local onboarding map from repo files, commands, conventions, examples, and Goal Maker receipts.",
+      "description": "A local-first documentation workflow for helping developers and agents understand a repository before implementation or review.",
+      "source": "extend/codebase-onboarding-map",
+      "docs": "README.md",
+      "use_when": [
+        "A developer or agent is starting work in an unfamiliar repo.",
+        "A broad goal needs an evidence-backed repo map before implementation.",
+        "Reviewers need package boundaries, commands, and conventions in one artifact."
+      ],
+      "activation": "before_worker",
+      "outputs": [
+        "Codebase onboarding map Markdown"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "documentation",
+          "onboarding",
+          "repo_map"
+        ]
+      },
+      "reads": [
+        "README.md",
+        "AGENTS.md",
+        "package manifests",
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs",
+        "examples",
+        "tests"
+      ],
+      "writes": [
+        "Codebase onboarding Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "credentials_required": false
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "codebase-onboarding-map/README.md",
+          "sha256": "b0c458697cb68fc04ab63d31906fdad7b686ce3c7e191958b48b37fb354966bd"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "codebase-onboarding-map/extension.yaml",
+          "sha256": "46fa6b6078082b18afdaab82ab52d2384f6ba5f80acd740cb1bfa78db6231b00"
+        }
+      ]
+    },
+    {
+      "id": "slack-standup-digest",
+      "name": "Slack standup digest",
+      "kind": "integration",
+      "version": "0.1.0",
+      "summary": "Prepare a Slack-ready status digest from Goal Maker receipts while treating live delivery as credential-gated and approval-required.",
+      "description": "A local-first team communication workflow that produces Slack-ready status text and keeps live Slack delivery separate from board truth.",
+      "source": "extend/slack-standup-digest",
+      "docs": "README.md",
+      "use_when": [
+        "A team wants an async Slack-ready update from a long-running goal.",
+        "A blocked task needs owner-visible context.",
+        "The PM needs to share progress without making Slack board truth."
+      ],
+      "activation": "publish_handoff",
+      "outputs": [
+        "Slack-ready standup digest Markdown"
+      ],
+      "requires_approval": true,
+      "safe_by_default": false,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "slack",
+          "team_status",
+          "blocked_task"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "git status --short",
+        "verification output"
+      ],
+      "writes": [
+        "Slack digest Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": [
+          "SLACK_BOT_TOKEN"
+        ]
+      },
+      "supports": {
+        "dry_run": true,
+        "live_slack": false,
+        "credentials_required": true
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "slack-standup-digest/README.md",
+          "sha256": "23a0e63fa5746835788481681d75b9e6e9701fab43908b9014deadb819abe643"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "slack-standup-digest/extension.yaml",
+          "sha256": "4f05716707820b60c4f4c3f94d0e7367b0edf7058b464f308da084b95d5b9e9a"
+        }
+      ]
+    },
+    {
+      "id": "linear-ticket-handoff",
+      "name": "Linear ticket handoff",
+      "kind": "integration",
+      "version": "0.1.0",
+      "summary": "Prepare Linear-ready issue text from Goal Maker receipts while treating live issue creation as credential-gated and approval-required.",
+      "description": "A local-first ticket handoff workflow that converts receipts, blockers, verification, and acceptance criteria into Linear-ready issue text.",
+      "source": "extend/linear-ticket-handoff",
+      "docs": "README.md",
+      "use_when": [
+        "A goal produces follow-up work that should become an issue.",
+        "A blocked task needs owner or team tracking.",
+        "The PM needs ticket-ready acceptance criteria from receipts and verification."
+      ],
+      "activation": "publish_handoff",
+      "outputs": [
+        "Linear-ready ticket handoff Markdown"
+      ],
+      "requires_approval": true,
+      "safe_by_default": false,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "linear",
+          "issue_tracker",
+          "blocked_task"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/goal.md",
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes",
+        "git status --short",
+        "git diff --stat",
+        "verification output"
+      ],
+      "writes": [
+        "Linear ticket handoff Markdown"
+      ],
+      "side_effects": [
+        "none by default"
+      ],
+      "auth": {
+        "env": [
+          "LINEAR_API_KEY"
+        ]
+      },
+      "supports": {
+        "dry_run": true,
+        "live_linear": false,
+        "credentials_required": true
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "linear-ticket-handoff/README.md",
+          "sha256": "2abce4632aae6326b6c626706dd03e3a81ac2321d057ec58480fc34243f040b0"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "linear-ticket-handoff/extension.yaml",
+          "sha256": "072d092be9d58c3b9e181eba182e234435e9370318169228796316a1fdc4d3f4"
+        }
+      ]
     }
   ]
 }
