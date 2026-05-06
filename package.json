@@ -20,7 +20,9 @@
   "scripts": {
     "check": "node --check internal/cli/goal-maker.mjs goal-maker/scripts/*.mjs && node --test internal/test/*.test.mjs",
     "test": "node --test internal/test/*.test.mjs",
-    "pack:dry-run": "npm pack --dry-run"
+    "pack:dry-run": "npm pack --dry-run",
+    "publish:check": "node internal/cli/check-publish-version.mjs && npm run pack:dry-run",
+    "prepublishOnly": "node internal/cli/check-publish-version.mjs"
   },
   "repository": {
     "type": "git",
