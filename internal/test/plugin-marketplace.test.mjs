@@ -25,3 +25,7 @@ test("GoalBuddy plugin metadata tracks the package release", () => {
   assert.equal(plugin.repository, "https://github.com/tolibear/goalbuddy");
   assert.equal(plugin.skills, "./skills/");
 });
+
+test("GoalBuddy plugin delegates composer invocation to the skill", () => {
+  assert.equal(Object.hasOwn(plugin.interface, "defaultPrompt"), false);
+});

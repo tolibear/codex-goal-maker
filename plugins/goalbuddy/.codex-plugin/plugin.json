@@ -35,11 +35,6 @@
     "websiteURL": "https://github.com/tolibear/goalbuddy",
     "privacyPolicyURL": "https://github.com/tolibear/goalbuddy#privacy",
     "termsOfServiceURL": "https://github.com/tolibear/goalbuddy#license",
-    "defaultPrompt": [
-      "Prepare a GoalBuddy board for this goal",
-      "Audit this GoalBuddy board and continue safely",
-      "Install GoalBuddy extensions and verify setup"
-    ],
     "brandColor": "#2563EB",
     "composerIcon": "./assets/goalbuddy-icon.svg",
     "logo": "./assets/goalbuddy-icon.svg",
