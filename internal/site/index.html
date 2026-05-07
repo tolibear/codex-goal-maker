@@ -41,14 +41,17 @@
         </nav>
         <a class="header-action" href="#install">
           <i data-lucide="terminal"></i>
-          Install
+          npx goalbuddy
         </a>
       </header>
 
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy" data-animate="hero-copy">
           <p class="eyebrow">Open source Codex /goal companion</p>
-          <h1 id="hero-title">Give /goal a best friend.</h1>
+          <h1 id="hero-title">
+            <span>Give /goal</span>
+            <span>a best friend.</span>
+          </h1>
           <p class="hero-subcopy">
             Goal Buddy prepares a goal.md for the Codex /goal command, keeps state.yaml as local truth, and lets you extend goal state into GitHub, Slack, Linear, and other places when the workflow needs it.
           </p>
@@ -72,15 +75,21 @@
               <span></span>
             </div>
             <pre><code><span>$</span> npx goalbuddy
-<span>$</span> goalbuddy
+Installed GoalBuddy Codex plugin
+Restart Codex, then use:
+  $goal-prep
+
+Optional extensions:
+  npx goalbuddy extend install --all
+
+<span>$</span> $goal-prep
 
 <em>Prepared docs/goals/improve-project/</em>
   goal.md
   state.yaml
   notes/
 
-<strong>Run next</strong> /goal Follow docs/goals/improve-project/goal.md
-<strong>State</strong> local state.yaml</code></pre>
+/goal Follow docs/goals/improve-project/goal.md.</code></pre>
           </div>
           <img class="hero-character" src="./assets/goalbuddy-character.png" alt="Goal Buddy mascot holding a pencil">
         </div>
@@ -142,6 +151,7 @@
           <p>
             Goal Buddy writes the goal charter, machine-readable state, and notes into your repository. /goal can resume from those files, and extensions can mirror the state without replacing it.
           </p>
+          <img class="local-character" src="./assets/goalbuddy-clipboard.png" alt="Goal Buddy mascot holding a checklist clipboard">
         </div>
 
         <div class="file-grid">
@@ -166,7 +176,7 @@
           <article class="file-card file-install" id="install">
             <i data-lucide="copy"></i>
             <h3>Install and prepare a board</h3>
-            <p>Run the CLI, answer the intake, then start Codex with the printed /goal command.</p>
+            <p>Run the CLI once to install the Codex plugin. Restart Codex, use $goal-prep, then start with the printed /goal command.</p>
             <button class="copy-command" type="button" data-copy="npx goalbuddy">
               <code>npx goalbuddy</code>
               <span>Copy</span>
@@ -208,7 +218,11 @@
         <div class="section-kicker">Extension surface</div>
         <div class="section-intro">
           <h2 id="extensions-title">Install focused state extensions.</h2>
-          <p>Each extension has a catalog ID, a local install command, and a defined handoff surface. The core board still runs from goal.md and state.yaml.</p>
+          <p>Install the optional bundle with one command, or pick individual catalog IDs. The core board still runs from goal.md and state.yaml.</p>
+          <button class="copy-command extension-command extension-bulk-command" type="button" data-copy="npx goalbuddy extend install --all">
+            <code>npx goalbuddy extend install --all</code>
+            <span>Copy</span>
+          </button>
         </div>
         <div class="extension-grid">
           <article>

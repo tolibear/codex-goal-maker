@@ -82,7 +82,19 @@ Install and enable the native Codex plugin:
 
 ```bash
 npx goalbuddy
+```
+
+Restart Codex, then use `$goal-prep`. To add the optional extension bundle:
+
+```bash
+npx goalbuddy extend install --all
+```
+
+If you prefer a global executable, install the npm package globally and run `goalbuddy`:
+
+```bash
 npm i -g goalbuddy
+goalbuddy
 ```
 
 Use the skill-only fallback if your Codex build does not support plugins:

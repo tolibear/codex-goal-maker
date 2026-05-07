@@ -25,10 +25,17 @@ Install and enable GoalBuddy:
 npx goalbuddy
 ```
 
+Restart Codex, then use `$goal-prep`. Optional extensions can be installed with:
+
+```bash
+npx goalbuddy extend install --all
+```
+
 Or install the npm package globally:
 
 ```bash
 npm i -g goalbuddy
+goalbuddy
 ```
 
 The marketplace manifest is included for Codex discovery, but current Codex CLI builds only register the marketplace with `codex plugin marketplace add`; the npm CLI also caches and enables the plugin.

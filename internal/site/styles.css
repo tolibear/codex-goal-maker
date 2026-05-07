@@ -177,10 +177,12 @@ pre {
 
 .header-action {
   min-height: 44px;
-  padding: 0 18px;
+  padding: 0 20px;
   color: #fff;
   background: var(--ink);
   box-shadow: 0 16px 32px rgba(9, 17, 40, 0.2);
+  font-family: "Geist Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.9rem;
 }
 
 .header-action svg,
@@ -221,12 +223,19 @@ pre {
 }
 
 .hero h1 {
+  display: grid;
+  gap: 0;
   max-width: 760px;
   margin: 0;
   color: var(--ink);
   font-size: clamp(3.5rem, 7.4vw, 7.2rem);
   line-height: 0.88;
   letter-spacing: 0;
+}
+
+.hero h1 span {
+  display: block;
+  white-space: nowrap;
 }
 
 .hero-subcopy {
@@ -271,7 +280,7 @@ pre {
 
 .command-window {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   overflow: hidden;
   width: min(100%, 560px);
   margin: 0 auto;
@@ -311,7 +320,7 @@ pre {
 
 .command-window pre {
   margin: 0;
-  min-height: 330px;
+  min-height: 286px;
   padding: 26px;
   overflow: hidden;
   color: #f6f8ff;
@@ -329,32 +338,16 @@ pre {
   font-style: normal;
 }
 
-.command-window strong {
-  display: inline-block;
-  min-width: 76px;
-  color: #9bf2c7;
-  font-weight: 600;
-}
-
 .hero-character {
   position: absolute;
-  right: clamp(-40px, -2vw, 0px);
-  bottom: -22px;
-  width: min(34vw, 330px);
+  z-index: 3;
+  right: clamp(-96px, -6vw, -62px);
+  bottom: 18px;
+  width: min(30vw, 285px);
   max-width: none;
   filter: drop-shadow(0 32px 34px rgba(67, 74, 190, 0.22));
   transform-origin: 64% 76%;
-  animation: hero-float 4.2s ease-in-out infinite alternate;
-}
-
-@keyframes hero-float {
-  from {
-    transform: translateY(0) rotate(-0.5deg);
-  }
-
-  to {
-    transform: translateY(-12px) rotate(1.6deg);
-  }
+  transform: rotate(1.4deg);
 }
 
 .principles {
@@ -548,6 +541,12 @@ pre {
   top: auto;
 }
 
+.local-character {
+  width: min(58%, 250px);
+  margin: 36px auto 0;
+  filter: drop-shadow(0 22px 28px rgba(67, 74, 190, 0.16));
+}
+
 .file-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -722,6 +721,11 @@ pre {
   text-align: left;
 }
 
+.extension-bulk-command {
+  width: min(100%, 460px);
+  margin-top: 24px;
+}
+
 .extension-command:hover {
   border-color: rgba(79, 70, 216, 0.34);
   background: #fff;
@@ -769,7 +773,8 @@ pre {
 
 .final-cta h2 {
   max-width: 760px;
-  font-size: clamp(2rem, 4vw, 4.45rem);
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1.08;
 }
 
 .final-cta p {
@@ -855,7 +860,7 @@ pre {
   .extensions,
   .final-cta,
   .site-footer {
-    width: min(1180px, calc(100% - 64px));
+    width: min(1180px, calc(100% - 40px));
   }
 
   .site-header {
@@ -884,7 +889,7 @@ pre {
   }
 
   .hero h1 {
-    font-size: 3.18rem;
+    font-size: clamp(2.35rem, 11vw, 3.18rem);
     line-height: 0.95;
     text-wrap: balance;
   }
@@ -908,16 +913,21 @@ pre {
   }
 
   .command-window pre {
-    min-height: 305px;
+    min-height: 272px;
     padding: 20px;
     font-size: 0.8rem;
     overflow-wrap: anywhere;
   }
 
   .hero-character {
-    right: -58px;
-    bottom: -14px;
-    width: 300px;
+    right: -84px;
+    bottom: -34px;
+    width: 220px;
+  }
+
+  .local-character {
+    width: min(74%, 230px);
+    margin-top: 28px;
   }
 
   .principles article,
