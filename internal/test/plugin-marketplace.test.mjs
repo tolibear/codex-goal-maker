@@ -15,7 +15,7 @@ test("GoalBuddy plugin is exposed through a Codex marketplace manifest", () => {
   assert.equal(entry.name, "goalbuddy");
   assert.equal(entry.source.source, "local");
   assert.equal(entry.source.path, "./plugins/goalbuddy");
-  assert.equal(entry.policy.installation, "AVAILABLE");
+  assert.equal(entry.policy.installation, "INSTALLED_BY_DEFAULT");
   assert.equal(entry.category, "Coding");
 });
 

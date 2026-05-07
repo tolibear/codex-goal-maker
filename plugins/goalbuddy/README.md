@@ -19,13 +19,13 @@ npx goalbuddy doctor
 
 ## Native Codex Install
 
-Install and enable the plugin with the GoalBuddy CLI:
+Install GoalBuddy from the Codex plugin marketplace:
 
 ```bash
-npx goalbuddy plugin install
+codex plugin marketplace add tolibear/goalbuddy
 ```
 
-This adds the `tolibear/goalbuddy` marketplace, caches the packaged plugin, and enables `goalbuddy@goalbuddy` for Codex. The npm CLI remains useful for `doctor`, project-local agent setup, and optional GoalBuddy extension management.
+The marketplace marks GoalBuddy as installed by default, so this one command is the native plugin install path. The npm CLI remains useful for `doctor`, project-local agent setup, and optional GoalBuddy extension management.
 
 For local CLI testing before npm publish:
 

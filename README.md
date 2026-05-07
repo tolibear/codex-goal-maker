@@ -33,7 +33,7 @@ $goalbuddy
 For native Codex plugin install instead of the skill-only installer:
 
 ```bash
-npx goalbuddy plugin install
+codex plugin marketplace add tolibear/goalbuddy
 ```
 
 ## Why GoalBuddy Exists
@@ -88,7 +88,7 @@ npx goalbuddy update
 Install and enable the native Codex plugin:
 
 ```bash
-npx goalbuddy plugin install
+codex plugin marketplace add tolibear/goalbuddy
 ```
 
 Native Codex `/goal` is still an under-development Codex feature. Before relying on the printed command, confirm your local Codex runtime is logged in and has goals enabled:
