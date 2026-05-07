@@ -2,25 +2,188 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>GoalBuddy README Hero Render</title>
+    <title>Goal Buddy README Hero Render</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;700;850;900&family=Geist+Mono:wght@600;700&display=swap" rel="stylesheet">
     <style>
+      * {
+        box-sizing: border-box;
+      }
+
       html,
       body {
         width: 1600px;
         height: 900px;
         margin: 0;
         overflow: hidden;
+        color: #091128;
+        background:
+          linear-gradient(rgba(9, 17, 40, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(9, 17, 40, 0.05) 1px, transparent 1px),
+          radial-gradient(circle at 10% 6%, #d8f8ef, transparent 520px),
+          radial-gradient(circle at 88% 10%, #e7eeff, transparent 620px),
+          #fbfcff;
+        background-size: 78px 78px, 78px 78px, auto, auto, auto;
+        font-family: Geist, system-ui, sans-serif;
+      }
+
+      main {
+        position: relative;
+        width: 1600px;
+        height: 900px;
+        padding: 76px 92px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 40px;
+        font-weight: 850;
+      }
+
+      .brand img {
+        width: 90px;
+        height: 90px;
+        filter: drop-shadow(0 18px 24px rgba(67, 74, 190, 0.16));
+      }
+
+      .eyebrow {
+        margin: 76px 0 28px;
+        color: #4f46d8;
+        font-size: 22px;
+        font-weight: 850;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 96px;
+        line-height: 0.98;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 34px 0 0;
+        max-width: 650px;
+        color: #45516f;
+        font-size: 32px;
+        line-height: 1.36;
+        font-weight: 500;
+      }
+
+      .actions {
+        display: flex;
+        gap: 28px;
+        margin-top: 54px;
+      }
+
+      .pill,
+      .secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 76px;
+        padding: 0 46px;
+        border-radius: 999px;
+        font-size: 27px;
+        font-weight: 850;
+      }
+
+      .pill {
+        color: #fff;
+        background: linear-gradient(135deg, #07101f, #1b2550 70%, #2736a8);
+        box-shadow: 0 22px 48px rgba(52, 48, 117, 0.25);
+        font-family: "Geist Mono", monospace;
+      }
+
+      .secondary {
+        border: 2px solid #dce3ef;
         background: #fff;
       }
 
-      img {
-        display: block;
-        width: 1600px;
-        height: 900px;
+      .terminal {
+        position: absolute;
+        right: 72px;
+        top: 176px;
+        width: 560px;
+        height: 430px;
+        overflow: hidden;
+        border-radius: 30px;
+        background: #07101f;
+        box-shadow: 0 34px 82px rgba(7, 16, 31, 0.32);
+      }
+
+      .bar {
+        display: flex;
+        gap: 12px;
+        height: 62px;
+        padding: 26px 34px;
+        border-bottom: 1px solid rgba(231, 236, 249, 0.12);
+        background: #101b2d;
+      }
+
+      .bar span {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+      }
+
+      .bar span:nth-child(1) { background: #ff6b66; }
+      .bar span:nth-child(2) { background: #ffc45b; }
+      .bar span:nth-child(3) { background: #58d878; }
+
+      pre {
+        margin: 0;
+        padding: 32px 40px;
+        color: #f6f8ff;
+        font-family: "Geist Mono", monospace;
+        font-size: 23px;
+        line-height: 1.42;
+        font-weight: 600;
+        white-space: pre-wrap;
+      }
+
+      em {
+        color: #78f29a;
+        font-style: normal;
+      }
+
+      .character {
+        position: absolute;
+        right: 28px;
+        bottom: 62px;
+        width: 374px;
+        filter: drop-shadow(0 34px 38px rgba(67, 74, 190, 0.22));
       }
     </style>
   </head>
   <body>
-    <img src="./goalbuddy-readme-hero.svg" alt="">
+    <main>
+      <div class="brand">
+        <img src="./goalbuddy-mark.png" alt="">
+        <span>Goal Buddy</span>
+      </div>
+      <div class="eyebrow">OPEN SOURCE CODEX /GOAL COMPANION</div>
+      <h1>Give /goal<br>a best friend.</h1>
+      <p>Prepare goal.md for Codex /goal. Keep state.yaml local and extensible.</p>
+      <div class="actions">
+        <div class="pill">npx goalbuddy</div>
+        <div class="secondary">View GitHub</div>
+      </div>
+      <section class="terminal" aria-hidden="true">
+        <div class="bar"><span></span><span></span><span></span></div>
+        <pre>$npx goalbuddy
+$goal-prep
+
+<em>Prepared docs/goals/...</em>
+  goal.md
+  state.yaml
+
+/goal follow goal.md</pre>
+      </section>
+      <img class="character" src="./goalbuddy-character.png" alt="">
+    </main>
   </body>
 </html>

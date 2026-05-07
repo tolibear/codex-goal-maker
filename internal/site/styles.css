@@ -199,9 +199,9 @@ pre {
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(360px, 0.68fr);
+  grid-template-columns: minmax(0, 0.78fr) minmax(420px, 0.72fr);
   align-items: center;
-  gap: clamp(2rem, 7vw, 7rem);
+  gap: clamp(3rem, 8vw, 8rem);
   min-height: 720px;
   padding: 88px 0 52px;
 }
@@ -225,10 +225,10 @@ pre {
 .hero h1 {
   display: grid;
   gap: 0;
-  max-width: 760px;
+  max-width: 660px;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(3.5rem, 7.4vw, 7.2rem);
+  font-size: clamp(3.4rem, 6.35vw, 6.55rem);
   line-height: 0.88;
   letter-spacing: 0;
 }
@@ -795,6 +795,33 @@ pre {
   height: 32px;
 }
 
+.built-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.built-by a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  transition: color 180ms ease;
+}
+
+.built-by a:hover {
+  color: var(--violet);
+}
+
+.built-by svg {
+  width: 15px;
+  height: 15px;
+}
+
 @media (max-width: 980px) {
   .nav-links {
     display: none;
@@ -804,13 +831,16 @@ pre {
     grid-template-columns: auto auto;
   }
 
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
   .local-system,
   .section-intro {
     grid-template-columns: 1fr;
   }
 
   .hero {
-    grid-template-columns: 1fr;
     min-height: auto;
     padding-top: 82px;
   }

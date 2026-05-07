@@ -2,25 +2,170 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>GoalBuddy OG Render</title>
+    <title>Goal Buddy OG Render</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;700;850;900&family=Geist+Mono:wght@600;700&display=swap" rel="stylesheet">
     <style>
+      * {
+        box-sizing: border-box;
+      }
+
       html,
       body {
         width: 1200px;
         height: 630px;
         margin: 0;
         overflow: hidden;
-        background: #fff;
+        color: #091128;
+        background:
+          linear-gradient(rgba(9, 17, 40, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(9, 17, 40, 0.05) 1px, transparent 1px),
+          radial-gradient(circle at 10% 6%, #d8f8ef, transparent 420px),
+          radial-gradient(circle at 90% 12%, #e7eeff, transparent 500px),
+          #fbfcff;
+        background-size: 72px 72px, 72px 72px, auto, auto, auto;
+        font-family: Geist, system-ui, sans-serif;
       }
 
-      img {
-        display: block;
+      main {
+        position: relative;
         width: 1200px;
         height: 630px;
+        padding: 58px 70px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 31px;
+        font-weight: 850;
+      }
+
+      .brand img {
+        width: 74px;
+        height: 74px;
+        filter: drop-shadow(0 14px 20px rgba(67, 74, 190, 0.16));
+      }
+
+      .eyebrow {
+        margin: 52px 0 22px;
+        color: #4f46d8;
+        font-size: 17px;
+        font-weight: 850;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 68px;
+        line-height: 0.98;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 28px 0 0;
+        max-width: 520px;
+        color: #45516f;
+        font-size: 24px;
+        line-height: 1.38;
+        font-weight: 500;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 58px;
+        margin-top: 36px;
+        padding: 0 34px;
+        color: #fff;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #07101f, #1b2550 70%, #2736a8);
+        box-shadow: 0 18px 42px rgba(52, 48, 117, 0.25);
+        font-family: "Geist Mono", monospace;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .terminal {
+        position: absolute;
+        right: 66px;
+        top: 106px;
+        width: 420px;
+        height: 338px;
+        overflow: hidden;
+        border-radius: 24px;
+        background: #07101f;
+        box-shadow: 0 30px 74px rgba(7, 16, 31, 0.3);
+      }
+
+      .bar {
+        display: flex;
+        gap: 10px;
+        height: 52px;
+        padding: 22px 24px;
+        border-bottom: 1px solid rgba(231, 236, 249, 0.12);
+        background: #101b2d;
+      }
+
+      .bar span {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+
+      .bar span:nth-child(1) { background: #ff6b66; }
+      .bar span:nth-child(2) { background: #ffc45b; }
+      .bar span:nth-child(3) { background: #58d878; }
+
+      pre {
+        margin: 0;
+        padding: 26px 30px;
+        color: #f6f8ff;
+        font-family: "Geist Mono", monospace;
+        font-size: 17px;
+        line-height: 1.45;
+        font-weight: 600;
+        white-space: pre-wrap;
+      }
+
+      em {
+        color: #78f29a;
+        font-style: normal;
+      }
+
+      .character {
+        position: absolute;
+        right: 32px;
+        bottom: 18px;
+        width: 246px;
+        filter: drop-shadow(0 28px 32px rgba(67, 74, 190, 0.22));
       }
     </style>
   </head>
   <body>
-    <img src="./goalbuddy-og.svg" alt="">
+    <main>
+      <div class="brand">
+        <img src="./goalbuddy-mark.png" alt="">
+        <span>Goal Buddy</span>
+      </div>
+      <div class="eyebrow">OPEN SOURCE CODEX /GOAL COMPANION</div>
+      <h1>Give /goal<br>a best friend.</h1>
+      <p>Prepare goal.md for Codex /goal. Keep state.yaml local and extensible.</p>
+      <div class="pill">npx goalbuddy</div>
+      <section class="terminal" aria-hidden="true">
+        <div class="bar"><span></span><span></span><span></span></div>
+        <pre>$npx goalbuddy
+$goal-prep
+
+<em>Prepared docs/goals/...</em>
+  goal.md
+  state.yaml
+
+/goal follow goal.md</pre>
+      </section>
+      <img class="character" src="./goalbuddy-character.png" alt="">
+    </main>
   </body>
 </html>
