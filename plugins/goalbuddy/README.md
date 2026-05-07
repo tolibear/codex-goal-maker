@@ -15,6 +15,7 @@ From the repo root:
 ```bash
 npm run check
 npx goalbuddy doctor
+npx goalbuddy check-update
 ```
 
 ## Native Codex Install

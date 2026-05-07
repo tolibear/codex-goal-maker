@@ -183,6 +183,26 @@ test("doctor reports native goal runtime readiness and supports strict goal-read
   }
 });
 
+test("check-update reports newer published GoalBuddy versions", () => {
+  const env = {
+    ...process.env,
+    GOALBUDDY_TEST_NPM_LATEST_VERSION: "99.0.0",
+  };
+
+  const result = runGoalMaker(["check-update", "--json"], { env });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.current_version, packageVersion);
+  assert.equal(report.latest_version, "99.0.0");
+  assert.equal(report.update_available, true);
+  assert.equal(report.update_command, "npx goalbuddy");
+
+  const human = runGoalMaker(["check-update"], { env });
+  assert.equal(human.status, 0, human.stderr || human.stdout);
+  assert.match(human.stdout, /GoalBuddy 99\.0\.0 is available/);
+  assert.match(human.stdout, /Update with: npx goalbuddy/);
+});
+
 test("plugin install adds marketplace, caches plugin, and enables config", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {

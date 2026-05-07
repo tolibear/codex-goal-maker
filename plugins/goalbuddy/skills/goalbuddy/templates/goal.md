@@ -61,11 +61,15 @@ On every `/goal` continuation:
 
 1. Read this charter.
 2. Read `state.yaml`.
-3. Re-check the intake: original request, input shape, authority, proof, blind spots, existing plan facts, and likely misfire.
-4. Work only on the active board task.
-5. Assign Scout, Judge, Worker, or PM according to the task.
-6. Write a compact task receipt.
-7. Update the board.
-8. If Judge selected a safe Worker task with `allowed_files`, `verify`, and `stop_if`, activate it and continue unless blocked.
-9. Treat a slice audit as a checkpoint, not completion, unless it explicitly proves the full original outcome is complete.
-10. Finish only with a Judge/PM audit receipt that maps receipts and verification back to the original user outcome and records `full_outcome_complete: true`.
+3. Run the bundled GoalBuddy update checker when available and mention a newer version without blocking.
+4. Re-check the intake: original request, input shape, authority, proof, blind spots, existing plan facts, and likely misfire.
+5. Work only on the active board task.
+6. Assign Scout, Judge, Worker, or PM according to the task.
+7. Write a compact task receipt.
+8. Update the board.
+9. If Judge selected a safe Worker task with `allowed_files`, `verify`, and `stop_if`, activate it and continue unless blocked.
+10. If a problem, suggestion, or follow-up should become a repo artifact, create an approved issue/PR or ask the operator whether to create one.
+11. Treat a slice audit as a checkpoint, not completion, unless it explicitly proves the full original outcome is complete.
+12. Finish only with a Judge/PM audit receipt that maps receipts and verification back to the original user outcome and records `full_outcome_complete: true`.
+
+Issue and PR handoffs are supporting artifacts. `state.yaml` remains authoritative, and every external artifact decision must be recorded in a task receipt.

@@ -28,6 +28,7 @@ During a `$goal-prep` turn, do not perform the user's requested work, even if th
 
 Allowed `$goal-prep` actions:
 
+- run the bundled GoalBuddy update checker and mention a newer version if one is available;
 - ask diagnostic intake questions and wait when required;
 - create or repair only `docs/goals/<slug>/goal.md`, `docs/goals/<slug>/state.yaml`, and `docs/goals/<slug>/notes/`;
 - optionally run the GoalBuddy board checker against that `state.yaml`;
@@ -36,6 +37,22 @@ Allowed `$goal-prep` actions:
 - ask whether to start `/goal`, refine the board, or stop.
 
 If the prompt names another skill or tool, such as "use the taste skill", "refresh the taste skill", "look at this repo", "use browser", or "generate assets", record that requirement in the charter and seed tasks. Do not load that skill, browse that repo, or generate those assets during `$goal-prep`.
+
+## Update Check
+
+At the start of a `$goal-prep` turn, check whether GoalBuddy itself is stale. Run the bundled checker from the installed skill directory when available:
+
+```bash
+node <skill-path>/scripts/check-update.mjs --json
+```
+
+If the checker reports `update_available: true`, tell the user once before continuing:
+
+```text
+GoalBuddy <latest_version> is available. After this turn, update with: npx goalbuddy
+```
+
+Do not block intake or board creation on update checking. If the checker is missing, cannot find npm, or network access fails, continue silently unless the user asked about updates.
 
 ## Intake Compiler
 
@@ -131,6 +148,7 @@ When invoked directly, run intake first. For vague, strategic, improvement-orien
 
 Do:
 
+- check for a newer GoalBuddy version once at the start and mention it without blocking;
 - clarify or infer the goal title and slug;
 - run the Intake Compiler;
 - ask diagnostic intake questions when clarity would materially improve the board;
@@ -408,6 +426,25 @@ Blocked tasks do not necessarily block the goal. The PM should keep doing safe l
 - update receipts and verification freshness.
 
 Avoid setting `goal.status: blocked` for missing input, credentials, production access, destructive-operation permission, or policy decisions. Block the specific task instead, record the missing requirement, and continue with every safe local workaround or adjacent slice.
+
+## Operator Escalation
+
+When Scout, Judge, Worker, or PM discovers a problem, improvement opportunity, product suggestion, follow-up repair, or tool limitation that should not be fixed inside the current active task, do not let it disappear in chat.
+
+The PM may create a board task to prepare a repo-native follow-up. If the user has already approved publishing and the repo/auth state supports it, the PM may create an issue or PR directly and record the link in the receipt. Otherwise, ask the operator one concise question before creating the external artifact:
+
+```markdown
+I found [problem or suggestion].
+
+Should I:
+1. Create an issue in this repo for it? (Recommended) - [why]
+2. Prepare a PR for the fix/suggestion - [when this is better]
+3. Keep it only in the GoalBuddy board for now - [tradeoff]
+```
+
+Use an issue for follow-up work, unclear scope, missing approval, or suggestions that need discussion. Use a PR when the fix is already implemented or safely implementable within the current approved scope. If neither is appropriate, propose a different path and record the decision in `state.yaml`.
+
+External issues and PRs are supporting artifacts, not board truth. `state.yaml` remains authoritative, and every issue/PR creation or decision must be reflected in a PM, Worker, or Judge receipt.
 
 ## Continuation Rule
 

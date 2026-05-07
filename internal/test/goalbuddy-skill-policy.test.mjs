@@ -14,6 +14,10 @@ test("Goal Prep invocation boundary keeps $goal-prep prepare-only", () => {
     assert.match(text, /During a `\$goal-prep` turn, do not perform the user's requested work/);
     assert.match(text, /Do not refresh or load named skills/);
     assert.match(text, /Do not load that skill, browse that repo, or generate those assets during `\$goal-prep`/);
+    assert.match(text, /check whether GoalBuddy itself is stale/);
+    assert.match(text, /GoalBuddy <latest_version> is available/);
+    assert.match(text, /Operator Escalation/);
+    assert.match(text, /ask the operator one concise question before creating the external artifact/);
     assert.match(text, /This section applies after the user starts `\/goal Follow docs\/goals\/<slug>\/goal\.md\.`/);
   }
 });

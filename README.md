@@ -124,6 +124,12 @@ Check the local install:
 npx goalbuddy doctor
 ```
 
+Check whether a newer GoalBuddy release is available:
+
+```bash
+npx goalbuddy check-update
+```
+
 Use a non-default Codex home:
 
 ```bash

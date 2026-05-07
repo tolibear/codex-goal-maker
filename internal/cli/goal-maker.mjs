@@ -70,6 +70,10 @@ async function main() {
     case "doctor":
       doctor();
       break;
+    case "check-update":
+    case "update-check":
+      checkUpdate();
+      break;
     case "plugin":
       plugin();
       break;
@@ -144,6 +148,7 @@ Usage:
   ${canonicalCliName} update [--codex-home <path>] [--json]
   ${canonicalCliName} agents [--codex-home <path>] [--force]
   ${canonicalCliName} doctor [--codex-home <path>] [--goal-ready]
+  ${canonicalCliName} check-update [--json]
   ${canonicalCliName} extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
   ${canonicalCliName} extend <id> [--catalog-url <url-or-path>] [--json]
   ${canonicalCliName} extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
@@ -333,6 +338,46 @@ function doctor() {
   const installOk = installed && missingAgents.length === 0 && staleAgents.length === 0;
   const goalReadyOk = !hasFlag("--goal-ready") || goalRuntime.ready;
   process.exit(installOk && goalReadyOk ? 0 : 1);
+}
+
+function checkUpdate() {
+  const report = updateReport();
+
+  if (hasFlag("--json")) {
+    printJson(report);
+    return;
+  }
+
+  if (report.check_status !== "ok") {
+    console.log(`GoalBuddy update check unavailable: ${report.error}`);
+  } else if (report.update_available) {
+    console.log(`GoalBuddy ${report.latest_version} is available; installed version is ${report.current_version}.`);
+    console.log(`Update with: ${report.update_command}`);
+  } else {
+    console.log(`GoalBuddy is up to date (${report.current_version}).`);
+  }
+}
+
+function updateReport() {
+  const report = {
+    package: packageInfo.name,
+    current_version: normalizeVersion(packageInfo.version),
+    latest_version: null,
+    update_available: false,
+    check_status: "unknown",
+    update_command: `npx ${canonicalCliName}`,
+  };
+
+  try {
+    report.latest_version = latestPublishedVersion();
+    report.update_available = compareVersions(report.current_version, report.latest_version) < 0;
+    report.check_status = "ok";
+  } catch (error) {
+    report.check_status = "unavailable";
+    report.error = error.message;
+  }
+
+  return report;
 }
 
 function plugin() {
@@ -1129,9 +1174,39 @@ function assertSkillInstalledForExtensionInstall() {
   }
 }
 
+function latestPublishedVersion() {
+  if (process.env.GOALBUDDY_TEST_NPM_LATEST_VERSION) {
+    return normalizeVersion(process.env.GOALBUDDY_TEST_NPM_LATEST_VERSION);
+  }
+
+  const result = spawnSync("npm", ["view", packageInfo.name, "version"], {
+    cwd: packageRoot,
+    encoding: "utf8",
+    timeout: 5000,
+    env: {
+      ...process.env,
+      npm_config_update_notifier: "false",
+    },
+  });
+
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    const output = `${result.stderr || ""}${result.stdout || ""}`.trim();
+    throw new Error(output || `npm view exited with status ${result.status}`);
+  }
+
+  return normalizeVersion(result.stdout);
+}
+
+function normalizeVersion(value) {
+  const match = String(value).trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/);
+  if (!match) throw new Error(`Unsupported version: ${value}`);
+  return `${Number(match[1])}.${Number(match[2])}.${Number(match[3])}`;
+}
+
 function compareVersions(left, right) {
-  const leftParts = left.split(".").map((part) => Number.parseInt(part, 10) || 0);
-  const rightParts = right.split(".").map((part) => Number.parseInt(part, 10) || 0);
+  const leftParts = normalizeVersion(left).split(".").map((part) => Number.parseInt(part, 10) || 0);
+  const rightParts = normalizeVersion(right).split(".").map((part) => Number.parseInt(part, 10) || 0);
   const length = Math.max(leftParts.length, rightParts.length);
   for (let index = 0; index < length; index += 1) {
     const diff = (leftParts[index] || 0) - (rightParts[index] || 0);
