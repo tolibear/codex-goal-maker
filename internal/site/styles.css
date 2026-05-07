@@ -142,8 +142,7 @@ pre {
   filter: drop-shadow(0 8px 13px rgba(87, 76, 210, 0.18));
 }
 
-.nav-links,
-.site-footer nav {
+.nav-links {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -173,6 +172,46 @@ pre {
   font-weight: 800;
   white-space: nowrap;
   transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+}
+
+.header-tools {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: fit-content;
+}
+
+.github-stars {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 15px;
+  color: #2f3c59;
+  border: 1px solid rgba(219, 226, 240, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  transition: transform 240ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.github-stars:hover {
+  transform: translateY(-2px);
+  color: var(--ink);
+  border-color: rgba(79, 70, 216, 0.26);
+  background: #fff;
+}
+
+.github-stars svg {
+  width: 16px;
+  height: 16px;
+  color: var(--violet);
+  fill: currentColor;
+  stroke-width: 2.1;
 }
 
 .header-action {
@@ -208,7 +247,7 @@ pre {
 
 .hero-copy {
   min-width: 0;
-  max-width: 760px;
+  max-width: 690px;
 }
 
 .eyebrow,
@@ -225,11 +264,11 @@ pre {
 .hero h1 {
   display: grid;
   gap: 0;
-  max-width: 660px;
+  max-width: 600px;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(3.4rem, 6.35vw, 6.55rem);
-  line-height: 0.88;
+  font-size: clamp(3.25rem, 5.45vw, 5.85rem);
+  line-height: 0.92;
   letter-spacing: 0;
 }
 
@@ -542,7 +581,7 @@ pre {
 }
 
 .local-character {
-  width: min(58%, 250px);
+  width: min(78%, 340px);
   margin: 36px auto 0;
   filter: drop-shadow(0 22px 28px rgba(67, 74, 190, 0.16));
 }
@@ -647,6 +686,29 @@ pre {
   border-radius: 999px;
   background: #fff;
   font-weight: 850;
+}
+
+.copy-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  padding: 12px 16px;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: var(--ink);
+  box-shadow: 0 18px 44px rgba(9, 17, 40, 0.22);
+  font-weight: 800;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.copy-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .sequence-list {
@@ -795,6 +857,28 @@ pre {
   height: 32px;
 }
 
+.footer-links {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 22px;
+  margin-left: auto;
+}
+
+.repo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.repo-link svg {
+  width: 16px;
+  height: 16px;
+}
+
 .built-by {
   display: inline-flex;
   align-items: center;
@@ -829,6 +913,10 @@ pre {
 
   .site-header {
     grid-template-columns: auto auto;
+  }
+
+  .github-stars {
+    display: none;
   }
 
   .hero {
@@ -956,7 +1044,7 @@ pre {
   }
 
   .local-character {
-    width: min(74%, 230px);
+    width: min(82%, 300px);
     margin-top: 28px;
   }
 
@@ -997,7 +1085,7 @@ pre {
   }
 
   .site-footer,
-  .site-footer nav {
+  .footer-links {
     align-items: flex-start;
     flex-direction: column;
   }
