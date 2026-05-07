@@ -560,9 +560,7 @@ function resolveWindowsCommand(name, env) {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  return candidates.find((candidate) => /\.(?:exe|cmd|bat)$/i.test(candidate))
-    || candidates[0]
-    || "";
+  return candidates.find((candidate) => /\.(?:exe|cmd|bat)$/i.test(candidate)) || "";
 }
 
 function quoteWindowsCommandArg(value) {
