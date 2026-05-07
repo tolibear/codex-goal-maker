@@ -1,6 +1,6 @@
 {
   "name": "goalbuddy",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "Turn broad Codex work into verified GoalBuddy boards with Scout, Judge, Worker, receipts, and optional extensions.",
   "author": {
     "name": "tolibear",

@@ -1,6 +1,6 @@
 {
   "name": "goalbuddy",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "Turn open-ended Codex goals into a GoalBuddy Scout/Judge/Worker board with receipts, verification, and optional extensions.",
   "type": "module",
   "bin": {
