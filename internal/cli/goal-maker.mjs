@@ -406,6 +406,10 @@ function installPlugin() {
   console.log("");
   console.log("Restart Codex, then use:");
   console.log(`  $${canonicalSkillName}`);
+  console.log("");
+  console.log("Optional extensions:");
+  console.log(`  npx ${canonicalCliName} extend`);
+  console.log(`  npx ${canonicalCliName} extend install --all`);
 }
 
 function pluginCacheRoot(version) {

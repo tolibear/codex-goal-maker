@@ -172,6 +172,7 @@ npx goalbuddy extend
 npx goalbuddy extend github-pr-workflow
 npx goalbuddy extend install github-pr-workflow --dry-run
 npx goalbuddy extend install --all --dry-run
+npx goalbuddy extend install --all
 ```
 
 `goalbuddy extend` shows available extensions plus local install state, activation state, credential requirements, safe-by-default status, and missing environment variables.
