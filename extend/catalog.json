@@ -70,9 +70,10 @@
       "id": "github-projects",
       "name": "GitHub Projects",
       "kind": "integration",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "summary": "Mirror GoalBuddy state.yaml tasks into GitHub Projects with dry-run planning, ProjectV2 fields, draft issue upserts, and one Goal Board view.",
       "description": "A cataloged one-way GitHub Projects sync extension that ports PR #1 into the extension system while keeping state.yaml authoritative and live GitHub writes credential-gated.",
+      "local_use_prompt": "Run the bundled GitHub Projects sync script for docs/goals/<slug>/state.yaml. Use --dry-run first unless the user has approved live GitHub writes, then run the same script with GITHUB_TOKEN or GH_TOKEN and --project-id or --owner plus --project-number. Do not use Computer Use, browser automation, the GitHub web UI, or gh project as a fallback.",
       "source": "extend/github-projects",
       "docs": "README.md",
       "use_when": [
@@ -111,6 +112,12 @@
       "side_effects": [
         "Live sync creates or updates GitHub Project draft issues, fields, and views."
       ],
+      "agent_instructions": [
+        "Use the bundled sync script for all live GitHub Projects writes.",
+        "Do not use Computer Use, browser automation, or the GitHub web UI to create or repair Project views.",
+        "Do not replace the bundled script with gh project commands; the script uses GraphQL plus the REST Project views endpoint.",
+        "Do not claim ProjectV2 board views are UI-only; the GitHub REST Project views API supports creating board-layout views."
+      ],
       "auth": {
         "env": [
           "GITHUB_TOKEN"
@@ -128,12 +135,12 @@
         {
           "path": "README.md",
           "url": "github-projects/README.md",
-          "sha256": "4c3eb5b46369f6a08d836614d41d883b24c96113e21cb937c6d28dca286fd15f"
+          "sha256": "d18ee0b4b6d25646f3e09bd6c900fe5736fad2a9ba97e6d9be7ffad741df44a2"
         },
         {
           "path": "extension.yaml",
           "url": "github-projects/extension.yaml",
-          "sha256": "e20028c8463f79152a2e0187a54c99350f088705abad68daa52ee7b82f06c36b"
+          "sha256": "1f2796f5f273cbed3c2ac223ba5ba9275c1549e06b4519358750f29ca62c8a69"
         },
         {
           "path": "scripts/sync-github-project.mjs",

@@ -21,6 +21,8 @@ The live sync ensures a GitHub Project has:
 - Text fields for `Task ID`, `Owner`, `Goal Role`, `Agent Responsible`, `Credential Gate`, `Parent ID`, `Depends On`, `Receipt Summary`, `Verify`, `Allowed Files`, and `Goal Updated`.
 - A `Goal Board` board-layout view for PM flow.
 
+The extension must use the bundled sync script for live writes. Do not use Computer Use, browser automation, or the GitHub web UI to create or repair the board view. Do not replace the script with `gh project` commands; `gh project` does not expose the complete ProjectV2 view creation path this extension needs. The script uses GitHub GraphQL for projects, fields, items, and draft issues, plus the GitHub REST Project views endpoint for the `Goal Board` view.
+
 The sync only creates or reuses `Goal Board`. It does not create a default Table view, an `Agent Workboard`, or extra role-specific views. GitHub may still show views that already existed on the Project.
 
 The extension does not promise custom board grouping or sort order. GitHub's public Project views REST API currently accepts `name`, `layout`, `filter`, and `visible_fields` when creating a view, and GraphQL exposes grouping/sort fields for reading but not a public mutation for saving them. Because that display state cannot be written reliably through the public API, the sync only creates supported fields, cards, and the single `Goal Board` view.
@@ -52,6 +54,8 @@ node extend/github-projects/scripts/sync-github-project.mjs \
 ```
 
 ## Live Sync
+
+Always run the bundled script for live sync. It creates or reuses the `Goal Board` view as part of the same run that syncs fields and draft issues.
 
 Use a ProjectV2 node ID:
 
@@ -95,5 +99,7 @@ node extend/github-projects/scripts/sync-github-project.mjs \
 - `state.yaml` remains authoritative.
 - The sync is one-way from GoalBuddy to GitHub Projects.
 - Missing GitHub credentials block only live sync, not local dry-run validation.
-- Live sync creates or updates GitHub Project draft issues and fields.
+- Live sync creates or updates GitHub Project draft issues, fields, and the `Goal Board` view through the bundled script.
+- Agents must not fall back to Computer Use, browser automation, or the GitHub web UI for Project setup.
+- Agents must not claim ProjectV2 board views are UI-only; GitHub's REST Project views API supports creating board-layout views.
 - Native GitHub issue hierarchy and dependencies are represented as fields because ProjectV2 draft issues do not provide full issue relationship semantics.

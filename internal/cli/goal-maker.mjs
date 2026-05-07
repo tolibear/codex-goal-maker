@@ -616,11 +616,12 @@ async function extendDetails(id) {
   printListSection("Reads", extension.reads);
   printListSection("Writes", extension.writes);
   printListSection("Side effects", extension.side_effects);
+  printListSection("Agent instructions", extension.agent_instructions);
   printListSection("Auth env", extension.auth?.env);
   printSupports(extension.supports);
   console.log("");
   console.log("Local use prompt:");
-  console.log(`  Use the ${extension.name || extension.id} extension for docs/goals/<slug>/goal.md and write its ${firstValue(extension.outputs, "artifact")} as Markdown.`);
+  console.log(`  ${extension.local_use_prompt || `Use the ${extension.name || extension.id} extension for docs/goals/<slug>/goal.md and write its ${firstValue(extension.outputs, "artifact")} as Markdown.`}`);
   console.log("");
   console.log("Install:");
   console.log(`  npx ${canonicalCliName} extend install ${extension.id}`);
@@ -1195,6 +1196,7 @@ function publicExtension(extension) {
     version: extension.version || "",
     summary: extension.summary || "",
     description: extension.description || "",
+    local_use_prompt: extension.local_use_prompt || "",
     source: extension.source || "",
     docs: extension.docs || "",
     use_when: extension.use_when || [],
@@ -1206,6 +1208,7 @@ function publicExtension(extension) {
     reads: extension.reads || [],
     writes: extension.writes || [],
     side_effects: extension.side_effects || [],
+    agent_instructions: extension.agent_instructions || [],
     auth: extension.auth || { env: [] },
     supports: extension.supports || {},
     source_of_truth: extension.source_of_truth || "local",

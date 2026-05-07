@@ -69,6 +69,7 @@ function writeCatalog(root) {
         kind: "publish",
         version: "0.1.0",
         summary: "Publish a one-way Goal Maker board view to GitHub Projects.",
+        local_use_prompt: "Run the bundled sync script. Do not use Computer Use.",
         docs: "README.md",
         use_when: [
           "The goal needs a generated GitHub Projects board view.",
@@ -84,6 +85,10 @@ function writeCatalog(root) {
           dry_run: true,
           watch: true,
         },
+        agent_instructions: [
+          "Use the bundled sync script.",
+          "Do not use Computer Use or the GitHub web UI.",
+        ],
         source_of_truth: "local",
         files: [
           {
@@ -306,9 +311,12 @@ test("extend human output shows extension names, descriptions, and next commands
     assert.match(details.stdout, /Requires approval: yes/);
     assert.match(details.stdout, /Use when:/);
     assert.match(details.stdout, /Outputs:/);
+    assert.match(details.stdout, /Agent instructions:/);
+    assert.match(details.stdout, /Do not use Computer Use or the GitHub web UI/);
     assert.match(details.stdout, /Auth env:/);
     assert.match(details.stdout, /Supports:/);
     assert.match(details.stdout, /Local use prompt:/);
+    assert.match(details.stdout, /Run the bundled sync script\. Do not use Computer Use\./);
     assert.match(details.stdout, /npx goalbuddy extend install publish-github-projects/);
     assert.match(details.stdout, /npx goalbuddy extend install publish-github-projects --dry-run/);
     assert.doesNotMatch(details.stdout, /files:/);
