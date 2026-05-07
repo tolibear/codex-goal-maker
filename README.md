@@ -175,7 +175,7 @@ npx goalbuddy extend install --all --dry-run
 npx goalbuddy extend install --all
 ```
 
-`goalbuddy extend` shows available extensions plus local install state, activation state, credential requirements, safe-by-default status, and missing environment variables.
+`goalbuddy extend` shows available extensions and detail commands. `goalbuddy extend <id>` shows local install state, activation state, credential requirements, safe-by-default status, and missing environment variables.
 
 Current catalog examples include:
 

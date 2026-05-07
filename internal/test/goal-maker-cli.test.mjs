@@ -286,10 +286,10 @@ test("extend human output shows extension names, descriptions, and next commands
     assert.match(list.stdout, /Available extensions/);
     assert.match(list.stdout, /GitHub Projects publishing/);
     assert.match(list.stdout, /Publish a one-way Goal Maker board view to GitHub Projects\./);
-    assert.match(list.stdout, /kind: publish \| activation: publish_handoff/);
-    assert.match(list.stdout, /state: available \| configured: no/);
-    assert.match(list.stdout, /safe by default: no \| requires approval: yes/);
-    assert.match(list.stdout, /missing env: GITHUB_TOKEN/);
+    assert.doesNotMatch(list.stdout, /kind: publish \| activation: publish_handoff/);
+    assert.doesNotMatch(list.stdout, /state: available \| configured: no/);
+    assert.doesNotMatch(list.stdout, /safe by default: no \| requires approval: yes/);
+    assert.doesNotMatch(list.stdout, /missing env: GITHUB_TOKEN/);
     assert.match(list.stdout, /npx goalbuddy extend install --all/);
     assert.match(list.stdout, /npx goalbuddy extend publish-github-projects/);
     assert.doesNotMatch(list.stdout, /publish-github-projects\tpublish/);

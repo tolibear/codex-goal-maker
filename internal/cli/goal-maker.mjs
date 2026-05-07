@@ -572,17 +572,9 @@ async function extendCatalog() {
   for (const extension of extensions) {
     console.log(extension.name || extension.id);
     if (extension.summary) console.log(`  ${extension.summary}`);
-    console.log(`  id: ${extension.id}`);
-    console.log(`  kind: ${extension.kind} | activation: ${extension.activation || "unspecified"}`);
-    console.log(`  state: ${extension.state.installed ? "installed" : "available"} | configured: ${extension.state.configured ? "yes" : "no"}`);
-    console.log(`  safe by default: ${extension.safe_by_default ? "yes" : "no"} | requires approval: ${extension.requires_approval ? "yes" : "no"}`);
-    if (extension.state.missing_env.length) {
-      console.log(`  missing env: ${extension.state.missing_env.join(", ")}`);
-    }
+    console.log(`  Details: npx ${canonicalCliName} extend ${extension.id}`);
     console.log("");
   }
-  console.log("View details:");
-  console.log(`  npx ${canonicalCliName} extend ${extensions[0].id}`);
   console.log("Install all:");
   console.log(`  npx ${canonicalCliName} extend install --all`);
 }
