@@ -1,58 +1,93 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">GoalBuddy social image</title>
-  <desc id="desc">GoalBuddy brand card with terminal preview and mascot.</desc>
+  <title id="title">Goal Buddy social image</title>
+  <desc id="desc">Goal Buddy brand card with a terminal preview and mascot.</desc>
   <defs>
-    <radialGradient id="bgA" cx="18%" cy="14%" r="72%">
-      <stop offset="0" stop-color="#f0eaff"/>
-      <stop offset=".56" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e8fbff"/>
+    <radialGradient id="bgMint" cx="8%" cy="8%" r="70%">
+      <stop offset="0" stop-color="#d8f8ef"/>
+      <stop offset=".48" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f8fbff"/>
     </radialGradient>
-    <linearGradient id="buttonGrad" x1="0" x2="1">
-      <stop offset="0" stop-color="#765cff"/>
-      <stop offset="1" stop-color="#563bea"/>
+    <radialGradient id="bgBlue" cx="88%" cy="18%" r="72%">
+      <stop offset="0" stop-color="#dfe8ff"/>
+      <stop offset=".62" stop-color="#ffffff" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="darkButton" x1="0" x2="1">
+      <stop offset="0" stop-color="#07101f"/>
+      <stop offset=".62" stop-color="#1b2550"/>
+      <stop offset="1" stop-color="#6252f3"/>
     </linearGradient>
-    <radialGradient id="cloudGrad" cx="35%" cy="18%" r="82%">
-      <stop offset="0" stop-color="#f8f2ff"/>
-      <stop offset=".45" stop-color="#c2b6ff"/>
-      <stop offset="1" stop-color="#5361ff"/>
+    <radialGradient id="cloud" cx="34%" cy="18%" r="82%">
+      <stop offset="0" stop-color="#f9f2ff"/>
+      <stop offset=".44" stop-color="#c9bcff"/>
+      <stop offset="1" stop-color="#5364f4"/>
     </radialGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
-      <feDropShadow dx="0" dy="26" stdDeviation="25" flood-color="#172347" flood-opacity=".18"/>
+    <linearGradient id="pencil" x1="0" x2="1">
+      <stop offset="0" stop-color="#2435d8"/>
+      <stop offset="1" stop-color="#736bff"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="26" stdDeviation="24" flood-color="#1e2a50" flood-opacity=".16"/>
     </filter>
+    <pattern id="grid" width="72" height="72" patternUnits="userSpaceOnUse">
+      <path d="M72 0H0v72" fill="none" stroke="#091128" stroke-opacity=".055" stroke-width="1"/>
+    </pattern>
   </defs>
-  <rect width="1200" height="630" fill="url(#bgA)"/>
-  <circle cx="1005" cy="455" r="250" fill="#c9fbff" opacity=".58"/>
-  <circle cx="130" cy="100" r="230" fill="#ded5ff" opacity=".42"/>
-  <g transform="translate(74 58)">
-    <path d="M34 72c-18 0-33-15-33-33 0-16 11-29 26-32C30-4 41-13 54-13c11 0 21 6 26 15 8-5 17-8 27-8 22 0 40 16 44 38 13 7 22 20 22 36 0 22-18 40-40 40H47c-5 0-9-1-13-4z" transform="translate(0 12)" fill="url(#cloudGrad)"/>
-    <text x="190" y="86" fill="#071236" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="50" font-weight="800">GoalBuddy</text>
+  <rect width="1200" height="630" fill="url(#bgMint)"/>
+  <rect width="1200" height="630" fill="url(#bgBlue)"/>
+  <rect width="1200" height="630" fill="url(#grid)" opacity=".55"/>
+  <circle cx="1040" cy="525" r="230" fill="#ffe4ef" opacity=".48"/>
+
+  <g transform="translate(72 58)">
+    <g transform="translate(0 -14) scale(.15)" filter="url(#softShadow)">
+      <path d="M150 345c-42 0-76-34-76-76 0-37 26-68 61-75 8-59 59-104 120-104 13 0 25 2 36 6 32-47 85-77 145-77 88 0 161 64 174 148 45 21 76 66 76 119 0 72-58 130-130 130H208c-22 0-42-7-58-21z" fill="url(#cloud)"/>
+      <ellipse cx="332" cy="254" rx="25" ry="37" fill="#07101f"/>
+      <ellipse cx="474" cy="254" rx="25" ry="37" fill="#07101f"/>
+      <circle cx="342" cy="240" r="8" fill="#fff"/>
+      <circle cx="484" cy="240" r="8" fill="#fff"/>
+      <path d="M382 311c18 18 45 18 63 0" fill="none" stroke="#07101f" stroke-width="16" stroke-linecap="round"/>
+      <ellipse cx="278" cy="314" rx="27" ry="16" fill="#ffaec4" opacity=".9"/>
+      <ellipse cx="529" cy="314" rx="27" ry="16" fill="#ffaec4" opacity=".9"/>
+    </g>
+    <text x="108" y="27" fill="#091128" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="31" font-weight="850">Goal Buddy</text>
   </g>
-  <text x="78" y="220" fill="#071236" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="-1">Turn vague Codex goals</text>
-  <text x="78" y="274" fill="#071236" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="-1">into structured progress.</text>
-  <text x="82" y="350" fill="#34415f" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="24" font-weight="500">A local Scout / Judge / Worker board</text>
-  <text x="82" y="384" fill="#34415f" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="24" font-weight="500">with receipts and verification.</text>
-  <rect x="82" y="448" width="270" height="66" rx="14" fill="url(#buttonGrad)"/>
-  <text x="123" y="490" fill="#fff" font-family="Geist Mono, Menlo, monospace" font-size="24" font-weight="700">$ npx goalbuddy</text>
-  <g filter="url(#shadow)" transform="translate(705 130)">
-    <rect x="0" y="0" width="430" height="292" rx="18" fill="#081426"/>
-    <rect x="0" y="0" width="430" height="56" rx="18" fill="#111d31"/>
-    <circle cx="34" cy="28" r="8" fill="#ff6b65"/>
-    <circle cx="58" cy="28" r="8" fill="#ffbd55"/>
-    <circle cx="82" cy="28" r="8" fill="#48d86a"/>
-    <text x="34" y="103" fill="#f7f8ff" font-family="Geist Mono, Menlo, monospace" font-size="18" font-weight="600">$ npx goalbuddy</text>
-    <text x="34" y="148" fill="#75f27b" font-family="Geist Mono, Menlo, monospace" font-size="18" font-weight="600">Creating docs/goals/...</text>
-    <text x="56" y="187" fill="#f7f8ff" font-family="Geist Mono, Menlo, monospace" font-size="17">- goal.md</text>
-    <text x="56" y="218" fill="#f7f8ff" font-family="Geist Mono, Menlo, monospace" font-size="17">- state.yaml</text>
-    <text x="34" y="264" fill="#75f27b" font-family="Geist Mono, Menlo, monospace" font-size="17" font-weight="600">Agents ready</text>
+
+  <text x="76" y="166" fill="#4f46d8" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="17" font-weight="850">OPEN SOURCE CODEX /GOAL COMPANION</text>
+  <text x="76" y="248" fill="#091128" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="64" font-weight="900">Give /goal a</text>
+  <text x="76" y="322" fill="#091128" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="64" font-weight="900">best friend.</text>
+  <text x="80" y="408" fill="#45516f" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="23" font-weight="500">Prepare goal.md for Codex /goal.</text>
+  <text x="80" y="442" fill="#45516f" font-family="Geist, Avenir Next, Arial, sans-serif" font-size="23" font-weight="500">Keep state.yaml local and extensible.</text>
+  <rect x="80" y="522" width="260" height="58" rx="29" fill="url(#darkButton)"/>
+  <text x="123" y="558" fill="#ffffff" font-family="Geist Mono, Menlo, monospace" font-size="20" font-weight="700">npx goalbuddy</text>
+
+  <g filter="url(#softShadow)" transform="translate(742 118)">
+    <rect width="390" height="278" rx="24" fill="#07101f"/>
+    <rect width="390" height="52" rx="24" fill="#131d31"/>
+    <circle cx="32" cy="26" r="7" fill="#ff6b66"/>
+    <circle cx="55" cy="26" r="7" fill="#ffc45b"/>
+    <circle cx="78" cy="26" r="7" fill="#58d878"/>
+    <text x="34" y="100" fill="#f6f8ff" font-family="Geist Mono, Menlo, monospace" font-size="17" font-weight="600">$ npx goalbuddy</text>
+    <text x="34" y="139" fill="#78f29a" font-family="Geist Mono, Menlo, monospace" font-size="17" font-weight="600">Prepared docs/goals/...</text>
+    <text x="58" y="176" fill="#f6f8ff" font-family="Geist Mono, Menlo, monospace" font-size="16">goal.md</text>
+    <text x="58" y="205" fill="#f6f8ff" font-family="Geist Mono, Menlo, monospace" font-size="16">state.yaml</text>
+    <text x="34" y="255" fill="#9bf2c7" font-family="Geist Mono, Menlo, monospace" font-size="16" font-weight="700">Run next</text>
+    <text x="126" y="255" fill="#f6f8ff" font-family="Geist Mono, Menlo, monospace" font-size="16">/goal Follow goal.md</text>
   </g>
-  <g filter="url(#shadow)" transform="translate(850 320) scale(.31)">
-    <path d="M224 622c-58 0-105-47-105-105 0-50 35-93 83-103 5-78 70-140 150-140 15 0 30 2 44 7 37-78 116-131 208-131 116 0 212 86 228 198 62 26 105 87 105 158 0 94-77 171-171 171H301c-25 0-50-20-77-55z" fill="url(#cloudGrad)"/>
-    <ellipse cx="433" cy="422" rx="38" ry="58" fill="#061238"/>
-    <ellipse cx="610" cy="422" rx="38" ry="58" fill="#061238"/>
-    <circle cx="447" cy="399" r="13" fill="#fff"/>
-    <circle cx="624" cy="399" r="13" fill="#fff"/>
-    <ellipse cx="342" cy="505" rx="41" ry="25" fill="#ffabc2" opacity=".86"/>
-    <ellipse cx="701" cy="505" rx="41" ry="25" fill="#ffabc2" opacity=".86"/>
-    <path d="M483 501c18 24 54 24 72 0" fill="none" stroke="#071238" stroke-width="18" stroke-linecap="round"/>
+  <g filter="url(#softShadow)" transform="translate(850 315) scale(.28)">
+    <g transform="translate(-42 18) rotate(-24 155 210)">
+      <rect x="132" y="70" width="70" height="270" rx="34" fill="url(#pencil)"/>
+      <rect x="132" y="70" width="70" height="52" rx="24" fill="#7f77ff"/>
+      <path d="M132 325h70l-35 48z" fill="#27335e"/>
+    </g>
+    <path d="M150 345c-42 0-76-34-76-76 0-37 26-68 61-75 8-59 59-104 120-104 13 0 25 2 36 6 32-47 85-77 145-77 88 0 161 64 174 148 45 21 76 66 76 119 0 72-58 130-130 130H208c-22 0-42-7-58-21z" fill="url(#cloud)"/>
+    <ellipse cx="332" cy="254" rx="25" ry="37" fill="#07101f"/>
+    <ellipse cx="474" cy="254" rx="25" ry="37" fill="#07101f"/>
+    <circle cx="342" cy="240" r="8" fill="#fff"/>
+    <circle cx="484" cy="240" r="8" fill="#fff"/>
+    <path d="M382 311c18 18 45 18 63 0" fill="none" stroke="#07101f" stroke-width="16" stroke-linecap="round"/>
+    <ellipse cx="278" cy="314" rx="27" ry="16" fill="#ffaec4" opacity=".9"/>
+    <ellipse cx="529" cy="314" rx="27" ry="16" fill="#ffaec4" opacity=".9"/>
+    <ellipse cx="260" cy="430" rx="42" ry="34" fill="#8077ff"/>
+    <ellipse cx="515" cy="430" rx="42" ry="34" fill="#8077ff"/>
   </g>
 </svg>
