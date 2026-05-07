@@ -24,3 +24,10 @@ When improving this repo, consider README, `goalbuddy/SKILL.md`, generated `$goa
 - Keep package-only CLI and tests under `internal/`.
 - Do not commit local `docs/goals/` run artifacts unless explicitly requested.
 - Run `npm run check` before claiming implementation is complete.
+
+## Release Rules
+
+- Before telling the user to publish, check `npm whoami` and the latest published version with `npm view goalbuddy version`.
+- If `npm whoami` fails with `E401` or publish fails with `E401`, `E403`, or `E404` after the tarball is built, treat it as an npm authentication/permission problem first, not a missing version bump.
+- Do not tell the user to rerun plain `npm publish` after an auth failure. Tell them to run `npm login` for the correct npm account, verify `npm whoami`, then publish.
+- `package.json` already has `publishConfig.access = "public"`; do not add `--access public` as the primary fix unless package metadata changes.
