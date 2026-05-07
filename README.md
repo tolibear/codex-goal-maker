@@ -22,19 +22,19 @@ GoalBuddy is a local Codex companion for work that is too broad to trust to a si
 npx goalbuddy
 ```
 
-Then invoke the installed skill inside Codex:
+Or install it globally:
+
+```bash
+npm i -g goalbuddy
+```
+
+Then restart Codex and invoke the installed skill:
 
 ```text
 $goalbuddy
 ```
 
 `$goalbuddy` prepares the board and prints the `/goal` command to run next. It does not start `/goal` automatically.
-
-For native Codex plugin install instead of the skill-only installer:
-
-```bash
-codex plugin marketplace add tolibear/goalbuddy
-```
 
 ## Why GoalBuddy Exists
 
@@ -78,17 +78,18 @@ The default agents are installed with the skill:
 
 ## Install And Check Readiness
 
-Install or refresh the Codex skill and bundled agents:
-
-```bash
-npx goalbuddy
-npx goalbuddy update
-```
-
 Install and enable the native Codex plugin:
 
 ```bash
-codex plugin marketplace add tolibear/goalbuddy
+npx goalbuddy
+npm i -g goalbuddy
+```
+
+Use the skill-only fallback if your Codex build does not support plugins:
+
+```bash
+npx goalbuddy install
+npx goalbuddy update
 ```
 
 Native Codex `/goal` is still an under-development Codex feature. Before relying on the printed command, confirm your local Codex runtime is logged in and has goals enabled:
@@ -114,10 +115,10 @@ npx goalbuddy doctor
 Use a non-default Codex home:
 
 ```bash
-npx goalbuddy install --codex-home /path/to/.codex
+npx goalbuddy --codex-home /path/to/.codex
 ```
 
-`install`, `update`, and `doctor` also support `--json` when an agent or script needs structured output.
+`plugin install`, `install`, `update`, and `doctor` also support `--json` when an agent or script needs structured output.
 
 ## Run A Goal
 

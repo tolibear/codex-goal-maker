@@ -206,6 +206,31 @@ test("plugin install adds marketplace, caches plugin, and enables config", () =>
   }
 });
 
+test("default command installs the native Codex plugin", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const codexHome = join(root, "codex-home");
+    const fakeBin = fakeCodexBin(root);
+    const env = {
+      ...process.env,
+      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
+    };
+
+    const install = runGoalMaker(["--codex-home", codexHome, "--json"], { env });
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const report = JSON.parse(install.stdout);
+    assert.equal(report.installed, true);
+    assert.equal(report.plugin, "goalbuddy@goalbuddy");
+
+    const config = readFileSync(join(codexHome, "config.toml"), "utf8");
+    assert.match(config, /\[plugins\."goalbuddy@goalbuddy"\]/);
+    assert.match(config, /enabled = true/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("extend shows catalog entries and reports local install state", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {

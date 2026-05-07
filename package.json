@@ -1,6 +1,6 @@
 {
   "name": "goalbuddy",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "description": "Turn open-ended Codex goals into a GoalBuddy Scout/Judge/Worker board with receipts, verification, and optional extensions.",
   "type": "module",
   "bin": {
@@ -21,9 +21,10 @@
     "goalbuddy/templates"
   ],
   "scripts": {
-    "check": "node --check internal/cli/goal-maker.mjs goalbuddy/scripts/*.mjs && node --test internal/test/*.test.mjs",
+    "check": "node --check internal/cli/*.mjs goalbuddy/scripts/*.mjs && node --test internal/test/*.test.mjs",
     "test": "node --test internal/test/*.test.mjs",
     "pack:dry-run": "npm pack --dry-run",
+    "postinstall": "node internal/cli/postinstall.mjs",
     "publish:check": "node internal/cli/check-publish-version.mjs && npm run pack:dry-run",
     "prepublishOnly": "node internal/cli/check-publish-version.mjs"
   },

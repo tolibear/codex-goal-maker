@@ -44,7 +44,7 @@ const command = args[0] === "--help" || args[0] === "-h"
   ? "help"
   : args[0] && !args[0].startsWith("-")
     ? args[0]
-    : "install";
+    : "default";
 const invokedAs = invokedCommandName();
 
 main().catch((error) => {
@@ -55,6 +55,9 @@ main().catch((error) => {
 async function main() {
   maybePrintLegacyNotice();
   switch (command) {
+    case "default":
+      installPlugin();
+      break;
     case "install":
     case "update":
       await installAll();
@@ -133,11 +136,12 @@ function usage() {
   console.log(`Codex ${canonicalProductName}
 
 Usage:
+  ${canonicalCliName} [--codex-home <path>] [--json]
+  ${canonicalCliName} plugin install [--source <marketplace-source>] [--codex-home <path>] [--json]
   ${canonicalCliName} install [--codex-home <path>] [--force] [--json]
   ${canonicalCliName} update [--codex-home <path>] [--json]
   ${canonicalCliName} agents [--codex-home <path>] [--force]
   ${canonicalCliName} doctor [--codex-home <path>] [--goal-ready]
-  ${canonicalCliName} plugin install [--source <marketplace-source>] [--codex-home <path>] [--json]
   ${canonicalCliName} extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
   ${canonicalCliName} extend <id> [--catalog-url <url-or-path>] [--json]
   ${canonicalCliName} extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
@@ -145,7 +149,10 @@ Usage:
   ${canonicalCliName} extend doctor [<id>] [--codex-home <path>] [--json]
 
 Default:
-  ${canonicalCliName}  Installs the skill and bundled agent definitions.
+  ${canonicalCliName}  Installs and enables the native Codex plugin.
+
+Skill-only fallback:
+  ${canonicalCliName} install  Installs the legacy skill payload and bundled agent definitions.
 
 Compatibility:
   ${legacyCliName} remains a temporary alias and prints the new npx command for human-facing use.
