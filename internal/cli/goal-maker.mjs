@@ -19,10 +19,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, "../..");
 const canonicalProductName = "GoalBuddy";
 const canonicalCliName = "goalbuddy";
-const canonicalSkillName = "goalbuddy";
+const pluginName = "goalbuddy";
+const canonicalSkillName = "goal-prep";
+const canonicalSkillDirectory = "goalbuddy";
 const legacyCliName = "goal-maker";
 const legacySkillName = "goal-maker";
-const skillSource = join(packageRoot, canonicalSkillName);
+const skillSource = join(packageRoot, canonicalSkillDirectory);
 const packageInfo = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
 const defaultCodexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
 const defaultCatalogUrl = "https://raw.githubusercontent.com/tolibear/goalbuddy/main/extend/catalog.json";
@@ -364,7 +366,7 @@ Default source:
 
 function installPlugin() {
   const source = optionValue("--source") || "tolibear/goalbuddy";
-  const pluginSource = join(packageRoot, "plugins", canonicalSkillName);
+  const pluginSource = join(packageRoot, "plugins", pluginName);
   const pluginManifestPath = join(pluginSource, ".codex-plugin", "plugin.json");
   if (!existsSync(pluginManifestPath)) {
     throw new Error(`Plugin manifest not found: ${pluginManifestPath}`);
@@ -384,7 +386,7 @@ function installPlugin() {
 
   const report = {
     installed: true,
-    plugin: `${canonicalSkillName}@${canonicalSkillName}`,
+    plugin: `${pluginName}@${pluginName}`,
     version: pluginManifest.version,
     codex_home: codexHome(),
     marketplace_source: source,
@@ -407,13 +409,13 @@ function installPlugin() {
 }
 
 function pluginCacheRoot(version) {
-  return join(codexHome(), "plugins", "cache", canonicalSkillName, canonicalSkillName, version);
+  return join(codexHome(), "plugins", "cache", pluginName, pluginName, version);
 }
 
 function enablePluginConfig() {
   const configPath = join(codexHome(), "config.toml");
   mkdirSync(dirname(configPath), { recursive: true });
-  const header = `[plugins."${canonicalSkillName}@${canonicalSkillName}"]`;
+  const header = `[plugins."${pluginName}@${pluginName}"]`;
   const existing = existsSync(configPath) ? readFileSync(configPath, "utf8") : "";
   const updated = upsertTomlEnabled(existing, header);
   writeFileSync(configPath, updated);
@@ -794,7 +796,7 @@ function extendDoctor() {
 }
 
 function installedSkillRoot() {
-  return join(codexHome(), "skills", canonicalSkillName);
+  return join(codexHome(), "skills", canonicalSkillDirectory);
 }
 
 function legacyInstalledSkillRoot() {
@@ -1087,7 +1089,7 @@ function printInstallReport(report) {
 
   console.log("");
   console.log("Next:");
-  console.log("  $goalbuddy");
+  console.log(`  $${canonicalSkillName}`);
   console.log(`  ${canonicalCliName} extend`);
   console.log(`  ${legacyCliName} remains a temporary compatibility alias.`);
 }

@@ -31,10 +31,10 @@ npm i -g goalbuddy
 Then restart Codex and invoke the installed skill:
 
 ```text
-$goalbuddy
+$goal-prep
 ```
 
-`$goalbuddy` prepares the board and prints the `/goal` command to run next. It does not start `/goal` automatically.
+`$goal-prep` prepares the GoalBuddy board and prints the `/goal` command to run next. It does not start `/goal` automatically.
 
 ## Why GoalBuddy Exists
 
@@ -122,7 +122,7 @@ npx goalbuddy --codex-home /path/to/.codex
 
 ## Run A Goal
 
-After `$goalbuddy` creates or repairs the board, start the run with the printed command:
+After `$goal-prep` creates or repairs the board, start the run with the printed command:
 
 ```text
 /goal Follow docs/goals/<slug>/goal.md.

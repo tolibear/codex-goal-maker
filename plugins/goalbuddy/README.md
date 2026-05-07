@@ -1,6 +1,6 @@
 # GoalBuddy Codex Plugin
 
-GoalBuddy packages the canonical `$goalbuddy` skill as a Codex plugin so teams can install the reusable workflow as a plugin while keeping the npm CLI for local setup, doctor checks, and extension management.
+GoalBuddy packages the canonical `$goal-prep` skill as a Codex plugin so teams can install the reusable workflow as a plugin while keeping the npm CLI for local setup, doctor checks, and extension management.
 
 ## What It Contains
 

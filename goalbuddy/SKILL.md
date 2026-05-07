@@ -1,11 +1,11 @@
 ---
-name: goalbuddy
-description: Use for broad, long-running, stalled, vague, detailed, planned, or unhealthy Codex work that needs a structured /goal intake, autonomous task discovery, role-tagged Scout/Judge/Worker delegation, one active task, durable receipts, and a PM-owned rolling board that maximizes the chance of a successful goal run.
+name: goal-prep
+description: Goal Prep for GoalBuddy. Use for broad, long-running, stalled, vague, detailed, planned, or unhealthy Codex work that needs a structured /goal intake, autonomous task discovery, role-tagged Scout/Judge/Worker delegation, one active task, durable receipts, and a PM-owned rolling board that maximizes the chance of a successful goal run.
 ---
 
-# GoalBuddy
+# Goal Prep
 
-`$goalbuddy` prepares a GoalBuddy board. It does not start `/goal` automatically, but the board and starter `/goal` command must be shaped so the next run continues into safe execution by default.
+`$goal-prep` prepares a GoalBuddy board. It does not start `/goal` automatically, but the board and starter `/goal` command must be shaped so the next run continues into safe execution by default.
 
 GoalBuddy is for autonomous, long-running Codex work where the PM thread may need to discover the work, define tasks, sequence them, delegate them, execute them, verify them, and keep going without the human decomposing every step.
 
@@ -19,14 +19,14 @@ raw user intent -> intake compiler -> discovery/plan validation/execution board 
 
 There are two different modes:
 
-- `$goalbuddy`: prepare intake, `goal.md`, `state.yaml`, and the starter `/goal` command, then stop.
+- `$goal-prep`: prepare intake, `goal.md`, `state.yaml`, and the starter `/goal` command, then stop.
 - `/goal Follow docs/goals/<slug>/goal.md.`: execute the board, including Scout/Judge/Worker work.
 
-This boundary is strict. `$goalbuddy` is not a lightweight `/goal`; it is a board compiler.
+This boundary is strict. `$goal-prep` is not a lightweight `/goal`; it is a board compiler.
 
-During a `$goalbuddy` turn, do not perform the user's requested work, even if the work looks read-only, preparatory, or obviously useful. Do not refresh or load named skills, inspect implementation files, browse reference repos, research design inspiration, generate design plans, generate images/assets, run app-specific checks, start servers, or edit product files. Put those actions into Scout, Judge, Worker, or PM tasks for the later `/goal` run.
+During a `$goal-prep` turn, do not perform the user's requested work, even if the work looks read-only, preparatory, or obviously useful. Do not refresh or load named skills, inspect implementation files, browse reference repos, research design inspiration, generate design plans, generate images/assets, run app-specific checks, start servers, or edit product files. Put those actions into Scout, Judge, Worker, or PM tasks for the later `/goal` run.
 
-Allowed `$goalbuddy` actions:
+Allowed `$goal-prep` actions:
 
 - ask diagnostic intake questions and wait when required;
 - create or repair only `docs/goals/<slug>/goal.md`, `docs/goals/<slug>/state.yaml`, and `docs/goals/<slug>/notes/`;
@@ -35,7 +35,7 @@ Allowed `$goalbuddy` actions:
 - print exactly `/goal Follow docs/goals/<slug>/goal.md.`;
 - ask whether to start `/goal`, refine the board, or stop.
 
-If the prompt names another skill or tool, such as "use the taste skill", "refresh the taste skill", "look at this repo", "use browser", or "generate assets", record that requirement in the charter and seed tasks. Do not load that skill, browse that repo, or generate those assets during `$goalbuddy`.
+If the prompt names another skill or tool, such as "use the taste skill", "refresh the taste skill", "look at this repo", "use browser", or "generate assets", record that requirement in the charter and seed tasks. Do not load that skill, browse that repo, or generate those assets during `$goal-prep`.
 
 ## Intake Compiler
 
@@ -125,7 +125,7 @@ If the raw input is detailed and already contains a plan, the first board task s
 
 The target is not literal certainty. It is the highest practical likelihood of a successful goal run: preserve the user's intent, avoid the likely misfire, pick the earliest responsible phase, require proof, and keep advancing safe work until a final audit proves the full outcome.
 
-## What `$goalbuddy` Does
+## What `$goal-prep` Does
 
 When invoked directly, run intake first. For vague, strategic, improvement-oriented, or open-ended input, run the diagnostic intake and stop before creating or repairing the board until enough material answers are known. For sufficiently clear, planned, recovery, audit, or explicitly-defaulted input, prepare or repair the board and stop for user choice.
 
@@ -157,7 +157,7 @@ Do not:
 
 ## `/goal` Default Bias: Users Want Work Done
 
-This section applies after the user starts `/goal Follow docs/goals/<slug>/goal.md.` It does not apply to the initial `$goalbuddy` board-preparation turn.
+This section applies after the user starts `/goal Follow docs/goals/<slug>/goal.md.` It does not apply to the initial `$goal-prep` board-preparation turn.
 
 Unless the user explicitly asks for planning only, treat a `/goal` run as a request for work to happen.
 

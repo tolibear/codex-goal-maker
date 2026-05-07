@@ -26,6 +26,8 @@ test("GoalBuddy plugin metadata tracks the package release", () => {
   assert.equal(plugin.skills, "./skills/");
 });
 
-test("GoalBuddy plugin delegates composer invocation to the skill", () => {
-  assert.equal(Object.hasOwn(plugin.interface, "defaultPrompt"), false);
+test("GoalBuddy plugin delegates composer invocation to Goal Prep", () => {
+  assert.deepEqual(plugin.interface.defaultPrompt, [
+    "$goal-prep prepare a GoalBuddy board for this goal",
+  ]);
 });

@@ -1,6 +1,6 @@
 {
   "name": "goalbuddy",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "description": "Turn broad Codex work into verified GoalBuddy boards with Scout, Judge, Worker, receipts, and optional extensions.",
   "author": {
     "name": "tolibear",
@@ -35,6 +35,9 @@
     "websiteURL": "https://github.com/tolibear/goalbuddy",
     "privacyPolicyURL": "https://github.com/tolibear/goalbuddy#privacy",
     "termsOfServiceURL": "https://github.com/tolibear/goalbuddy#license",
+    "defaultPrompt": [
+      "$goal-prep prepare a GoalBuddy board for this goal"
+    ],
     "brandColor": "#2563EB",
     "composerIcon": "./assets/goalbuddy-icon.svg",
     "logo": "./assets/goalbuddy-icon.svg",
