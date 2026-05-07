@@ -795,12 +795,34 @@ function installedSkillRoot() {
   return join(codexHome(), "skills", canonicalSkillDirectory);
 }
 
+function installedPluginSkillRoot() {
+  const root = join(codexHome(), "plugins", "cache", pluginName, pluginName);
+  if (!existsSync(root)) return "";
+  const versions = readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort(compareVersions)
+    .reverse();
+  for (const version of versions) {
+    const skillPath = join(root, version, "skills", canonicalSkillDirectory);
+    if (existsSync(join(skillPath, "SKILL.md"))) return skillPath;
+  }
+  return "";
+}
+
+function activeSkillRoot() {
+  if (existsSync(join(installedSkillRoot(), "SKILL.md"))) return installedSkillRoot();
+  const pluginSkillRoot = installedPluginSkillRoot();
+  if (pluginSkillRoot) return pluginSkillRoot;
+  return installedSkillRoot();
+}
+
 function legacyInstalledSkillRoot() {
   return join(codexHome(), "skills", legacySkillName);
 }
 
 function extendRoot() {
-  return join(installedSkillRoot(), "extend");
+  return join(activeSkillRoot(), "extend");
 }
 
 function extensionTarget(id) {
@@ -1101,9 +1123,20 @@ function summarizeStatuses(items) {
 }
 
 function assertSkillInstalledForExtensionInstall() {
-  if (!existsSync(join(installedSkillRoot(), "SKILL.md"))) {
-    throw new Error(`${canonicalProductName} skill is not installed at ${installedSkillRoot()}. Run: npx ${canonicalCliName}`);
+  if (!existsSync(join(activeSkillRoot(), "SKILL.md"))) {
+    throw new Error(`${canonicalProductName} skill is not installed. Run: npx ${canonicalCliName}`);
   }
+}
+
+function compareVersions(left, right) {
+  const leftParts = left.split(".").map((part) => Number.parseInt(part, 10) || 0);
+  const rightParts = right.split(".").map((part) => Number.parseInt(part, 10) || 0);
+  const length = Math.max(leftParts.length, rightParts.length);
+  for (let index = 0; index < length; index += 1) {
+    const diff = (leftParts[index] || 0) - (rightParts[index] || 0);
+    if (diff !== 0) return diff;
+  }
+  return left.localeCompare(right);
 }
 
 function installedExtensions() {

@@ -355,6 +355,35 @@ test("extend installs all catalog extensions", () => {
   }
 });
 
+test("extend installs into the plugin skill after default plugin install", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+    const fakeBin = fakeCodexBin(root);
+    const env = {
+      ...process.env,
+      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
+    };
+
+    const installPlugin = runGoalMaker(["--codex-home", codexHome, "--json"], { env });
+    assert.equal(installPlugin.status, 0, installPlugin.stderr || installPlugin.stdout);
+
+    const installExtensions = runGoalMaker(["extend", "install", "--all", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"], { env });
+    assert.equal(installExtensions.status, 0, installExtensions.stderr || installExtensions.stdout);
+
+    const report = JSON.parse(installExtensions.stdout);
+    assert.equal(report.installed, true);
+    assert.match(report.extensions[0].target, /plugins\/cache\/goalbuddy\/goalbuddy\/[^/]+\/skills\/goalbuddy\/extend\/publish-github-projects$/);
+
+    const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"], { env });
+    assert.equal(details.status, 0, details.stderr || details.stdout);
+    assert.equal(JSON.parse(details.stdout).extension.state.installed, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("install reports extension discovery in json mode", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
