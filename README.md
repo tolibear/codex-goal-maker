@@ -30,6 +30,12 @@ $goalbuddy
 
 `$goalbuddy` prepares the board and prints the `/goal` command to run next. It does not start `/goal` automatically.
 
+For native Codex plugin install instead of the skill-only installer:
+
+```bash
+npx goalbuddy plugin install
+```
+
 ## Why GoalBuddy Exists
 
 Long Codex goals drift. A request like "improve this project" can turn into unbounded edits, stale verification, and premature completion claims.
@@ -77,6 +83,12 @@ Install or refresh the Codex skill and bundled agents:
 ```bash
 npx goalbuddy
 npx goalbuddy update
+```
+
+Install and enable the native Codex plugin:
+
+```bash
+npx goalbuddy plugin install
 ```
 
 Native Codex `/goal` is still an under-development Codex feature. Before relying on the printed command, confirm your local Codex runtime is logged in and has goals enabled:

@@ -36,6 +36,7 @@ const optionsWithValues = new Set([
   "--catalog-url",
   "--codex-home",
   "--kind",
+  "--source",
 ]);
 
 const args = process.argv.slice(2);
@@ -63,6 +64,9 @@ async function main() {
       break;
     case "doctor":
       doctor();
+      break;
+    case "plugin":
+      plugin();
       break;
     case "extend":
       await extend();
@@ -133,6 +137,7 @@ Usage:
   ${canonicalCliName} update [--codex-home <path>] [--json]
   ${canonicalCliName} agents [--codex-home <path>] [--force]
   ${canonicalCliName} doctor [--codex-home <path>] [--goal-ready]
+  ${canonicalCliName} plugin install [--source <marketplace-source>] [--codex-home <path>] [--json]
   ${canonicalCliName} extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
   ${canonicalCliName} extend <id> [--catalog-url <url-or-path>] [--json]
   ${canonicalCliName} extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
@@ -319,6 +324,123 @@ function doctor() {
   const installOk = installed && missingAgents.length === 0 && staleAgents.length === 0;
   const goalReadyOk = !hasFlag("--goal-ready") || goalRuntime.ready;
   process.exit(installOk && goalReadyOk ? 0 : 1);
+}
+
+function plugin() {
+  const subcommand = positional(1) || "";
+  switch (subcommand) {
+    case "install":
+      installPlugin();
+      break;
+    case "help":
+    case "--help":
+    case "-h":
+      pluginUsage();
+      break;
+    default:
+      console.error(`Unknown plugin command: ${subcommand || "<missing>"}`);
+      pluginUsage();
+      process.exit(2);
+  }
+}
+
+function pluginUsage() {
+  console.log(`${canonicalProductName} Plugin
+
+Usage:
+  ${canonicalCliName} plugin install [--source <marketplace-source>] [--codex-home <path>] [--json]
+
+Default source:
+  tolibear/goalbuddy
+`);
+}
+
+function installPlugin() {
+  const source = optionValue("--source") || "tolibear/goalbuddy";
+  const pluginSource = join(packageRoot, "plugins", canonicalSkillName);
+  const pluginManifestPath = join(pluginSource, ".codex-plugin", "plugin.json");
+  if (!existsSync(pluginManifestPath)) {
+    throw new Error(`Plugin manifest not found: ${pluginManifestPath}`);
+  }
+
+  const pluginManifest = JSON.parse(readFileSync(pluginManifestPath, "utf8"));
+  const pluginCachePath = pluginCacheRoot(pluginManifest.version);
+  const marketplace = runCodex(["plugin", "marketplace", "add", source]);
+  if (!marketplace.ok) {
+    throw new Error(`Failed to add Codex plugin marketplace: ${firstLine(marketplace.stderr || marketplace.stdout)}`);
+  }
+
+  mkdirSync(dirname(pluginCachePath), { recursive: true });
+  rmSync(pluginCachePath, { recursive: true, force: true });
+  cpSync(pluginSource, pluginCachePath, { recursive: true });
+  const configPath = enablePluginConfig();
+
+  const report = {
+    installed: true,
+    plugin: `${canonicalSkillName}@${canonicalSkillName}`,
+    version: pluginManifest.version,
+    codex_home: codexHome(),
+    marketplace_source: source,
+    cache_path: pluginCachePath,
+    config_path: configPath,
+  };
+
+  if (hasFlag("--json")) {
+    printJson(report);
+    return;
+  }
+
+  console.log(`Installed ${canonicalProductName} Codex plugin ${pluginManifest.version}`);
+  console.log(`Marketplace: ${source}`);
+  console.log(`Cache: ${pluginCachePath}`);
+  console.log(`Config: ${configPath}`);
+  console.log("");
+  console.log("Restart Codex, then use:");
+  console.log(`  $${canonicalSkillName}`);
+}
+
+function pluginCacheRoot(version) {
+  return join(codexHome(), "plugins", "cache", canonicalSkillName, canonicalSkillName, version);
+}
+
+function enablePluginConfig() {
+  const configPath = join(codexHome(), "config.toml");
+  mkdirSync(dirname(configPath), { recursive: true });
+  const header = `[plugins."${canonicalSkillName}@${canonicalSkillName}"]`;
+  const existing = existsSync(configPath) ? readFileSync(configPath, "utf8") : "";
+  const updated = upsertTomlEnabled(existing, header);
+  writeFileSync(configPath, updated);
+  return configPath;
+}
+
+function upsertTomlEnabled(text, header) {
+  const normalized = text.endsWith("\n") || text.length === 0 ? text : `${text}\n`;
+  const lines = normalized.split("\n");
+  const start = lines.findIndex((line) => line.trim() === header);
+  if (start === -1) {
+    const prefix = normalized.trim() ? `${normalized}\n` : "";
+    return `${prefix}${header}\nenabled = true\n`;
+  }
+
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^\s*\[/.test(lines[index])) {
+      end = index;
+      break;
+    }
+  }
+
+  let sawEnabled = false;
+  for (let index = start + 1; index < end; index += 1) {
+    if (/^\s*enabled\s*=/.test(lines[index])) {
+      lines[index] = "enabled = true";
+      sawEnabled = true;
+      break;
+    }
+  }
+  if (!sawEnabled) lines.splice(start + 1, 0, "enabled = true");
+
+  return lines.join("\n").replace(/\n*$/, "\n");
 }
 
 function codexGoalRuntimeStatus() {

@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -7,6 +7,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 const cli = resolve("internal/cli/goal-maker.mjs");
+const packageVersion = JSON.parse(readFileSync("package.json", "utf8")).version;
 
 function runGoalMaker(args, options = {}) {
   const result = spawnSync(process.execPath, [cli, ...args], {
@@ -31,6 +32,9 @@ function fakeCodexBin(root, { loggedIn = true, goalsEnabled = true } = {}) {
     "fi",
     "if [ \"$1\" = \"features\" ] && [ \"$2\" = \"list\" ]; then",
     `  echo "goals                               under development  ${goalsEnabled ? "true" : "false"}"; exit 0`,
+    "fi",
+    "if [ \"$1\" = \"plugin\" ] && [ \"$2\" = \"marketplace\" ] && [ \"$3\" = \"add\" ]; then",
+    "  echo \"Added marketplace goalbuddy\"; exit 0",
     "fi",
     "exit 2",
     "",
@@ -169,6 +173,34 @@ test("doctor reports native goal runtime readiness and supports strict goal-read
 
     const strictDoctor = runGoalMaker(["doctor", "--goal-ready", "--codex-home", codexHome], { env });
     assert.equal(strictDoctor.status, 1, strictDoctor.stderr || strictDoctor.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("plugin install adds marketplace, caches plugin, and enables config", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const codexHome = join(root, "codex-home");
+    const fakeBin = fakeCodexBin(root);
+    const env = {
+      ...process.env,
+      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
+    };
+
+    const install = runGoalMaker(["plugin", "install", "--codex-home", codexHome, "--json"], { env });
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const report = JSON.parse(install.stdout);
+    assert.equal(report.installed, true);
+    assert.equal(report.plugin, "goalbuddy@goalbuddy");
+    assert.equal(report.version, packageVersion);
+    assert.match(report.cache_path, new RegExp(`plugins/cache/goalbuddy/goalbuddy/${packageVersion.replaceAll(".", "\\.")}$`));
+    assert.match(report.config_path, /config\.toml$/);
+
+    const config = readFileSync(join(codexHome, "config.toml"), "utf8");
+    assert.match(config, /\[plugins\."goalbuddy@goalbuddy"\]/);
+    assert.match(config, /enabled = true/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
