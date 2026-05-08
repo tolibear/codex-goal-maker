@@ -12,7 +12,7 @@ const packageVersion = JSON.parse(readFileSync("package.json", "utf8")).version;
 function runGoalMaker(args, options = {}) {
   const result = spawnSync(process.execPath, [cli, ...args], {
     encoding: "utf8",
-    env: options.env || process.env,
+    env: testEnv(options.env || process.env),
   });
   return {
     status: result.status,
@@ -21,27 +21,58 @@ function runGoalMaker(args, options = {}) {
   };
 }
 
+function testEnv(env) {
+  const result = { ...env };
+  delete result.GITHUB_TOKEN;
+  return result;
+}
+
+function pathSuffixPattern(...segments) {
+  return new RegExp(`${segments.map(escapeRegExp).join("[\\\\/]")}$`);
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+}
+
 function fakeCodexBin(root, { loggedIn = true, goalsEnabled = true } = {}) {
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
-  const script = [
-    "#!/bin/sh",
-    "if [ \"$1\" = \"--version\" ]; then echo \"codex-cli 0.128.0\"; exit 0; fi",
-    "if [ \"$1\" = \"login\" ] && [ \"$2\" = \"status\" ]; then",
-    loggedIn ? "  echo \"Logged in with ChatGPT\"; exit 0" : "  echo \"Not logged in\"; exit 1",
-    "fi",
-    "if [ \"$1\" = \"features\" ] && [ \"$2\" = \"list\" ]; then",
-    `  echo "goals                               under development  ${goalsEnabled ? "true" : "false"}"; exit 0`,
-    "fi",
-    "if [ \"$1\" = \"plugin\" ] && [ \"$2\" = \"marketplace\" ] && [ \"$3\" = \"add\" ]; then",
-    "  echo \"Added marketplace goalbuddy\"; exit 0",
-    "fi",
-    "exit 2",
-    "",
-  ].join("\n");
-  const path = join(bin, "codex");
-  writeFileSync(path, script);
-  chmodSync(path, 0o755);
+  if (process.platform === "win32") {
+    const script = [
+      "@echo off",
+      "if \"%~1\"==\"--version\" echo codex-cli 0.128.0& exit /b 0",
+      "if \"%~1\"==\"login\" if \"%~2\"==\"status\" (",
+      loggedIn ? "  echo Logged in with ChatGPT& exit /b 0" : "  echo Not logged in& exit /b 1",
+      ")",
+      "if \"%~1\"==\"features\" if \"%~2\"==\"list\" (",
+      `  echo goals                               under development  ${goalsEnabled ? "true" : "false"}& exit /b 0`,
+      ")",
+      "if \"%~1\"==\"plugin\" if \"%~2\"==\"marketplace\" if \"%~3\"==\"add\" echo Added marketplace goalbuddy& exit /b 0",
+      "exit /b 2",
+      "",
+    ].join("\r\n");
+    writeFileSync(join(bin, "codex.cmd"), script);
+  } else {
+    const script = [
+      "#!/bin/sh",
+      "if [ \"$1\" = \"--version\" ]; then echo \"codex-cli 0.128.0\"; exit 0; fi",
+      "if [ \"$1\" = \"login\" ] && [ \"$2\" = \"status\" ]; then",
+      loggedIn ? "  echo \"Logged in with ChatGPT\"; exit 0" : "  echo \"Not logged in\"; exit 1",
+      "fi",
+      "if [ \"$1\" = \"features\" ] && [ \"$2\" = \"list\" ]; then",
+      `  echo "goals                               under development  ${goalsEnabled ? "true" : "false"}"; exit 0`,
+      "fi",
+      "if [ \"$1\" = \"plugin\" ] && [ \"$2\" = \"marketplace\" ] && [ \"$3\" = \"add\" ]; then",
+      "  echo \"Added marketplace goalbuddy\"; exit 0",
+      "fi",
+      "exit 2",
+      "",
+    ].join("\n");
+    const path = join(bin, "codex");
+    writeFileSync(path, script);
+    chmodSync(path, 0o755);
+  }
   return bin;
 }
 
@@ -124,8 +155,8 @@ test("doctor fails when a required bundled agent is missing", () => {
     const report = JSON.parse(doctor.stdout);
     assert.equal(report.skill_installed, true);
     assert.equal(report.compatibility_skill_installed, true);
-    assert.match(report.skill_path, /skills\/goalbuddy\/SKILL\.md$/);
-    assert.match(report.compatibility_skill_path, /skills\/goal-maker\/SKILL\.md$/);
+    assert.match(report.skill_path, pathSuffixPattern("skills", "goalbuddy", "SKILL.md"));
+    assert.match(report.compatibility_skill_path, pathSuffixPattern("skills", "goal-maker", "SKILL.md"));
     assert.deepEqual(report.missing_agents, ["goal_worker.toml"]);
   } finally {
     rmSync(codexHome, { recursive: true, force: true });
@@ -220,7 +251,7 @@ test("plugin install adds marketplace, caches plugin, and enables config", () =>
     assert.equal(report.installed, true);
     assert.equal(report.plugin, "goalbuddy@goalbuddy");
     assert.equal(report.version, packageVersion);
-    assert.match(report.cache_path, new RegExp(`plugins/cache/goalbuddy/goalbuddy/${packageVersion.replaceAll(".", "\\.")}$`));
+    assert.match(report.cache_path, pathSuffixPattern("plugins", "cache", "goalbuddy", "goalbuddy", packageVersion));
     assert.match(report.config_path, /config\.toml$/);
 
     const config = readFileSync(join(codexHome, "config.toml"), "utf8");
@@ -402,7 +433,7 @@ test("extend installs into the plugin skill after default plugin install", () =>
 
     const report = JSON.parse(installExtensions.stdout);
     assert.equal(report.installed, true);
-    assert.match(report.extensions[0].target, /plugins\/cache\/goalbuddy\/goalbuddy\/[^/]+\/skills\/goalbuddy\/extend\/publish-github-projects$/);
+    assert.match(report.extensions[0].target, new RegExp(`plugins[\\\\/]cache[\\\\/]goalbuddy[\\\\/]goalbuddy[\\\\/][^\\\\/]+[\\\\/]skills[\\\\/]goalbuddy[\\\\/]extend[\\\\/]publish-github-projects$`));
 
     const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"], { env });
     assert.equal(details.status, 0, details.stderr || details.stdout);
@@ -424,8 +455,8 @@ test("install reports extension discovery in json mode", () => {
     assert.equal(report.command, "install");
     assert.equal(report.package.name, "goalbuddy");
     assert.equal(report.skill.status, "installed");
-    assert.match(report.skill.path, /skills\/goalbuddy$/);
-    assert.match(report.skill.compatibility_path, /skills\/goal-maker$/);
+    assert.match(report.skill.path, pathSuffixPattern("skills", "goalbuddy"));
+    assert.match(report.skill.compatibility_path, pathSuffixPattern("skills", "goal-maker"));
     assert.equal(report.extensions.available_count, 1);
     assert.equal(report.extensions.available[0].id, "publish-github-projects");
     assert.equal(report.extensions.recommended.length, 0);
@@ -485,8 +516,8 @@ test("install migrates legacy skill extensions and metadata to GoalBuddy paths",
     const doctorReport = JSON.parse(doctor.stdout);
     assert.equal(doctorReport.skill_installed, true);
     assert.equal(doctorReport.compatibility_skill_installed, true);
-    assert.match(doctorReport.skill_path, /skills\/goalbuddy\/SKILL\.md$/);
-    assert.match(doctorReport.compatibility_skill_path, /skills\/goal-maker\/SKILL\.md$/);
+    assert.match(doctorReport.skill_path, pathSuffixPattern("skills", "goalbuddy", "SKILL.md"));
+    assert.match(doctorReport.compatibility_skill_path, pathSuffixPattern("skills", "goal-maker", "SKILL.md"));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

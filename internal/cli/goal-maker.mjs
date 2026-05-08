@@ -520,9 +520,12 @@ function codexGoalRuntimeStatus() {
 }
 
 function runCodex(args) {
-  const result = spawnSync("codex", args, {
+  const env = { ...process.env, CODEX_HOME: codexHome() };
+  const command = codexSpawnCommand(args, env);
+  const result = spawnSync(command.file, command.args, {
     encoding: "utf8",
-    env: { ...process.env, CODEX_HOME: codexHome() },
+    env,
+    shell: command.shell || false,
   });
   return {
     ok: result.status === 0,
@@ -530,6 +533,38 @@ function runCodex(args) {
     stdout: result.stdout || "",
     stderr: result.stderr || result.error?.message || "",
   };
+}
+
+function codexSpawnCommand(args, env) {
+  if (process.platform !== "win32") return { file: "codex", args };
+
+  const command = resolveWindowsCommand("codex", env);
+  if (!command) return { file: "codex", args };
+  if (/\.(?:cmd|bat)$/i.test(command)) {
+    const commandLine = [quoteWindowsCommandArg(command), ...args.map(quoteWindowsCommandArg)].join(" ");
+    return {
+      file: commandLine,
+      args: [],
+      shell: true,
+    };
+  }
+  return { file: command, args };
+}
+
+function resolveWindowsCommand(name, env) {
+  const systemWhere = env.SystemRoot ? join(env.SystemRoot, "System32", "where.exe") : "";
+  const whereCommand = systemWhere && existsSync(systemWhere) ? systemWhere : "where.exe";
+  const where = spawnSync(whereCommand, [name], { encoding: "utf8", env });
+  if (where.status !== 0) return "";
+  const candidates = where.stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return candidates.find((candidate) => /\.(?:exe|cmd|bat)$/i.test(candidate)) || "";
+}
+
+function quoteWindowsCommandArg(value) {
+  return `"${String(value).replace(/(["^&|<>()%])/g, "^$1")}"`;
 }
 
 function parseGoalFeature(output) {
