@@ -2,12 +2,12 @@
 
 <p align="center">
   <a href="https://goalbuddy.dev">
-    <img src="internal/assets/goalbuddy-readme-hero.png" alt="GoalBuddy turns vague Codex goals into structured progress with Scout, Judge, Worker, receipts, and verification." width="100%">
+    <img src="internal/assets/goalbuddy-readme-hero.png" alt="GoalBuddy gives Codex a goal operating system with live boards, Scout, Judge, Worker, receipts, and verification." width="100%">
   </a>
 </p>
 
 <p align="center">
-  <strong>Turn open-ended Codex work into one reviewable goal board.</strong>
+  <strong>Give Codex a goal operating system: intake, live boards, agents, receipts, and verification.</strong>
 </p>
 
 <p align="center">
@@ -16,13 +16,7 @@
   <a href="https://goalbuddy.dev"><img alt="goalbuddy.dev" src="https://img.shields.io/badge/site-goalbuddy.dev-684cff?style=flat-square"></a>
 </p>
 
-GoalBuddy is a local Codex companion for work that is too broad to trust to a single prompt. It turns a vague request into a `goal.md` charter, a machine-readable `state.yaml` board, role-tagged Scout/Judge/Worker tasks, compact receipts, and verification before completion.
-
-<p align="center">
-  <a href="https://goalbuddy.dev/assets/goalbuddy-demo.mp4">
-    <img src="https://goalbuddy.dev/assets/goalbuddy-demo-poster.jpg" alt="Watch GoalBuddy create a local live board in Codex while tasks populate." width="100%">
-  </a>
-</p>
+GoalBuddy is a local Codex companion for work that is too broad to trust to a single prompt. It turns rough intent into a durable operating loop: a `goal.md` charter, a machine-readable `state.yaml` board, optional visual boards, Scout/Judge/Worker task flow, compact receipts, and verification before completion.
 
 ```bash
 npx goalbuddy
@@ -186,6 +180,14 @@ tasks:
       - "Verification fails twice."
     receipt: null
 ```
+
+## Visual Boards
+
+GoalBuddy can show progress as the goal runs. `$goal-prep` can open a local live board inside Codex before the task list is finished, or prepare a GitHub Projects sync when stakeholders need an external board.
+
+<p align="center">
+  <img src="internal/assets/goalbuddy-live-board.jpg" alt="GoalBuddy local live board open next to Codex while Scout, Judge, and Worker tasks populate." width="100%">
+</p>
 
 ## Extensions
 
