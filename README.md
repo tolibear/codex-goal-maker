@@ -18,6 +18,12 @@
 
 GoalBuddy is a local Codex companion for work that is too broad to trust to a single prompt. It turns a vague request into a `goal.md` charter, a machine-readable `state.yaml` board, role-tagged Scout/Judge/Worker tasks, compact receipts, and verification before completion.
 
+<p align="center">
+  <a href="https://goalbuddy.dev/assets/goalbuddy-demo.mp4">
+    <img src="https://goalbuddy.dev/assets/goalbuddy-demo-poster.jpg" alt="Watch GoalBuddy create a local live board in Codex while tasks populate." width="100%">
+  </a>
+</p>
+
 ```bash
 npx goalbuddy
 ```

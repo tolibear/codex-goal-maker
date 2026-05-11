@@ -34,6 +34,7 @@
           <span>Goal Buddy</span>
         </a>
         <nav class="nav-links" aria-label="Primary navigation">
+          <a href="#demo">Demo</a>
           <a href="#workflow">Workflow</a>
           <a href="#local">Local files</a>
           <a href="#extensions">Extensions</a>
@@ -73,22 +74,23 @@
           </div>
         </div>
 
-        <div class="hero-visual" data-animate="hero-visual">
-          <div class="command-window" aria-label="Goal Buddy terminal preview">
-            <div class="window-bar" aria-hidden="true">
+        <div class="hero-visual" id="demo" data-animate="hero-visual">
+          <div class="demo-frame" aria-label="Goal Buddy live board demo">
+            <div class="demo-bar" aria-hidden="true">
               <span></span>
               <span></span>
               <span></span>
+              <strong>GoalBuddy live board</strong>
             </div>
-            <pre><code><span>$</span>npx goalbuddy
-<span>$</span>goal-prep
-
-<em>Prepared docs/goals/improve-project/</em>
-  goal.md
-  state.yaml
-  notes/
-
-/goal follow goal.md</code></pre>
+            <video
+              controls
+              muted
+              playsinline
+              preload="metadata"
+              poster="./assets/goalbuddy-demo-poster.jpg"
+            >
+              <source src="./assets/goalbuddy-demo.mp4" type="video/mp4">
+            </video>
           </div>
           <img class="hero-character" src="./assets/goalbuddy-character.png" alt="Goal Buddy mascot holding a pencil">
         </div>

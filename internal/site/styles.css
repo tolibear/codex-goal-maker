@@ -317,11 +317,11 @@ pre {
   min-height: 550px;
 }
 
-.command-window {
+.demo-frame {
   position: relative;
   z-index: 2;
   overflow: hidden;
-  width: min(100%, 560px);
+  width: min(100%, 640px);
   margin: 0 auto;
   border: 1px solid rgba(120, 135, 168, 0.22);
   border-radius: 20px;
@@ -330,7 +330,7 @@ pre {
   box-shadow: 0 34px 76px rgba(7, 16, 31, 0.36);
 }
 
-.window-bar {
+.demo-bar {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -339,42 +339,44 @@ pre {
   border-bottom: 1px solid rgba(231, 236, 249, 0.11);
 }
 
-.window-bar span {
+.demo-bar span {
   width: 12px;
   height: 12px;
   border-radius: 50%;
 }
 
-.window-bar span:nth-child(1) {
+.demo-bar span:nth-child(1) {
   background: #ff6b66;
 }
 
-.window-bar span:nth-child(2) {
+.demo-bar span:nth-child(2) {
   background: #ffc45b;
 }
 
-.window-bar span:nth-child(3) {
+.demo-bar span:nth-child(3) {
   background: #58d878;
 }
 
-.command-window pre {
-  margin: 0;
-  min-height: 286px;
-  padding: 26px;
-  overflow: hidden;
-  color: #f6f8ff;
-  font-size: clamp(0.78rem, 1.04vw, 0.94rem);
-  line-height: 1.6;
-  white-space: pre-wrap;
+.demo-bar strong {
+  margin-left: 6px;
+  color: rgba(246, 248, 255, 0.82);
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
-.command-window span {
-  color: #98a6c5;
+.demo-frame video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1676 / 1080;
+  background: #07101f;
 }
 
-.command-window em {
-  color: #78f29a;
-  font-style: normal;
+.demo-frame::after {
+  position: absolute;
+  inset: 48px 0 0;
+  pointer-events: none;
+  content: "";
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .hero-character {
@@ -937,7 +939,7 @@ pre {
     min-height: 520px;
   }
 
-  .command-window {
+  .demo-frame {
     right: 0;
   }
 
@@ -1026,15 +1028,17 @@ pre {
     min-height: 440px;
   }
 
-  .command-window {
+  .demo-frame {
     right: 0;
   }
 
-  .command-window pre {
-    min-height: 272px;
-    padding: 20px;
-    font-size: 0.8rem;
-    overflow-wrap: anywhere;
+  .demo-bar {
+    height: 42px;
+    padding: 0 16px;
+  }
+
+  .demo-bar strong {
+    font-size: 0.78rem;
   }
 
   .hero-character {
