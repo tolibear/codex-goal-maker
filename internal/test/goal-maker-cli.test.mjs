@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -214,6 +214,20 @@ test("doctor reports native goal runtime readiness and supports strict goal-read
   }
 });
 
+test("install bundles core visual board backends into the skill", () => {
+  const codexHome = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const install = runGoalMaker(["install", "--codex-home", codexHome, "--json"]);
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const skillRoot = join(codexHome, "skills", "goalbuddy");
+    assert.equal(existsSync(join(skillRoot, "extend", "local-goal-board", "scripts", "local-goal-board.mjs")), true);
+    assert.equal(existsSync(join(skillRoot, "extend", "github-projects", "scripts", "sync-github-project.mjs")), true);
+  } finally {
+    rmSync(codexHome, { recursive: true, force: true });
+  }
+});
+
 test("check-update reports newer published GoalBuddy versions", () => {
   const env = {
     ...process.env,
@@ -253,6 +267,8 @@ test("plugin install adds marketplace, caches plugin, and enables config", () =>
     assert.equal(report.version, packageVersion);
     assert.match(report.cache_path, pathSuffixPattern("plugins", "cache", "goalbuddy", "goalbuddy", packageVersion));
     assert.match(report.config_path, /config\.toml$/);
+    assert.equal(existsSync(join(report.cache_path, "skills", "goalbuddy", "extend", "local-goal-board", "scripts", "local-goal-board.mjs")), true);
+    assert.equal(existsSync(join(report.cache_path, "skills", "goalbuddy", "extend", "github-projects", "scripts", "sync-github-project.mjs")), true);
 
     const config = readFileSync(join(codexHome, "config.toml"), "utf8");
     assert.match(config, /\[plugins\."goalbuddy@goalbuddy"\]/);
@@ -262,7 +278,7 @@ test("plugin install adds marketplace, caches plugin, and enables config", () =>
   }
 });
 
-test("plugin install output points to Goal Prep and optional extensions", () => {
+test("plugin install output points to Goal Prep and bundled visual boards", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
     const codexHome = join(root, "codex-home");
@@ -275,8 +291,9 @@ test("plugin install output points to Goal Prep and optional extensions", () => 
     const install = runGoalMaker(["plugin", "install", "--codex-home", codexHome], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
     assert.match(install.stdout, /\$goal-prep/);
-    assert.match(install.stdout, /npx goalbuddy extend/);
-    assert.match(install.stdout, /npx goalbuddy extend install --all/);
+    assert.match(install.stdout, /Bundled visual boards/);
+    assert.match(install.stdout, /npx goalbuddy board docs\/goals\/<slug>/);
+    assert.match(install.stdout, /npx goalbuddy extend github-projects/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -546,6 +563,65 @@ test("extend installs a catalog extension with checksum verification", () => {
     const doctor = runGoalMaker(["extend", "doctor", "publish-github-projects", "--codex-home", codexHome, "--json"]);
     assert.equal(doctor.status, 1, doctor.stderr || doctor.stdout);
     assert.deepEqual(JSON.parse(doctor.stdout).extensions[0].issues, ["missing env: GITHUB_TOKEN"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("board command installs and launches the local board extension", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const codexHome = join(root, "codex-home");
+    const goalDir = join(root, "docs", "goals", "demo");
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    writeFileSync(join(goalDir, "goal.md"), "# Demo\n");
+    writeFileSync(join(goalDir, "state.yaml"), `
+version: 2
+goal:
+  title: "Demo"
+  slug: "demo"
+  kind: specific
+  tranche: "demo"
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T001
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Map the demo."
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+
+    const installCore = runGoalMaker(["install", "--codex-home", codexHome]);
+    assert.equal(installCore.status, 0, installCore.stderr || installCore.stdout);
+
+    const board = runGoalMaker([
+      "board",
+      goalDir,
+      "--codex-home",
+      codexHome,
+      "--once",
+      "--json",
+      "--port",
+      "0",
+    ]);
+    assert.equal(board.status, 0, board.stderr || board.stdout);
+
+    const report = JSON.parse(board.stdout);
+    assert.equal(report.goalDir, goalDir);
+    assert.equal(existsSync(join(goalDir, ".goalbuddy-board", "index.html")), true);
+    assert.equal(report.board.goal.slug, "demo");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

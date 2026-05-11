@@ -70,7 +70,11 @@ GoalBuddy uses four primitives:
 - **Task**: exactly one active Scout, Judge, Worker, or PM task.
 - **Receipt**: compact proof for every completed, blocked, or escalated task.
 
-The default agents are installed with the skill:
+GoalBuddy bundles default agent templates. `$goal-prep` records whether matching installed agent configs were actually found; if not, `/goal` can continue through PM fallback, or you can install dedicated agents with:
+
+```bash
+npx goalbuddy agents
+```
 
 - **Scout** maps repo evidence, workflows, constraints, risks, and candidate next tasks.
 - **Judge** resolves ambiguity, scope, risk, task selection, and completion claims.
@@ -84,11 +88,7 @@ Install and enable the native Codex plugin:
 npx goalbuddy
 ```
 
-Restart Codex, then use `$goal-prep`. To add the optional extension bundle:
-
-```bash
-npx goalbuddy extend install --all
-```
+Restart Codex, then use `$goal-prep`. GoalBuddy ships with two visual board backends by default: a local live board and a GitHub Projects sync.
 
 If you prefer a global executable, install the npm package globally and run `goalbuddy`:
 
@@ -183,14 +183,14 @@ tasks:
 
 ## Extensions
 
-The npm package is the stable core. Optional extensions live under `extend/` and are discovered from the GitHub-hosted `extend/catalog.json`, so users do not need a new npm release for every integration.
+The npm package is the stable core. Local Board and GitHub Projects are bundled into the installed GoalBuddy skill so `$goal-prep` can offer a visual board immediately. Other optional extensions live under `extend/` and are discovered from the GitHub-hosted `extend/catalog.json`, so users do not need a new npm release for every integration.
 
 ```bash
+npx goalbuddy board docs/goals/<slug>
+npx goalbuddy extend github-projects
 npx goalbuddy extend
 npx goalbuddy extend github-pr-workflow
 npx goalbuddy extend install github-pr-workflow --dry-run
-npx goalbuddy extend install --all --dry-run
-npx goalbuddy extend install --all
 ```
 
 `goalbuddy extend` shows available extensions and detail commands. `goalbuddy extend <id>` shows local install state, activation state, credential requirements, safe-by-default status, and missing environment variables.
@@ -199,6 +199,7 @@ Current catalog examples include:
 
 - `github-pr-workflow`: prepares receipt-aligned commit and PR handoff text.
 - `github-projects`: mirrors GoalBuddy boards into GitHub Projects.
+- `local-goal-board`: serves a local live board that updates from `state.yaml` and `notes/`.
 - `ai-diff-risk-review`: summarizes risk in the current diff.
 - `ci-failure-triage`: maps failing CI back to likely causes and next tasks.
 - `docs-drift-audit`: checks whether docs still match implementation.

@@ -169,16 +169,16 @@ function receiptCommandStatuses(raw) {
 }
 
 function rootEntryErrors() {
-  const allowed = new Set(["goal.md", "state.yaml", "notes"]);
+  const allowed = new Set(["goal.md", "state.yaml", "notes", ".goalbuddy-board"]);
   const unexpected = [];
   for (const entry of readdirSync(root).filter((item) => item !== ".DS_Store")) {
     const path = join(root, entry);
     const stats = statSync(path);
     if (!allowed.has(entry)) {
       unexpected.push(entry);
-    } else if (entry === "notes" && !stats.isDirectory()) {
-      unexpected.push("notes (must be a directory)");
-    } else if (entry !== "notes" && !stats.isFile()) {
+    } else if ((entry === "notes" || entry === ".goalbuddy-board") && !stats.isDirectory()) {
+      unexpected.push(`${entry} (must be a directory)`);
+    } else if (entry !== "notes" && entry !== ".goalbuddy-board" && !stats.isFile()) {
       unexpected.push(`${entry} (must be a file)`);
     }
   }
@@ -188,10 +188,11 @@ function rootEntryErrors() {
 const version = topScalar("version");
 const goalStatus = nestedScalar("goal", "status");
 const activeTask = topScalar("active_task");
-const installedAgents = ["scout", "worker", "judge"].map((agent) => ({
+const agentStatuses = ["scout", "worker", "judge"].map((agent) => ({
   agent,
   status: nestedScalar("agents", agent),
 }));
+const allowedAgentStatuses = new Set(["installed", "bundled_not_installed", "missing", "unknown"]);
 const continuousUntilFullOutcome = nestedScalar("rules", "continuous_until_full_outcome") === true;
 const missingInputOrCredentialsDoNotStopGoal =
   nestedScalar("rules", "missing_input_or_credentials_do_not_stop_goal") === true;
@@ -214,9 +215,22 @@ if (!["active", "blocked", "done"].includes(goalStatus)) {
   errors.push(`goal.status must be active, blocked, or done; got ${goalStatus || "<missing>"}`);
 }
 
-for (const { agent, status } of installedAgents) {
-  if (status !== "installed") {
-    errors.push(`agents.${agent} must be installed; got ${status || "<missing>"}`);
+function agentStatusWarning(agent, status) {
+  const agentLabel = agent[0].toUpperCase() + agent.slice(1);
+  if (status === "bundled_not_installed") {
+    return `agents.${agent} is bundled_not_installed; /goal can continue through PM fallback, but dedicated ${agentLabel} delegation is unavailable until installed. If dedicated agents are required before /goal, run: npx goalbuddy agents`;
+  }
+  if (status === "missing") {
+    return `agents.${agent} is missing; /goal can continue through PM fallback, but dedicated ${agentLabel} delegation is unavailable. If dedicated agents are required before /goal, run: npx goalbuddy install`;
+  }
+  return `agents.${agent} is unknown; /goal can continue through PM fallback, but dedicated ${agentLabel} delegation was not verified. To check before /goal, run: npx goalbuddy doctor`;
+}
+
+for (const { agent, status } of agentStatuses) {
+  if (!allowedAgentStatuses.has(status)) {
+    errors.push(`agents.${agent} must be one of installed, bundled_not_installed, missing, or unknown; got ${status || "<missing>"}`);
+  } else if (status !== "installed") {
+    warnings.push(agentStatusWarning(agent, status));
   }
 }
 
@@ -227,7 +241,7 @@ if (!existsSync(join(root, "notes")) || !statSync(join(root, "notes")).isDirecto
 
 const unexpected = rootEntryErrors();
 if (unexpected.length > 0) {
-  errors.push(`unexpected root entries; v2 goal roots may contain only goal.md, state.yaml, and notes/: ${unexpected.join(", ")}`);
+  errors.push(`unexpected root entries; v2 goal roots may contain only goal.md, state.yaml, notes/, and .goalbuddy-board/: ${unexpected.join(", ")}`);
 }
 
 const tasks = parseTasks();
@@ -361,6 +375,7 @@ const result = {
   state_path: statePath,
   goal_status: goalStatus,
   active_task: activeTask,
+  agent_statuses: Object.fromEntries(agentStatuses.map(({ agent, status }) => [agent, status])),
   task_count: tasks.length,
   errors,
   warnings,

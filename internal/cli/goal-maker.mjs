@@ -33,11 +33,15 @@ const requiredAgentFiles = [
   "goal_scout.toml",
   "goal_worker.toml",
 ];
+const bundledCoreExtensionIds = new Set(["github-projects", "local-goal-board"]);
 const optionsWithValues = new Set([
   "--catalog",
   "--catalog-url",
   "--codex-home",
+  "--goal",
+  "--host",
   "--kind",
+  "--port",
   "--source",
 ]);
 
@@ -79,6 +83,9 @@ async function main() {
       break;
     case "extend":
       await extend();
+      break;
+    case "board":
+      await board();
       break;
     case "help":
     case "--help":
@@ -154,6 +161,7 @@ Usage:
   ${canonicalCliName} extend install <id> [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
   ${canonicalCliName} extend install --all [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
   ${canonicalCliName} extend doctor [<id>] [--codex-home <path>] [--json]
+  ${canonicalCliName} board <docs/goals/slug> [--catalog-url <url-or-path>] [--host <host>] [--port <port>] [--once] [--json]
 
 Default:
   ${canonicalCliName}  Installs and enables the native Codex plugin.
@@ -452,9 +460,9 @@ function installPlugin() {
   console.log("Restart Codex, then use:");
   console.log(`  $${canonicalSkillName}`);
   console.log("");
-  console.log("Optional extensions:");
-  console.log(`  npx ${canonicalCliName} extend`);
-  console.log(`  npx ${canonicalCliName} extend install --all`);
+  console.log("Bundled visual boards:");
+  console.log(`  npx ${canonicalCliName} board docs/goals/<slug>`);
+  console.log(`  npx ${canonicalCliName} extend github-projects`);
 }
 
 function pluginCacheRoot(version) {
@@ -606,6 +614,56 @@ async function extend() {
     default:
       await extendDetails(subcommand);
   }
+}
+
+async function board() {
+  const goal = optionValue("--goal") || positional(1);
+  if (!goal) {
+    console.error(`Missing goal directory. Usage: ${canonicalCliName} board docs/goals/<slug>`);
+    process.exit(2);
+  }
+
+  const script = await ensureLocalBoardExtension();
+  const scriptArgs = [script, "--goal", goal];
+  for (const option of ["--host", "--port"]) {
+    const value = optionValue(option);
+    if (value) scriptArgs.push(option, value);
+  }
+  if (hasFlag("--once")) scriptArgs.push("--once");
+  if (hasFlag("--json")) scriptArgs.push("--json");
+
+  const capture = hasFlag("--once") || hasFlag("--json");
+  const result = spawnSync(process.execPath, scriptArgs, {
+    cwd: packageRoot,
+    encoding: "utf8",
+    env: process.env,
+    stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit",
+  });
+
+  if (capture) {
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+  }
+  if (result.error) throw result.error;
+  process.exit(result.status ?? 1);
+}
+
+async function ensureLocalBoardExtension() {
+  const id = "local-goal-board";
+  const script = join(extensionTarget(id), "scripts", "local-goal-board.mjs");
+  if (existsSync(script)) return script;
+
+  const catalog = await loadCatalog();
+  const extension = catalog.extensions.find((candidate) => candidate.id === id);
+  if (!extension) {
+    throw new Error(`Extension ${id} is not available in ${catalog.url}.`);
+  }
+
+  await installCatalogExtension(catalog, extension);
+  if (!existsSync(script)) {
+    throw new Error(`Extension ${id} installed, but script is missing: ${script}`);
+  }
+  return script;
 }
 
 function extendUsage() {
@@ -766,6 +824,11 @@ async function extendInstall() {
 async function extendInstallAll(catalog) {
   const results = [];
   for (const extension of catalog.extensions) {
+    if (existsSync(extensionTarget(extension.id)) && !hasFlag("--force")) {
+      validateCatalogExtension(extension);
+      results.push({ extension, target: extensionTarget(extension.id), plan: installPlan(catalog, extension, extensionTarget(extension.id)), skipped: true });
+      continue;
+    }
     results.push(await installCatalogExtension(catalog, extension));
   }
 
@@ -793,11 +856,13 @@ async function extendInstallAll(catalog) {
     printJson({
       installed: true,
       count: results.length,
-      extensions: results.map(({ extension, target }) => ({ id: extension.id, target })),
+      extensions: results.map(({ extension, target, skipped }) => ({ id: extension.id, target, skipped: Boolean(skipped) })),
     });
   } else {
-    console.log(`Installed ${results.length} extensions`);
-    for (const { extension, target } of results) console.log(`  ${extension.id} -> ${target}`);
+    const installedCount = results.filter((result) => !result.skipped).length;
+    const skippedCount = results.length - installedCount;
+    console.log(`Installed ${installedCount} extensions${skippedCount ? `, skipped ${skippedCount} already installed` : ""}`);
+    for (const { extension, target, skipped } of results) console.log(`  ${extension.id} -> ${target}${skipped ? " (already installed)" : ""}`);
   }
 }
 
@@ -1045,6 +1110,7 @@ function preserveInstalledExtensions(targets) {
     if (!existsSync(source)) continue;
     mkdirSync(tempPath, { recursive: true });
     for (const entry of readdirSync(source, { withFileTypes: true })) {
+      if (bundledCoreExtensionIds.has(entry.name)) continue;
       const from = join(source, entry.name);
       const to = join(tempPath, entry.name);
       cpSync(from, to, { recursive: true, force: true });
@@ -1058,9 +1124,11 @@ function preserveInstalledExtensions(targets) {
 
 function restoreInstalledExtensions(target, tempPath) {
   if (!tempPath) return;
-  rmSync(join(target, "extend"), { recursive: true, force: true });
-  mkdirSync(target, { recursive: true });
-  cpSync(tempPath, join(target, "extend"), { recursive: true });
+  const destinationRoot = join(target, "extend");
+  mkdirSync(destinationRoot, { recursive: true });
+  for (const entry of readdirSync(tempPath, { withFileTypes: true })) {
+    cpSync(join(tempPath, entry.name), join(destinationRoot, entry.name), { recursive: true, force: true });
+  }
 }
 
 function cleanupPreservedExtensions(paths) {

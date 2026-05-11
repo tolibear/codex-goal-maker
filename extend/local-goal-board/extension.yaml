@@ -1,0 +1,37 @@
+id: local-goal-board
+name: Local Goal Board
+kind: visualization
+version: 0.1.0
+source_of_truth: local
+description: Generate and serve a minimal GoalBuddy-branded local Kanban board that updates live from a goal directory's state.yaml and notes.
+local_use_prompt: Run the bundled local board script for docs/goals/<slug>. It writes a tiny web app into docs/goals/<slug>/.goalbuddy-board and serves it on 127.0.0.1 with live SSE updates from state.yaml and notes. Use --once --json for generation checks and no long-running server.
+use_when:
+  - A human wants to watch a GoalBuddy run in a local board UI.
+  - The goal needs GitHub-Projects-like visibility without GitHub credentials.
+  - state.yaml and notes should remain the source of truth while the browser updates live.
+activation: user_requested
+outputs:
+  - Local GoalBuddy board web app
+  - Live state.yaml and notes viewer
+requires_approval: false
+safe_by_default: true
+reads:
+  - docs/goals/<slug>/state.yaml
+  - docs/goals/<slug>/notes
+writes:
+  - docs/goals/<slug>/.goalbuddy-board
+side_effects:
+  - Starts a local-only HTTP server when not run with --once.
+agent_instructions:
+  - Use the bundled local-goal-board script; do not build a static-only mockup.
+  - Keep state.yaml authoritative; the app is only a viewer.
+  - Require live no-manual-reload updates through the local server event stream.
+  - Keep the generated UI simple, clean, minimal, and GoalBuddy branded.
+auth:
+  env: []
+supports:
+  dry_run: true
+  live_local_board: true
+  live_updates: true
+  credentials_required: false
+  generated_goal_artifact: true

@@ -103,6 +103,45 @@ test("accepts a valid v2 board with one active Scout task", () => {
   }
 });
 
+test("accepts explicit non-installed agent states with actionable warnings", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard
+      .replace("scout: installed", "scout: bundled_not_installed")
+      .replace("worker: installed", "worker: missing")
+      .replace("judge: installed", "judge: unknown"));
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+    assert.deepEqual(result.stdout.agent_statuses, {
+      scout: "bundled_not_installed",
+      worker: "missing",
+      judge: "unknown",
+    });
+    assert.match(result.stdout.warnings.join("\n"), /PM fallback/i);
+    assert.match(result.stdout.warnings.join("\n"), /npx goalbuddy agents/i);
+    assert.match(result.stdout.warnings.join("\n"), /npx goalbuddy install/i);
+    assert.match(result.stdout.warnings.join("\n"), /npx goalbuddy doctor/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("accepts generated local visual board artifacts in goal roots", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard);
+    mkdirSync(join(root, ".goalbuddy-board"), { recursive: true });
+    writeFileSync(join(root, ".goalbuddy-board", "index.html"), "<!doctype html>\n");
+
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("accepts an active Worker only with scope, verification, and stop conditions", () => {
   const root = makeRoot();
   try {
@@ -156,7 +195,7 @@ checks:
   }
 });
 
-test("rejects invalid goal status and missing installed agents", () => {
+test("rejects invalid goal status and absent agent states", () => {
   const root = makeRoot();
   try {
     writeState(root, `
@@ -181,7 +220,19 @@ tasks:
     const result = runChecker(root);
     assert.equal(result.status, 1);
     assert.match(result.stdout.errors.join("\n"), /goal\.status must be active, blocked, or done/i);
-    assert.match(result.stdout.errors.join("\n"), /agents\.scout must be installed/i);
+    assert.match(result.stdout.errors.join("\n"), /agents\.scout must be one of installed, bundled_not_installed, missing, or unknown/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects unsupported agent states", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace("scout: installed", "scout: maybe"));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /agents\.scout must be one of installed, bundled_not_installed, missing, or unknown; got maybe/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
