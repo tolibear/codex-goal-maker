@@ -32,7 +32,7 @@ Allowed `$goal-prep` actions:
 - ask diagnostic intake questions and wait when required;
 - create or repair only `docs/goals/<slug>/goal.md`, `docs/goals/<slug>/state.yaml`, and `docs/goals/<slug>/notes/`;
 - optionally run the GoalBuddy board checker against that `state.yaml`;
-- verify that the GoalBuddy agents are installed, if this can be done without touching implementation work;
+- verify GoalBuddy agent availability, if this can be done without touching implementation work, and record `installed`, `bundled_not_installed`, `missing`, or `unknown` truthfully;
 - print exactly `/goal Follow docs/goals/<slug>/goal.md.`;
 - ask whether to start `/goal`, refine the board, or stop.
 
@@ -157,7 +157,7 @@ Do:
 - create `goal.md`, `state.yaml`, and `notes/`;
 - seed a role-tagged task board that matches the input shape;
 - make the first active task safe;
-- verify Scout, Worker, and Judge agents are installed or explain what is missing;
+- verify Scout, Worker, and Judge agent availability or record an explicit truthful state;
 - print the exact command `/goal Follow docs/goals/<slug>/goal.md.`;
 - ask whether to start now, refine `goal.md`, or stop.
 
@@ -472,7 +472,18 @@ If the checker and your judgment disagree, choose the more conservative state.
 
 ## Agents
 
-Scout, Worker, and Judge are default-installed roles.
+Scout, Worker, and Judge templates are bundled with GoalBuddy. They may also be installed as user or project agent configs, but a board must not claim `installed` unless the preparer verified the matching agent files.
+
+Use these `state.yaml` values:
+
+| State | Meaning | Next action |
+|---|---|---|
+| `installed` | Matching Scout/Worker/Judge agent configs were found in the expected user or project agent location. | Continue. |
+| `bundled_not_installed` | The bundled `goal_*.toml` template exists with the skill, but no matching installed agent config was verified. | `/goal` can proceed through PM fallback. If dedicated agents are required before `/goal`, run `npx goalbuddy agents`. |
+| `missing` | Neither an installed config nor the bundled template was verified. | `/goal` can proceed through PM fallback. If dedicated agents are required before `/goal`, run `npx goalbuddy install`. |
+| `unknown` | Agent availability could not be checked. | `/goal` can proceed through PM fallback. To check before `/goal`, run `npx goalbuddy doctor`. |
+
+Non-`installed` states are warnings, not false failures, because the main `/goal` PM can perform Scout/Judge/Worker-shaped tasks directly when dedicated agents are unavailable.
 
 | Agent | Thinking level | Write access | Use for |
 |---|---:|---:|---|

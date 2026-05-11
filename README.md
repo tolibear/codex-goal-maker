@@ -70,7 +70,11 @@ GoalBuddy uses four primitives:
 - **Task**: exactly one active Scout, Judge, Worker, or PM task.
 - **Receipt**: compact proof for every completed, blocked, or escalated task.
 
-The default agents are installed with the skill:
+GoalBuddy bundles default agent templates. `$goal-prep` records whether matching installed agent configs were actually found; if not, `/goal` can continue through PM fallback, or you can install dedicated agents with:
+
+```bash
+npx goalbuddy agents
+```
 
 - **Scout** maps repo evidence, workflows, constraints, risks, and candidate next tasks.
 - **Judge** resolves ambiguity, scope, risk, task selection, and completion claims.

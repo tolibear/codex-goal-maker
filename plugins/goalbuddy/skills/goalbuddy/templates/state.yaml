@@ -35,9 +35,11 @@ rules:
   intake_misfire_must_be_audited: true
 
 agents:
-  scout: installed
-  worker: installed
-  judge: installed
+  # installed | bundled_not_installed | missing | unknown
+  # If non-installed, /goal can continue through PM fallback; install agents before /goal only when dedicated delegation is required.
+  scout: unknown
+  worker: unknown
+  judge: unknown
 
 active_task: T001
 
