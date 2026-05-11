@@ -1,7 +1,7 @@
 {
   "name": "goalbuddy",
   "version": "0.2.21",
-  "description": "Turn broad Codex work into verified GoalBuddy boards with Scout, Judge, Worker, receipts, and optional extensions.",
+  "description": "Turn broad Codex work into verified GoalBuddy boards with Scout, Judge, Worker, visual boards, and receipts.",
   "author": {
     "name": "tolibear",
     "email": "support@tolibear.com",
@@ -24,7 +24,7 @@
   "interface": {
     "displayName": "GoalBuddy",
     "shortDescription": "Turn broad Codex work into verified Scout/Judge/Worker boards",
-    "longDescription": "GoalBuddy packages a structured Codex goal workflow for broad, long-running, or ambiguous engineering work. It creates durable goal charters, task boards, receipts, verification gates, extension handoffs, and compatibility guidance for teams moving from goal-maker.",
+    "longDescription": "GoalBuddy packages a structured Codex goal workflow for broad, long-running, or ambiguous engineering work. It creates durable goal charters, task boards, visual board surfaces, receipts, verification gates, extension handoffs, and compatibility guidance for teams moving from goal-maker.",
     "developerName": "tolibear",
     "category": "Coding",
     "capabilities": [

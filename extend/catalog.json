@@ -170,6 +170,111 @@
       ]
     },
     {
+      "id": "local-goal-board",
+      "name": "Local Goal Board",
+      "kind": "visualization",
+      "version": "0.1.0",
+      "summary": "Generate and serve a minimal GoalBuddy-branded local Kanban board that updates live from state.yaml and notes.",
+      "description": "A local-only board viewer that writes a tiny app into docs/goals/<slug>/.goalbuddy-board, serves it on 127.0.0.1, and streams state.yaml and notes changes to the browser with no manual reload.",
+      "local_use_prompt": "Run the bundled local board script for docs/goals/<slug>. It writes .goalbuddy-board into the goal directory and serves it locally with live SSE updates from state.yaml and notes. Use --once --json for generation checks and no long-running server.",
+      "source": "extend/local-goal-board",
+      "docs": "README.md",
+      "use_when": [
+        "A human wants to watch a GoalBuddy run in a local board UI.",
+        "The team wants GitHub-Projects-like visibility without GitHub credentials.",
+        "state.yaml and notes should remain the source of truth while the browser updates live."
+      ],
+      "activation": "user_requested",
+      "outputs": [
+        "Local GoalBuddy board web app",
+        "Live state.yaml and notes viewer"
+      ],
+      "requires_approval": false,
+      "safe_by_default": true,
+      "applies_to": {
+        "goal_state": "v2",
+        "surfaces": [
+          "local_browser",
+          "stakeholder_board",
+          "goal_monitoring"
+        ]
+      },
+      "reads": [
+        "docs/goals/<slug>/state.yaml",
+        "docs/goals/<slug>/notes"
+      ],
+      "writes": [
+        "docs/goals/<slug>/.goalbuddy-board"
+      ],
+      "side_effects": [
+        "Starts a local-only HTTP server when not run with --once."
+      ],
+      "agent_instructions": [
+        "Use the bundled local-goal-board script; do not build a static-only mockup.",
+        "Keep state.yaml authoritative; the app is only a viewer.",
+        "Require live no-manual-reload updates through the local server event stream.",
+        "Keep the generated UI simple, clean, minimal, and GoalBuddy branded."
+      ],
+      "auth": {
+        "env": []
+      },
+      "supports": {
+        "dry_run": true,
+        "live_local_board": true,
+        "live_updates": true,
+        "credentials_required": false,
+        "generated_goal_artifact": true
+      },
+      "source_of_truth": "local",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "local-goal-board/README.md",
+          "sha256": "6044f57d5f752bef8e68c32868cde2376435c7a4aaa182a8fa3cbdebbe0df836"
+        },
+        {
+          "path": "extension.yaml",
+          "url": "local-goal-board/extension.yaml",
+          "sha256": "ea644d9f77e44d31b60e2072f005b0ad105e6b31934e55e54c0c4ea270c5a520"
+        },
+        {
+          "path": "assets/goalbuddy-mark.png",
+          "url": "local-goal-board/assets/goalbuddy-mark.png",
+          "sha256": "d2b2d58eae6ff9029a4d59480a61bd20f013a0f27e14ece02a4064a286abc533"
+        },
+        {
+          "path": "scripts/local-goal-board.mjs",
+          "url": "local-goal-board/scripts/local-goal-board.mjs",
+          "sha256": "df345627c082633ffad6984c432130f4db3cdc2b20c7b5e069915aa3e288fb56"
+        },
+        {
+          "path": "scripts/lib/goal-board.mjs",
+          "url": "local-goal-board/scripts/lib/goal-board.mjs",
+          "sha256": "5d0c7316acf14b567b357860ec043cf25540148dccebf35160a293c5ee5b15a7"
+        },
+        {
+          "path": "test/local-goal-board.test.mjs",
+          "url": "local-goal-board/test/local-goal-board.test.mjs",
+          "sha256": "3852a6022a430c26162b2a6bd6ec2b5564bd2d398088d756f3fc1126a0687100"
+        },
+        {
+          "path": "examples/sample-goal/state.yaml",
+          "url": "local-goal-board/examples/sample-goal/state.yaml",
+          "sha256": "cc0cd7945cfb7c23ec8fe4e8d092f3c300ae8dfd53780f427e6c6321fa181b17"
+        },
+        {
+          "path": "examples/sample-goal/notes/T001-scout.md",
+          "url": "local-goal-board/examples/sample-goal/notes/T001-scout.md",
+          "sha256": "3150507d9aff10a28bf5df092d09d3c73c989d726781071a0632ccbc4ef953fe"
+        },
+        {
+          "path": "examples/sample-goal/.gitignore",
+          "url": "local-goal-board/examples/sample-goal/.gitignore",
+          "sha256": "299f0e2e788fd4dd936350a354acb5f260c3004941f57b1f57eae9ee295bb05e"
+        }
+      ]
+    },
+    {
       "id": "ai-diff-risk-review",
       "name": "AI diff risk review",
       "kind": "review",

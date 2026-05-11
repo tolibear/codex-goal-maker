@@ -127,6 +127,21 @@ test("accepts explicit non-installed agent states with actionable warnings", () 
   }
 });
 
+test("accepts generated local visual board artifacts in goal roots", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard);
+    mkdirSync(join(root, ".goalbuddy-board"), { recursive: true });
+    writeFileSync(join(root, ".goalbuddy-board", "index.html"), "<!doctype html>\n");
+
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("accepts an active Worker only with scope, verification, and stop conditions", () => {
   const root = makeRoot();
   try {

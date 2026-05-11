@@ -169,16 +169,16 @@ function receiptCommandStatuses(raw) {
 }
 
 function rootEntryErrors() {
-  const allowed = new Set(["goal.md", "state.yaml", "notes"]);
+  const allowed = new Set(["goal.md", "state.yaml", "notes", ".goalbuddy-board"]);
   const unexpected = [];
   for (const entry of readdirSync(root).filter((item) => item !== ".DS_Store")) {
     const path = join(root, entry);
     const stats = statSync(path);
     if (!allowed.has(entry)) {
       unexpected.push(entry);
-    } else if (entry === "notes" && !stats.isDirectory()) {
-      unexpected.push("notes (must be a directory)");
-    } else if (entry !== "notes" && !stats.isFile()) {
+    } else if ((entry === "notes" || entry === ".goalbuddy-board") && !stats.isDirectory()) {
+      unexpected.push(`${entry} (must be a directory)`);
+    } else if (entry !== "notes" && entry !== ".goalbuddy-board" && !stats.isFile()) {
       unexpected.push(`${entry} (must be a file)`);
     }
   }
@@ -241,7 +241,7 @@ if (!existsSync(join(root, "notes")) || !statSync(join(root, "notes")).isDirecto
 
 const unexpected = rootEntryErrors();
 if (unexpected.length > 0) {
-  errors.push(`unexpected root entries; v2 goal roots may contain only goal.md, state.yaml, and notes/: ${unexpected.join(", ")}`);
+  errors.push(`unexpected root entries; v2 goal roots may contain only goal.md, state.yaml, notes/, and .goalbuddy-board/: ${unexpected.join(", ")}`);
 }
 
 const tasks = parseTasks();

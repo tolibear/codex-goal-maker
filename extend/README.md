@@ -1,8 +1,10 @@
 # Extend
 
-Optional GoalBuddy extensions live here as subfolders when they are ready to ship.
+GoalBuddy integrations live here as subfolders when they are ready to ship.
 
-The npm package reads the GitHub-hosted catalog at `extend/catalog.json`, so adding or updating extension entries here does not require an npm release.
+`local-goal-board` and `github-projects` are also bundled into the installed skill by default because `$goal-prep` offers them as first-class visual board backends. Other optional extensions remain catalog-installed.
+
+The npm package reads the GitHub-hosted catalog at `extend/catalog.json`, so adding or updating non-bundled extension entries here does not require an npm release.
 
 Each extension folder should contain the files referenced by `extend/catalog.json`. Keep catalog entries checksum-pinned so `goalbuddy extend install <id>` can verify downloads before copying them into a local Codex install.
 
@@ -14,6 +16,7 @@ Use `goalbuddy extend <id>` when deciding whether to activate an extension. The 
 
 - `github-pr-workflow`: prepares receipt-aligned commit boundaries and GitHub pull request handoff text while keeping `state.yaml` authoritative.
 - `github-projects`: mirrors GoalBuddy boards into GitHub Projects with dry-run planning, draft issue upserts, `Todo`/`In Progress`/`Blocked`/`Done` statuses, agent-facing fields, credential gates, ProjectV2 fields, and a Goal Board view.
+- `local-goal-board`: generates and serves a local GoalBuddy-branded board web app under a goal directory with live `state.yaml` and `notes/` updates.
 - `codebase-onboarding-map`: creates a concise onboarding map from repo files, commands, conventions, and receipts.
 - `slack-standup-digest`: prepares Slack-ready status digests while keeping live delivery credential-gated.
 - `linear-ticket-handoff`: prepares Linear-ready issue text while keeping live issue creation credential-gated.

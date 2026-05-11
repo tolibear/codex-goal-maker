@@ -1,0 +1,63 @@
+version: 2
+
+goal:
+  title: "Goal board sync MVP"
+  slug: "goal-board-sync-mvp"
+  kind: specific
+  tranche: "Mirror a GoalBuddy board into an external Kanban surface."
+  status: active
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+
+active_task: T002
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    priority: P3
+    objective: "Map external board API requirements."
+    inputs:
+      - "Board API docs"
+    constraints:
+      - "Read-only."
+    expected_output:
+      - "Required scopes"
+      - "Field mapping"
+    receipt:
+      result: done
+      summary: "The board sync can read GoalBuddy state.yaml and mirror tasks into an external board."
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: active
+    priority: P1
+    objective: "Implement one-way external board sync."
+    parent: T001
+    depends_on:
+      - T001
+    allowed_files:
+      - "extend/github-projects/scripts/**"
+      - "README.md"
+    verify:
+      - "node --test extend/github-projects/test/*.test.mjs"
+      - "node extend/github-projects/scripts/sync-github-project.mjs --state extend/github-projects/examples/goal-board-sync/state.yaml --dry-run"
+    stop_if:
+      - "Board API credentials are unavailable."
+    receipt: null
+  - id: T003
+    type: judge
+    assignee: Judge
+    status: queued
+    priority: P2
+    objective: "Audit whether the board sync MVP is ready to document."
+    parent: T002
+    depends_on:
+      - T002
+    receipt: null

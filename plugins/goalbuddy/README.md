@@ -26,11 +26,7 @@ Install and enable GoalBuddy:
 npx goalbuddy
 ```
 
-Restart Codex, then use `$goal-prep`. Optional extensions can be installed with:
-
-```bash
-npx goalbuddy extend install --all
-```
+Restart Codex, then use `$goal-prep`. The plugin bundles the local live board and GitHub Projects visual board backends so Goal Prep can offer a board immediately.
 
 Or install the npm package globally:
 

@@ -41,6 +41,19 @@ agents:
   worker: unknown
   judge: unknown
 
+visual_board:
+  # none | local | github_projects | both | unknown
+  selected: unknown
+  local:
+    status: not_requested # not_requested | starting | live | generated | blocked
+    url: null
+    command: "npx goalbuddy board docs/goals/<goal-slug>"
+  github_projects:
+    status: not_requested # not_requested | needs_approval | dry_run_ready | synced | blocked
+    url: null
+    command: "npx goalbuddy extend github-projects"
+    missing: []
+
 active_task: T001
 
 tasks:

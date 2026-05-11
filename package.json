@@ -1,7 +1,7 @@
 {
   "name": "goalbuddy",
   "version": "0.2.21",
-  "description": "Turn open-ended Codex goals into a GoalBuddy Scout/Judge/Worker board with receipts, verification, and optional extensions.",
+  "description": "Turn open-ended Codex goals into GoalBuddy Scout/Judge/Worker boards with visual board surfaces, receipts, and verification.",
   "type": "module",
   "bin": {
     "goalbuddy": "internal/cli/goal-maker.mjs",

@@ -1,0 +1,124 @@
+version: 2
+
+goal:
+  title: "Local Kanban Board Extension"
+  slug: "local-kanban-board-extension"
+  kind: specific
+  tranche: "Demonstrate local GoalBuddy board rendering."
+  status: active
+
+active_task: null
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Map the goal state inputs."
+    receipt:
+      result: done
+      summary: "T001 completed during the progressive board motion demo."
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Build the local board viewer."
+    receipt:
+      result: done
+      summary: "T002 completed during the progressive board motion demo."
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: blocked
+    objective: "Catalog and document the local board extension."
+    receipt:
+      result: blocked
+      summary: "T003 is blocked during the progressive board motion demo."
+  - id: T004
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit the local board viewer."
+    receipt:
+      result: done
+      summary: "T004 completed during the progressive board motion demo."
+  - id: T005
+    type: scout
+    assignee: Scout
+    status: blocked
+    objective: "Review live update edge cases."
+    receipt:
+      result: blocked
+      summary: "T005 is blocked during the progressive board motion demo."
+  - id: T006
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Tune board spacing for dense card sets."
+    receipt:
+      result: done
+      summary: "T006 completed during the progressive board motion demo."
+  - id: T007
+    type: worker
+    assignee: Worker
+    status: blocked
+    objective: "Add motion timing polish."
+    receipt:
+      result: blocked
+      summary: "T007 is blocked during the progressive board motion demo."
+  - id: T008
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Confirm the board remains readable with many cards."
+    receipt:
+      result: done
+      summary: "T008 completed during the progressive board motion demo."
+  - id: T009
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "List the extension launch paths."
+    receipt:
+      result: done
+      summary: "T009 completed during the progressive board motion demo."
+  - id: T010
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Exercise a queued card moving into active work."
+    receipt:
+      result: done
+      summary: "T010 completed during the progressive board motion demo."
+  - id: T011
+    type: worker
+    assignee: Worker
+    status: blocked
+    objective: "Demonstrate blocked card handling."
+    receipt:
+      result: blocked
+      summary: "T011 is blocked during the progressive board motion demo."
+  - id: T012
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit the animation behavior after repeated updates."
+    receipt:
+      result: done
+      summary: "T012 completed during the progressive board motion demo."
+  - id: T013
+    type: scout
+    assignee: Scout
+    status: blocked
+    objective: "Capture visual proof notes."
+    receipt:
+      result: blocked
+      summary: "T013 is blocked during the progressive board motion demo."
+  - id: T014
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Prepare final extension packaging check."
+    receipt:
+      result: done
+      summary: "T014 completed during the progressive board motion demo."

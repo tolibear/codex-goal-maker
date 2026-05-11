@@ -24,13 +24,14 @@ There are two different modes:
 
 This boundary is strict. `$goal-prep` is not a lightweight `/goal`; it is a board compiler.
 
-During a `$goal-prep` turn, do not perform the user's requested work, even if the work looks read-only, preparatory, or obviously useful. Do not refresh or load named skills, inspect implementation files, browse reference repos, research design inspiration, generate design plans, generate images/assets, run app-specific checks, start servers, or edit product files. Put those actions into Scout, Judge, Worker, or PM tasks for the later `/goal` run.
+During a `$goal-prep` turn, do not perform the user's requested work, even if the work looks read-only, preparatory, or obviously useful. Do not refresh or load named skills, inspect implementation files, browse reference repos, research design inspiration, generate design plans, generate images/assets, run app-specific checks, or edit product files. Put those actions into Scout, Judge, Worker, or PM tasks for the later `/goal` run.
 
 Allowed `$goal-prep` actions:
 
 - run the bundled GoalBuddy update checker and mention a newer version if one is available;
 - ask diagnostic intake questions and wait when required;
-- create or repair only `docs/goals/<slug>/goal.md`, `docs/goals/<slug>/state.yaml`, and `docs/goals/<slug>/notes/`;
+- create or repair only `docs/goals/<slug>/goal.md`, `docs/goals/<slug>/state.yaml`, `docs/goals/<slug>/notes/`, and the generated `.goalbuddy-board/` visual board artifact;
+- create and open the selected visual board surface for the goal;
 - optionally run the GoalBuddy board checker against that `state.yaml`;
 - verify GoalBuddy agent availability, if this can be done without touching implementation work, and record `installed`, `bundled_not_installed`, `missing`, or `unknown` truthfully;
 - print exactly `/goal Follow docs/goals/<slug>/goal.md.`;
@@ -71,6 +72,22 @@ Extract:
 - likely misfire: how `/goal` could succeed at the wrong thing;
 - blind spots: important risks, choices, or success dimensions the user may not have named yet;
 - existing plan facts: user-provided steps, files, constraints, or sequencing that must be preserved but still validated.
+
+Ask the visual-board question early, before detailed task shaping:
+
+```text
+Do you want to set up a visual board for this?
+```
+
+Recommended options:
+
+1. Local live board in Codex (Recommended) - starts immediately, requires no credentials, and lets the user watch tasks populate.
+2. GitHub Projects - best when stakeholders need a shared external board and the user can approve GitHub credentials/project details.
+3. No visual board - best for quick or private goals where the file board is enough.
+
+If the user chooses the local live board, create the goal directory, `notes/`, and an initial minimal `state.yaml` as soon as the slug is known, then run `npx goalbuddy board docs/goals/<slug>` and open the printed local URL in the Codex in-app Browser. In short: start the local board before filling the task list so the board pops up right away and cards populate live as `state.yaml` changes. Keep the printed URL in the final prep response as a fallback, but do not make the URL the primary experience.
+
+If the user chooses GitHub Projects, ask for approval and the required project target before any live write. Create or sync the GitHub Project at the same early point as the local board: after the goal root and skeleton `state.yaml` exist, before the detailed task list is finished, then sync again as tasks populate. Run a dry-run sync first when possible. Missing GitHub credentials or project details should not block local board creation or goal prep; record the missing requirement in `visual_board.github_projects` and seed a PM setup task.
 
 Ask before board creation when the request is vague, strategic, improvement-oriented, or open-ended and the user has not explicitly said to use defaults. Ask one guided question at a time with 2-3 options and a recommended default, then wait. Continue the diagnostic intake until the user's answers are sufficient to choose the board shape. Do not create or repair `docs/goals/<slug>/` until the diagnostic intake is complete or the user explicitly accepts defaults.
 
@@ -117,10 +134,11 @@ Stop after each question. Do not create files, repair an existing board, run che
 
 Minimum diagnostic ladder for vague, strategic, or improvement-oriented goals:
 
-1. Intent target: what kind of improvement or outcome matters most?
-2. Success proof: what evidence would convince the user this worked?
-3. Scope and non-goals: what should remain untouched or explicitly out of scope?
-4. Board handling: reuse an existing board, create a fresh board, or inspect first?
+1. Visual board: ask "Do you want to set up a visual board for this?"
+2. Intent target: what kind of improvement or outcome matters most?
+3. Success proof: what evidence would convince the user this worked?
+4. Scope and non-goals: what should remain untouched or explicitly out of scope?
+5. Board handling: reuse an existing board, create a fresh board, or inspect first?
 
 Ask these one at a time. Skip a step only when the user's words already answer it clearly. After the user answers one step, do not assume the remaining steps; ask the next unresolved material question.
 
@@ -155,6 +173,7 @@ Do:
 - classify the goal as `specific`, `open_ended`, `existing_plan`, `recovery`, or `audit`;
 - create or repair `docs/goals/<slug>/`;
 - create `goal.md`, `state.yaml`, and `notes/`;
+- if requested, start the local visual board immediately and open it in the Codex in-app Browser before filling the task list;
 - seed a role-tagged task board that matches the input shape;
 - make the first active task safe;
 - verify Scout, Worker, and Judge agent availability or record an explicit truthful state;
@@ -221,7 +240,7 @@ docs/goals/<slug>/
   notes/
 ```
 
-The goal root may contain only `goal.md`, `state.yaml`, and `notes/`.
+The goal root may contain only `goal.md`, `state.yaml`, `notes/`, and generated `.goalbuddy-board/` files when the local visual board is enabled.
 
 Most results live inline as task receipts in `state.yaml`. Only create `notes/<task-id>-<slug>.md` when Scout, Judge, or PM output is too large to fit on the task card.
 
