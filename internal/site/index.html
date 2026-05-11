@@ -74,23 +74,22 @@
           </div>
         </div>
 
-        <div class="hero-visual" id="demo" data-animate="hero-visual">
-          <div class="demo-frame" aria-label="Goal Buddy live board demo">
-            <div class="demo-bar" aria-hidden="true">
+        <div class="hero-visual" data-animate="hero-visual">
+          <div class="command-window" aria-label="Goal Buddy terminal preview">
+            <div class="window-bar" aria-hidden="true">
               <span></span>
               <span></span>
               <span></span>
-              <strong>GoalBuddy live board</strong>
             </div>
-            <video
-              controls
-              muted
-              playsinline
-              preload="metadata"
-              poster="./assets/goalbuddy-demo-poster.jpg"
-            >
-              <source src="./assets/goalbuddy-demo.mp4" type="video/mp4">
-            </video>
+            <pre><code><span>$</span>npx goalbuddy
+<span>$</span>goal-prep
+
+<em>Prepared docs/goals/improve-project/</em>
+  goal.md
+  state.yaml
+  notes/
+
+/goal follow goal.md</code></pre>
           </div>
           <img class="hero-character" src="./assets/goalbuddy-character.png" alt="Goal Buddy mascot holding a pencil">
         </div>
@@ -112,6 +111,32 @@
           <h2>Extend outward</h2>
           <p>Optional extensions publish handoffs or mirrors while state.yaml stays primary.</p>
         </article>
+      </section>
+
+      <section class="demo-section" id="demo" aria-labelledby="demo-title">
+        <div class="section-intro">
+          <h2 id="demo-title">Watch the board appear while Codex keeps working.</h2>
+          <p>
+            GoalBuddy can open a local live board inside Codex before the task list is finished, so the work becomes visible as Scout, Judge, and Worker tasks populate.
+          </p>
+        </div>
+        <div class="demo-frame" aria-label="GoalBuddy local live board demo">
+          <div class="demo-bar" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <strong>GoalBuddy live board</strong>
+          </div>
+          <video
+            controls
+            muted
+            playsinline
+            preload="metadata"
+            poster="./assets/goalbuddy-demo-poster.jpg"
+          >
+            <source src="./assets/goalbuddy-demo.mp4" type="video/mp4">
+          </video>
+        </div>
       </section>
 
       <section class="workflow" id="workflow" aria-labelledby="workflow-title">
@@ -292,6 +317,20 @@
         <a class="button button-primary" href="#install" data-copy="npx goalbuddy" data-copy-toast="Copied npx goalbuddy">
           <i data-lucide="terminal"></i>
           <span>npx goalbuddy</span>
+        </a>
+      </section>
+
+      <section class="star-history" aria-labelledby="star-history-title">
+        <div class="section-intro">
+          <h2 id="star-history-title">Star History</h2>
+          <p>Track GoalBuddy’s open source momentum over time.</p>
+        </div>
+        <a href="https://www.star-history.com/?repos=tolibear%2Fgoalbuddy&type=date&legend=top-left">
+          <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=tolibear/goalbuddy&type=date&theme=dark&legend=top-left">
+            <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=tolibear/goalbuddy&type=date&legend=top-left">
+            <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=tolibear/goalbuddy&type=date&legend=top-left">
+          </picture>
         </a>
       </section>
 
