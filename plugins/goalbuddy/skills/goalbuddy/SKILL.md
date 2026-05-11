@@ -138,11 +138,11 @@ Minimum diagnostic ladder for vague, strategic, or improvement-oriented goals:
 2. Intent target: what kind of improvement or outcome matters most?
 3. Success proof: what evidence would convince the user this worked?
 4. Scope and non-goals: what should remain untouched or explicitly out of scope?
-5. Board handling: reuse an existing board, create a fresh board, or inspect first?
+5. Goal handling: reuse an existing goal, create a fresh goal, or inspect first?
 
 Ask these one at a time. Skip a step only when the user's words already answer it clearly. After the user answers one step, do not assume the remaining steps; ask the next unresolved material question.
 
-For "make GoalBuddy better", a good first question is which improvement target matters most: intake clarity, board/execution reliability, completion proof/eval coverage, or user experience during long-running goals. A good second question asks what proof would convince the user it improved. A good third question asks whether to reuse an existing board, create a fresh board, or inspect first.
+For "make GoalBuddy better", a good first question is which improvement target matters most: intake clarity, board/execution reliability, completion proof/eval coverage, or user experience during long-running goals. A good second question asks what proof would convince the user it improved. A good third question asks whether to reuse an existing goal, create a fresh goal, or inspect first.
 
 ## Direct `/goal` Entry
 
