@@ -25,24 +25,33 @@ const canonicalSkillDirectory = "goalbuddy";
 const legacyCliName = "goal-maker";
 const legacySkillName = "goal-maker";
 const skillSource = join(packageRoot, canonicalSkillDirectory);
+const claudePluginSource = join(packageRoot, "plugins", "goalbuddy");
 const packageInfo = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
 const defaultCodexHome = process.env.CODEX_HOME || join(homedir(), ".codex");
+const defaultClaudeHome = process.env.CLAUDE_HOME || join(homedir(), ".claude");
 const defaultCatalogUrl = "https://raw.githubusercontent.com/tolibear/goalbuddy/main/extend/catalog.json";
 const requiredAgentFiles = [
   "goal_judge.toml",
   "goal_scout.toml",
   "goal_worker.toml",
 ];
+const requiredClaudeAgentFiles = [
+  "goal-scout.md",
+  "goal-judge.md",
+  "goal-worker.md",
+];
 const bundledCoreExtensionIds = new Set(["github-projects", "local-goal-board"]);
 const optionsWithValues = new Set([
   "--catalog",
   "--catalog-url",
+  "--claude-home",
   "--codex-home",
   "--goal",
   "--host",
   "--kind",
   "--port",
   "--source",
+  "--target",
 ]);
 
 const args = process.argv.slice(2);
@@ -62,17 +71,33 @@ async function main() {
   maybePrintLegacyNotice();
   switch (command) {
     case "default":
-      installPlugin();
+      if (targetMode() === "codex") {
+        installPlugin();
+      } else {
+        await installClaudeAll();
+      }
       break;
     case "install":
     case "update":
-      await installAll();
+      if (targetMode() === "codex") {
+        await installAll();
+      } else {
+        await installClaudeAll();
+      }
       break;
     case "agents":
-      installAgents();
+      if (targetMode() === "codex") {
+        installAgents();
+      } else {
+        installClaudeAgents();
+      }
       break;
     case "doctor":
-      doctor();
+      if (targetMode() === "codex") {
+        doctor();
+      } else {
+        doctorClaude();
+      }
       break;
     case "check-update":
     case "update-check":
@@ -146,15 +171,15 @@ function positionalArgs() {
 }
 
 function usage() {
-  console.log(`Codex ${canonicalProductName}
+  console.log(`${canonicalProductName} for Claude Code and Codex
 
 Usage:
-  ${canonicalCliName} [--codex-home <path>] [--json]
+  ${canonicalCliName} [--target claude|codex] [--claude-home <path>] [--codex-home <path>] [--json]
   ${canonicalCliName} plugin install [--source <marketplace-source>] [--codex-home <path>] [--json]
-  ${canonicalCliName} install [--codex-home <path>] [--force] [--json]
-  ${canonicalCliName} update [--codex-home <path>] [--json]
-  ${canonicalCliName} agents [--codex-home <path>] [--force]
-  ${canonicalCliName} doctor [--codex-home <path>] [--goal-ready]
+  ${canonicalCliName} install [--target claude|codex] [--claude-home <path>] [--codex-home <path>] [--force] [--json]
+  ${canonicalCliName} update [--target claude|codex] [--claude-home <path>] [--codex-home <path>] [--json]
+  ${canonicalCliName} agents [--target claude|codex] [--claude-home <path>] [--codex-home <path>] [--force]
+  ${canonicalCliName} doctor [--target claude|codex] [--claude-home <path>] [--codex-home <path>] [--goal-ready]
   ${canonicalCliName} check-update [--json]
   ${canonicalCliName} extend [--catalog-url <url-or-path>] [--kind <kind>] [--json]
   ${canonicalCliName} extend <id> [--catalog-url <url-or-path>] [--json]
@@ -163,17 +188,18 @@ Usage:
   ${canonicalCliName} extend doctor [<id>] [--codex-home <path>] [--json]
   ${canonicalCliName} board <docs/goals/slug> [--catalog-url <url-or-path>] [--host <host>] [--port <port>] [--once] [--json]
 
-Default:
-  ${canonicalCliName}  Installs and enables the native Codex plugin.
+Default target: Claude Code (~/.claude). Pass --target codex for Codex (~/.codex).
 
-Skill-only fallback:
-  ${canonicalCliName} install  Installs the legacy skill payload and bundled agent definitions.
+Default:
+  ${canonicalCliName}                  Installs ${canonicalProductName} for Claude Code (skill + agents + /goal-prep command).
+  ${canonicalCliName} --target codex   Installs and enables the native Codex plugin.
 
 Compatibility:
   ${legacyCliName} remains a temporary alias and prints the new npx command for human-facing use.
 
 Environment:
-  CODEX_HOME                         Overrides the default ~/.codex target.
+  CLAUDE_HOME                        Overrides the default ~/.claude target.
+  CODEX_HOME                         Overrides the default ~/.codex target (and selects Codex unless --target claude is set).
   GOALBUDDY_EXTEND_CATALOG_URL       Overrides the default GitHub-hosted extension catalog.
   GOAL_MAKER_EXTEND_CATALOG_URL      Legacy fallback for the extension catalog.
 `);
@@ -181,6 +207,219 @@ Environment:
 
 function codexHome() {
   return resolve(optionValue("--codex-home") || defaultCodexHome);
+}
+
+function claudeHome() {
+  return resolve(optionValue("--claude-home") || defaultClaudeHome);
+}
+
+function targetMode() {
+  const value = (optionValue("--target") || "").toLowerCase();
+  if (value === "codex" || value === "claude") return value;
+  // Backward compatibility: explicit --codex-home or CODEX_HOME implies Codex target,
+  // unless the user explicitly set --target claude.
+  if (optionValue("--codex-home") || process.env.CODEX_HOME) return "codex";
+  return "claude";
+}
+
+function claudeSkillRoot() {
+  return join(claudeHome(), "skills", canonicalSkillDirectory);
+}
+
+function claudeAgentsRoot() {
+  return join(claudeHome(), "agents");
+}
+
+function claudeCommandsRoot() {
+  return join(claudeHome(), "commands");
+}
+
+function installClaudeSkill({ quiet = false } = {}) {
+  const target = claudeSkillRoot();
+  if (!existsSync(skillSource)) {
+    console.error(`Skill payload not found: ${skillSource}`);
+    process.exit(1);
+  }
+
+  const previousMetadata = readInstallMetadata(target);
+  const previousFingerprint = existsSync(target) ? directoryFingerprint(target, { exclude: installFingerprintExcludes() }) : "";
+  const preservedExtensions = preserveInstalledExtensions([target]);
+  const extensionTempPath = preservedExtensions.tempPath;
+  const preservedExtensionIds = preservedExtensions.ids;
+
+  mkdirSync(dirname(target), { recursive: true });
+  rmSync(target, { recursive: true, force: true });
+  cpSync(skillSource, target, { recursive: true });
+  restoreInstalledExtensions(target, extensionTempPath);
+  writeInstallMetadata(target, previousMetadata);
+  cleanupPreservedExtensions([extensionTempPath]);
+
+  const currentFingerprint = directoryFingerprint(target, { exclude: installFingerprintExcludes() });
+  const status = previousFingerprint
+    ? previousFingerprint === currentFingerprint ? "unchanged" : "updated"
+    : "installed";
+  if (!quiet) console.log(`Installed Claude Code ${canonicalProductName} skill to ${target}`);
+
+  return {
+    status,
+    path: target,
+    previous_version: previousMetadata?.package_version || "",
+    current_version: packageInfo.version,
+    preserved_extensions: preservedExtensionIds,
+  };
+}
+
+function installClaudeAgents({ quiet = false } = {}) {
+  const source = join(claudePluginSource, "agents");
+  const target = claudeAgentsRoot();
+  const force = hasFlag("--force") || command === "update" || command === "install" || command === "default";
+  mkdirSync(target, { recursive: true });
+
+  const results = [];
+  if (!existsSync(source)) return results;
+  for (const file of readdirSync(source)) {
+    if (!file.endsWith(".md")) continue;
+    const dest = join(target, file);
+    const sourceHash = sha256(readFileSync(join(source, file)));
+    const previousHash = existsSync(dest) ? sha256(readFileSync(dest)) : "";
+    if (existsSync(dest) && !force) {
+      if (!quiet) console.log(`skip existing ${dest} (use --force to overwrite)`);
+      results.push({ file, status: "skipped", path: dest });
+      continue;
+    }
+    cpSync(join(source, file), dest);
+    const status = previousHash ? previousHash === sourceHash ? "unchanged" : "updated" : "installed";
+    if (!quiet) console.log(`installed ${dest}`);
+    results.push({ file, status, path: dest });
+  }
+  return results;
+}
+
+function installClaudeCommands({ quiet = false } = {}) {
+  const source = join(claudePluginSource, "commands");
+  const target = claudeCommandsRoot();
+  const force = hasFlag("--force") || command === "update" || command === "install" || command === "default";
+  mkdirSync(target, { recursive: true });
+
+  const results = [];
+  if (!existsSync(source)) return results;
+  for (const file of readdirSync(source)) {
+    if (!file.endsWith(".md")) continue;
+    const dest = join(target, file);
+    if (existsSync(dest) && !force) {
+      if (!quiet) console.log(`skip existing ${dest} (use --force to overwrite)`);
+      results.push({ file, status: "skipped", path: dest });
+      continue;
+    }
+    const sourceHash = sha256(readFileSync(join(source, file)));
+    const previousHash = existsSync(dest) ? sha256(readFileSync(dest)) : "";
+    cpSync(join(source, file), dest);
+    const status = previousHash ? previousHash === sourceHash ? "unchanged" : "updated" : "installed";
+    if (!quiet) console.log(`installed ${dest}`);
+    results.push({ file, status, path: dest });
+  }
+  return results;
+}
+
+async function installClaudeAll() {
+  const quiet = true;
+  const report = {
+    command,
+    target: "claude",
+    package: {
+      name: packageInfo.name,
+      current_version: packageInfo.version,
+    },
+    claude_home: claudeHome(),
+    skill: installClaudeSkill({ quiet }),
+    agents: installClaudeAgents({ quiet }),
+    commands: installClaudeCommands({ quiet }),
+    extensions: await extensionDiscoverySummary(),
+    warnings: [],
+  };
+
+  report.package.previous_version = report.skill.previous_version;
+
+  if (hasFlag("--json")) {
+    printJson(report);
+  } else {
+    printClaudeInstallReport(report);
+  }
+}
+
+function doctorClaude() {
+  const skillPath = join(claudeSkillRoot(), "SKILL.md");
+  const agentsPath = claudeAgentsRoot();
+  const commandsPath = claudeCommandsRoot();
+  const installed = existsSync(skillPath);
+  const agents = existsSync(agentsPath)
+    ? readdirSync(agentsPath).filter((file) => file.startsWith("goal-") && file.endsWith(".md"))
+    : [];
+  const missingAgents = requiredClaudeAgentFiles.filter((file) => !agents.includes(file));
+  const staleAgents = requiredClaudeAgentFiles.filter((file) => {
+    const installedAgent = join(agentsPath, file);
+    const bundledAgent = join(claudePluginSource, "agents", file);
+    if (!existsSync(installedAgent) || !existsSync(bundledAgent)) return false;
+    return sha256(readFileSync(installedAgent)) !== sha256(readFileSync(bundledAgent));
+  });
+  const commands = existsSync(commandsPath)
+    ? readdirSync(commandsPath).filter((file) => file === "goal-prep.md")
+    : [];
+
+  console.log(JSON.stringify({
+    target: "claude",
+    claude_home: claudeHome(),
+    skill_installed: installed,
+    skill_path: skillPath,
+    installed_agents: agents,
+    missing_agents: missingAgents,
+    stale_agents: staleAgents,
+    installed_commands: commands,
+  }, null, 2));
+
+  const installOk = installed && missingAgents.length === 0 && staleAgents.length === 0;
+  process.exit(installOk ? 0 : 1);
+}
+
+function printClaudeInstallReport(report) {
+  const verb = report.command === "update" ? "Updated" : "Installed";
+  const previous = report.package.previous_version && report.package.previous_version !== report.package.current_version
+    ? ` ${report.package.previous_version} -> ${report.package.current_version}`
+    : ` ${report.package.current_version}`;
+  console.log("");
+  console.log(`${verb} ${canonicalProductName} for Claude Code${previous}`);
+  console.log("");
+  console.log(`Skill: ${report.skill.status} at ${report.skill.path}`);
+  console.log(`Agents: ${summarizeStatuses(report.agents)}`);
+  console.log(`Commands: ${summarizeStatuses(report.commands)}`);
+  if (report.skill.preserved_extensions.length) {
+    console.log(`Preserved extensions: ${report.skill.preserved_extensions.join(", ")}`);
+  }
+
+  if (report.extensions?.error) {
+    console.log("");
+    console.log(`Extensions: unavailable (${report.extensions.error})`);
+  } else if (report.extensions) {
+    console.log("");
+    console.log(`Extensions: ${report.extensions.available_count} available from ${report.extensions.catalog_url}`);
+    if (report.extensions.recommended?.length) {
+      console.log("");
+      console.log("Recommended:");
+      for (const extension of report.extensions.recommended.slice(0, 3)) {
+        console.log(`  ${extension.name || extension.id}`);
+        if (extension.summary) console.log(`    ${extension.summary}`);
+        console.log(`    Details: npx ${extension.next_command}`);
+      }
+    }
+  }
+
+  console.log("");
+  console.log("Next:");
+  console.log(`  Restart Claude Code, then run: /goal-prep`);
+  console.log(`  Or invoke the skill: ${canonicalSkillName}`);
+  console.log("");
+  console.log("Also available for Codex:");
+  console.log(`  npx ${canonicalCliName} --target codex`);
 }
 
 function installSkill({ force = true, quiet = false } = {}) {

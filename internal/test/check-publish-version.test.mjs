@@ -44,9 +44,15 @@ test("publish version check rejects package versions behind the registry", () =>
 function offsetPatchVersion(version, offset) {
   const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
   assert.ok(match, `expected plain semver version, got ${version}`);
-  const patch = Number(match[3]) + offset;
-  assert.ok(patch >= 0, `patch offset produced negative version for ${version}`);
-  return `${match[1]}.${match[2]}.${patch}`;
+  const major = Number(match[1]);
+  let minor = Number(match[2]);
+  let patch = Number(match[3]) + offset;
+  while (patch < 0) {
+    assert.ok(minor > 0, `cannot offset ${version} by ${offset}`);
+    minor -= 1;
+    patch += 100;
+  }
+  return `${major}.${minor}.${patch}`;
 }
 
 function escapeRegex(value) {

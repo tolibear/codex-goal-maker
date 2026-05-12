@@ -493,7 +493,7 @@ test("legacy goal-maker invocation prints rebrand notice only for human output",
 
     const human = runGoalMaker(["--help"], { env });
     assert.equal(human.status, 0, human.stderr || human.stdout);
-    assert.match(human.stdout, /Codex GoalBuddy/);
+    assert.match(human.stdout, /GoalBuddy for Claude Code and Codex/);
     assert.match(human.stdout, /goalbuddy install/);
     assert.match(human.stderr, /goal-maker has been rebranded to goalbuddy/);
     assert.match(human.stderr, /Use: npx goalbuddy/);

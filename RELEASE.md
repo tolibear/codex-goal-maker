@@ -31,6 +31,8 @@ This command requires npm owner authentication and may print an `EOTP` browser/O
 
 After the trusted publisher works, use npm package settings to require 2FA and disallow tokens for publishing. Keep `goal-maker` published during the migration window.
 
+Starting in `0.3.0`, the installer is target-aware: it installs into `~/.claude/` by default and into `~/.codex/` with `--target codex`. Both targets share the same `goalbuddy/` skill payload and are exercised by the test suite under `internal/test/`.
+
 ## Release Flow
 
 1. Update `package.json` version.

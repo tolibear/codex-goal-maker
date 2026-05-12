@@ -1,13 +1,13 @@
 ---
 name: goal-prep
-description: Goal Prep for GoalBuddy. Use for broad, long-running, stalled, vague, detailed, planned, or unhealthy Codex work that needs a structured /goal intake, autonomous task discovery, role-tagged Scout/Judge/Worker delegation, one active task, durable receipts, and a PM-owned rolling board that maximizes the chance of a successful goal run.
+description: Goal Prep for GoalBuddy. Use for broad, long-running, stalled, vague, detailed, planned, or unhealthy Claude Code or Codex work that needs a structured /goal intake, autonomous task discovery, role-tagged Scout/Judge/Worker delegation, one active task, durable receipts, and a PM-owned rolling board that maximizes the chance of a successful goal run.
 ---
 
 # Goal Prep
 
-`$goal-prep` prepares a GoalBuddy board. It does not start `/goal` automatically, but the board and starter `/goal` command must be shaped so the next run continues into safe execution by default.
+`$goal-prep` (or `/goal-prep` in Claude Code) prepares a GoalBuddy board. It does not start `/goal` automatically, but the board and starter `/goal` command must be shaped so the next run continues into safe execution by default.
 
-GoalBuddy is for autonomous, long-running Codex work where the PM thread may need to discover the work, define tasks, sequence them, delegate them, execute them, verify them, and keep going without the human decomposing every step.
+GoalBuddy is for autonomous, long-running Claude Code or Codex work where the PM thread may need to discover the work, define tasks, sequence them, delegate them, execute them, verify them, and keep going without the human decomposing every step.
 
 The loop is:
 
@@ -81,11 +81,11 @@ Do you want to set up a visual board for this?
 
 Recommended options:
 
-1. Local live board in Codex (Recommended) - starts immediately, requires no credentials, and lets the user watch tasks populate.
+1. Local live board (Recommended) - starts immediately, requires no credentials, and lets the user watch tasks populate inside Claude Code or Codex.
 2. GitHub Projects - best when stakeholders need a shared external board and the user can approve GitHub credentials/project details.
 3. No visual board - best for quick or private goals where the file board is enough.
 
-If the user chooses the local live board, create the goal directory, `notes/`, and an initial minimal `state.yaml` as soon as the slug is known, then run `npx goalbuddy board docs/goals/<slug>` and open the printed local URL in the Codex in-app Browser. In short: start the local board before filling the task list so the board pops up right away and cards populate live as `state.yaml` changes. Keep the printed URL in the final prep response as a fallback, but do not make the URL the primary experience.
+If the user chooses the local live board, create the goal directory, `notes/`, and an initial minimal `state.yaml` as soon as the slug is known, then run `npx goalbuddy board docs/goals/<slug>` and open the printed local URL in the AI coding agent's in-app browser (the Codex in-app Browser, the Claude Code preview, or the user's regular browser). In short: start the local board before filling the task list so the board pops up right away and cards populate live as `state.yaml` changes. Keep the printed URL in the final prep response as a fallback, but do not make the URL the primary experience.
 
 If the user chooses GitHub Projects, ask for approval and the required project target before any live write. Create or sync the GitHub Project at the same early point as the local board: after the goal root and skeleton `state.yaml` exist, before the detailed task list is finished, then sync again as tasks populate. Run a dry-run sync first when possible. Missing GitHub credentials or project details should not block local board creation or goal prep; record the missing requirement in `visual_board.github_projects` and seed a PM setup task.
 
@@ -173,7 +173,7 @@ Do:
 - classify the goal as `specific`, `open_ended`, `existing_plan`, `recovery`, or `audit`;
 - create or repair `docs/goals/<slug>/`;
 - create `goal.md`, `state.yaml`, and `notes/`;
-- if requested, start the local visual board immediately and open it in the Codex in-app Browser before filling the task list;
+- if requested, start the local visual board immediately and open it in the AI coding agent's in-app browser (Codex in-app Browser, Claude Code preview, or the user's regular browser) before filling the task list;
 - seed a role-tagged task board that matches the input shape;
 - make the first active task safe;
 - verify Scout, Worker, and Judge agent availability or record an explicit truthful state;

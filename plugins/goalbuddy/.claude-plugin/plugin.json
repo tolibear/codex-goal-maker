@@ -1,0 +1,24 @@
+{
+  "name": "goalbuddy",
+  "version": "0.3.0",
+  "description": "Turn broad Claude Code work into verified GoalBuddy boards with Scout, Judge, Worker, visual boards, and receipts.",
+  "author": {
+    "name": "tolibear",
+    "email": "support@tolibear.com",
+    "url": "https://github.com/tolibear"
+  },
+  "homepage": "https://goalbuddy.dev",
+  "repository": "https://github.com/tolibear/goalbuddy",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "claude-code-plugin",
+    "claude-code-skill",
+    "goalbuddy",
+    "goal",
+    "task-board",
+    "receipts",
+    "workflow",
+    "extensions"
+  ]
+}
