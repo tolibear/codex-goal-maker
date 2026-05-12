@@ -52,6 +52,8 @@ const optionsWithValues = new Set([
   "--port",
   "--source",
   "--target",
+  "--task",
+  "--board",
 ]);
 
 const args = process.argv.slice(2);
@@ -115,6 +117,12 @@ async function main() {
       break;
     case "board":
       await board();
+      break;
+    case "prompt":
+      await prompt();
+      break;
+    case "parallel-plan":
+      await parallelPlan();
       break;
     case "help":
     case "--help":
@@ -191,6 +199,8 @@ Usage:
   ${canonicalCliName} extend install --all [--catalog-url <url-or-path>] [--dry-run] [--force] [--json]
   ${canonicalCliName} extend doctor [<id>] [--codex-home <path>] [--json]
   ${canonicalCliName} board <docs/goals/slug> [--catalog-url <url-or-path>] [--host <host>] [--port <port>] [--once] [--json]
+  ${canonicalCliName} prompt <docs/goals/slug> [--task T###] [--board <path/to/state.yaml>] [--json]
+  ${canonicalCliName} parallel-plan <docs/goals/slug> [--json]
 
 Targets: by default, install/update prepares both Codex (~/.codex) and Claude Code (~/.claude). Use --target codex or --target claude to limit the command.
 
@@ -957,6 +967,39 @@ async function board() {
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
   }
+  if (result.error) throw result.error;
+  process.exit(result.status ?? 1);
+}
+
+async function prompt() {
+  if (hasFlag("--parallel-plan")) {
+    await parallelPlan();
+    return;
+  }
+
+  const script = join(skillSource, "scripts", "render-task-prompt.mjs");
+  const scriptArgs = [script, ...args.slice(1)];
+  const result = spawnSync(process.execPath, scriptArgs, {
+    cwd: packageRoot,
+    encoding: "utf8",
+    env: process.env,
+  });
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (result.error) throw result.error;
+  process.exit(result.status ?? 1);
+}
+
+async function parallelPlan() {
+  const script = join(skillSource, "scripts", "parallel-plan.mjs");
+  const scriptArgs = [script, ...args.slice(1).filter((arg) => arg !== "--parallel-plan")];
+  const result = spawnSync(process.execPath, scriptArgs, {
+    cwd: packageRoot,
+    encoding: "utf8",
+    env: process.env,
+  });
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
   if (result.error) throw result.error;
   process.exit(result.status ?? 1);
 }

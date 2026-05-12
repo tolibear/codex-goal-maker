@@ -2,13 +2,15 @@
 
 GoalBuddy packages the canonical `goal-prep` skill as a plugin so teams can install the reusable workflow in **Codex** and **Claude Code**, while keeping the npm CLI for local setup, doctor checks, and extension management.
 
+Version 0.3.5 is the Subgoals, Parallel Agents, and Dark Mode release: depth-1 child boards, a shared multi-board local hub, readable dark-mode boards, stricter agent contracts, deterministic prompt rendering, and conservative parallel planning for long-running work.
+
 ## What It Contains
 
 - `.codex-plugin/plugin.json`: Codex plugin manifest and Codex UI copy.
 - `.claude-plugin/plugin.json`: Claude Code plugin manifest.
 - `skills/goalbuddy/`: the installable GoalBuddy skill payload (shared by both platforms).
 - `agents/`: Claude Code subagent definitions (`goal-scout.md`, `goal-judge.md`, `goal-worker.md`).
-- `commands/goal-prep.md`: Claude Code slash command entry point.
+- `skills/goalbuddy/SKILL.md`: canonical `$goal-prep` / `/goal-prep` entry point.
 - `assets/goalbuddy-icon.svg`: lightweight plugin icon.
 
 ## Local Testing
@@ -27,7 +29,7 @@ npx goalbuddy check-update
 npx goalbuddy
 ```
 
-This installs and enables the native Codex plugin in `~/.codex/`, then installs the GoalBuddy skill, Scout/Judge/Worker subagents, and `/goal-prep` slash command into `~/.claude/`.
+This installs and enables the native Codex plugin in `~/.codex/`, then installs the GoalBuddy skill and Scout/Judge/Worker subagents into `~/.claude/`. The skill surfaces `/goal-prep` in Claude Code.
 
 ## Install One Target
 
@@ -36,7 +38,7 @@ npx goalbuddy --target codex
 npx goalbuddy --target claude
 ```
 
-This installs the GoalBuddy skill, the three Scout/Judge/Worker subagents, and the `/goal-prep` slash command into `~/.claude/`. Restart Claude Code, then run:
+This installs the GoalBuddy skill and the three Scout/Judge/Worker subagents into `~/.claude/`. Restart Claude Code, then run:
 
 ```text
 /goal-prep

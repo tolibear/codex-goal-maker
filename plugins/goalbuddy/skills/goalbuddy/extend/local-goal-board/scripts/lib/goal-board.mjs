@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const VALID_STATUSES = new Set(["queued", "active", "blocked", "done"]);
@@ -26,7 +26,8 @@ export async function loadGoalBoard(goalDir) {
   return normalizeGoalBoard(parseGoalStateText(text), root);
 }
 
-export function createBoardPayload(goalDir) {
+export function createBoardPayload(goalDir, options = {}) {
+  const includeSubgoals = options.includeSubgoals !== false;
   const root = resolve(goalDir);
   const statePath = join(root, "state.yaml");
   if (!existsSync(statePath)) {
@@ -36,7 +37,9 @@ export function createBoardPayload(goalDir) {
   const document = parseGoalStateText(readFileSync(statePath, "utf8"));
   const board = normalizeGoalBoard(document, root);
   const noteIndex = loadNotes(root);
-  const tasks = board.tasks.map((task) => attachTaskNote(task, noteIndex));
+  const tasks = board.tasks
+    .map((task) => attachTaskNote(task, noteIndex))
+    .map((task) => includeSubgoals ? attachTaskSubgoal(task, root) : task);
   const columns = buildColumns(tasks);
   const stateStat = statSync(statePath);
 
@@ -128,6 +131,7 @@ export function normalizeTask(task, index) {
     allowedFiles: normalizeStringList(task.allowed_files),
     verify: normalizeStringList(task.verify),
     stopIf: normalizeStringList(task.stop_if),
+    subgoal: normalizeSubgoal(task.subgoal),
     receipt: normalizeReceipt(task.receipt),
   };
 }
@@ -168,6 +172,42 @@ function attachTaskNote(task, noteIndex) {
     ...task,
     note: noteIndex[normalized] || null,
   };
+}
+
+function attachTaskSubgoal(task, goalDir) {
+  if (!task.subgoal) return task;
+  const childStatePath = resolve(goalDir, task.subgoal.path);
+  validateChildSubgoalPath(task, goalDir, childStatePath);
+  const childGoalDir = dirname(childStatePath);
+  if (!existsSync(childStatePath)) {
+    throw new GoalBoardError(`Missing sub-goal state for ${task.id}: ${task.subgoal.path}`);
+  }
+
+  return {
+    ...task,
+    subgoal: {
+      ...task.subgoal,
+      board: createBoardPayload(childGoalDir, { includeSubgoals: false }),
+    },
+  };
+}
+
+function validateChildSubgoalPath(task, goalDir, childStatePath) {
+  if (task.subgoal.depth !== 1) {
+    throw new GoalBoardError(`Invalid sub-goal depth for ${task.id}: only depth 1 is supported.`);
+  }
+  const childRelativePath = relative(goalDir, childStatePath);
+  if (!isInsideRoot(childRelativePath)) {
+    throw new GoalBoardError(`Invalid sub-goal path for ${task.id}: ${task.subgoal.path} must stay inside the goal root.`);
+  }
+  const parts = childRelativePath.split(/[\\/]+/);
+  if (parts.length !== 3 || parts[0] !== "subgoals" || parts[2] !== "state.yaml") {
+    throw new GoalBoardError(`Invalid sub-goal path for ${task.id}: ${task.subgoal.path} must be subgoals/<slug>/state.yaml.`);
+  }
+}
+
+function isInsideRoot(relativePath) {
+  return relativePath && relativePath !== ".." && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath);
 }
 
 function loadNotes(goalDir) {
@@ -215,6 +255,19 @@ function normalizeReceipt(receipt) {
   };
 }
 
+function normalizeSubgoal(subgoal) {
+  if (!subgoal || typeof subgoal !== "object" || Array.isArray(subgoal)) return null;
+  return {
+    status: cleanText(subgoal.status || ""),
+    path: cleanText(subgoal.path || ""),
+    owner: cleanText(subgoal.owner || ""),
+    createdFrom: cleanText(subgoal.created_from || ""),
+    depth: Number(subgoal.depth || 0),
+    rollupReceipt: cleanText(subgoal.rollup_receipt || ""),
+    board: null,
+  };
+}
+
 function normalizeCommands(commands) {
   if (!commands) return [];
   if (!Array.isArray(commands)) return [cleanText(commands)].filter(Boolean).map((cmd) => ({ cmd, status: "" }));
@@ -228,8 +281,33 @@ function normalizeCommands(commands) {
 }
 
 function titleForTask(task) {
+  if (task.title) return compactTaskTitle(task.title);
   const objective = cleanText(task.objective || "Untitled task");
-  return objective.replace(/\.$/, "");
+  return compactTaskTitle(objective);
+}
+
+function compactTaskTitle(value) {
+  const text = cleanText(value).replace(/\.$/, "");
+  const routeMatch = text.match(/^Implement\b.*?\s(\/[A-Za-z0-9_./:-]+)\s+(route|queue slice|slice)\b/i);
+  if (routeMatch) return truncateTitle(`Implement ${routeMatch[1]} ${routeMatch[2]}`);
+
+  const firstClause = text
+    .split(/(?<=[.!?])\s+|\s+(?:Use only|Add|Match|Render|Clearly label|Do not)\b/i)[0]
+    .replace(/\bas the next first-milestone slice\b/gi, "")
+    .replace(/\bblocker documentation\b/gi, "blocker docs")
+    .replace(/\benv\/setup notes\b/gi, "setup notes")
+    .replace(/\s+/g, " ")
+    .replace(/[.;:,]\s*$/, "")
+    .trim();
+
+  return truncateTitle(firstClause || text);
+}
+
+function truncateTitle(value, maxLength = 82) {
+  const text = cleanText(value).replace(/\.$/, "");
+  if (text.length <= maxLength) return text;
+  const shortened = text.slice(0, maxLength + 1).replace(/\s+\S*$/, "").trim();
+  return `${shortened || text.slice(0, maxLength).trim()}...`;
 }
 
 function columnForStatus(status) {
@@ -452,11 +530,75 @@ function boardHtml() {
 </head>
 <body>
   <header class="topbar">
-    <div class="brand" aria-label="GoalBuddy">
-      <img class="brand-mark" src="./goalbuddy-mark.png" alt="GoalBuddy">
-      <span class="brand-name">GoalBuddy</span>
+    <div class="topbar-primary">
+      <div class="brand" aria-label="Goal Buddy">
+        <img class="brand-mark" src="./goalbuddy-mark.png" alt="GoalBuddy">
+        <span class="brand-name">Goal Buddy</span>
+        <span class="live-dot" id="live-dot" aria-hidden="true"></span>
+      </div>
+      <nav class="board-switcher is-empty" aria-label="Local GoalBuddy boards">
+        <label for="board-switcher">Board</label>
+        <select id="board-switcher" aria-label="Switch local board"></select>
+      </nav>
     </div>
-    <div class="live-state" id="live-state">Connecting</div>
+    <div class="header-tools">
+      <a class="github-stars" href="https://github.com/tolibear/goalbuddy" target="_blank" rel="noreferrer" aria-label="Open GoalBuddy on GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.84 5.76 6.36.92-4.6 4.48 1.08 6.34L12 17.32 6.32 20.3l1.08-6.34-4.6-4.48 6.36-.92L12 2.8Z"></path></svg>
+        <span id="github-stars">Stars</span>
+      </a>
+      <div class="settings-wrap">
+        <button class="settings-button" id="settings-button" type="button" aria-expanded="false" aria-controls="settings-popover">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12.2 2.75h-.4a1.6 1.6 0 0 0-1.58 1.36l-.18 1.18c-.46.16-.9.34-1.31.56l-1.02-.64a1.6 1.6 0 0 0-2.08.31l-.28.28a1.6 1.6 0 0 0-.31 2.08l.64 1.02c-.22.42-.4.86-.56 1.31l-1.18.18A1.6 1.6 0 0 0 2.58 12v.4A1.6 1.6 0 0 0 3.94 14l1.18.18c.16.46.34.9.56 1.31l-.64 1.02a1.6 1.6 0 0 0 .31 2.08l.28.28a1.6 1.6 0 0 0 2.08.31l1.02-.64c.42.22.86.4 1.31.56l.18 1.18a1.6 1.6 0 0 0 1.58 1.36h.4a1.6 1.6 0 0 0 1.58-1.36l.18-1.18c.46-.16.9-.34 1.31-.56l1.02.64a1.6 1.6 0 0 0 2.08-.31l.28-.28a1.6 1.6 0 0 0 .31-2.08l-.64-1.02c.22-.42.4-.86.56-1.31l1.18-.18a1.6 1.6 0 0 0 1.36-1.58V12a1.6 1.6 0 0 0-1.36-1.58l-1.18-.18a7.2 7.2 0 0 0-.56-1.31l.64-1.02a1.6 1.6 0 0 0-.31-2.08l-.28-.28a1.6 1.6 0 0 0-2.08-.31l-1.02.64c-.42-.22-.86-.4-1.31-.56l-.18-1.18a1.6 1.6 0 0 0-1.58-1.39Z"></path>
+            <circle cx="12" cy="12.2" r="3.15"></circle>
+          </svg>
+          <span class="visually-hidden" id="live-state">Connecting</span>
+        </button>
+        <section class="settings-popover" id="settings-popover" aria-label="Local board settings" hidden>
+          <div class="settings-heading">
+            <p class="eyebrow">Board settings</p>
+            <h2>Local preferences</h2>
+          </div>
+          <div class="setting-row">
+            <label for="setting-theme">Theme</label>
+            <select id="setting-theme" data-setting="theme">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label for="setting-density">Density</label>
+            <select id="setting-density" data-setting="density">
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label for="setting-completed">Completed</label>
+            <select id="setting-completed" data-setting="completedVisibility">
+              <option value="show">Show</option>
+              <option value="collapse">Collapse</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label for="setting-board-open">Open boards</label>
+            <select id="setting-board-open" data-setting="boardOpenBehavior">
+              <option value="last">Last viewed</option>
+              <option value="newest">Newest active</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <label for="setting-motion">Motion</label>
+            <select id="setting-motion" data-setting="motion">
+              <option value="system">System</option>
+              <option value="reduce">Reduce</option>
+              <option value="allow">Allow</option>
+            </select>
+          </div>
+        </section>
+      </div>
+    </div>
   </header>
   <main class="shell">
     <section class="goal-header" aria-labelledby="goal-title">
@@ -508,7 +650,92 @@ function boardCss() {
   --red-text: #9f2f2d;
   --yellow-bg: #fbf3db;
   --yellow-text: #956400;
+  --active-surface: #fbfdfe;
   font-family: "SF Pro Display", "Geist Sans", "Helvetica Neue", Arial, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #07101f;
+  --surface: #101a2d;
+  --surface-muted: #0c1525;
+  --ink: #f7f9fc;
+  --muted: #9aa7bf;
+  --line: #26334a;
+  --blue-bg: #173653;
+  --blue-text: #9ed8ff;
+  --green-bg: #143929;
+  --green-text: #a6e8bf;
+  --red-bg: #3a1d22;
+  --red-text: #ffb2b9;
+  --yellow-bg: #3a3014;
+  --yellow-text: #f6d878;
+  --active-surface: #0f2031;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    color-scheme: dark;
+    --canvas: #07101f;
+    --surface: #101a2d;
+    --surface-muted: #0c1525;
+    --ink: #f7f9fc;
+    --muted: #9aa7bf;
+    --line: #26334a;
+    --blue-bg: #173653;
+    --blue-text: #9ed8ff;
+    --green-bg: #143929;
+    --green-text: #a6e8bf;
+    --red-bg: #3a1d22;
+    --red-text: #ffb2b9;
+    --yellow-bg: #3a3014;
+    --yellow-text: #f6d878;
+    --active-surface: #0f2031;
+  }
+
+  :root[data-theme="system"] .topbar {
+    border-color: rgba(61, 76, 108, 0.86);
+    background: rgba(13, 23, 41, 0.84);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  }
+
+  :root[data-theme="system"] .brand {
+    color: var(--ink);
+  }
+
+  :root[data-theme="system"] .board-switcher select,
+  :root[data-theme="system"] .github-stars,
+  :root[data-theme="system"] .settings-button {
+    border-color: rgba(61, 76, 108, 0.9);
+    background: rgba(16, 26, 45, 0.78);
+    color: var(--ink);
+  }
+
+  :root[data-theme="system"] .settings-popover {
+    border-color: rgba(61, 76, 108, 0.96);
+    background: rgba(16, 26, 45, 0.96);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  }
+
+  :root[data-theme="system"] .setting-row select {
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  :root[data-theme="system"] .goal-tranche,
+  :root[data-theme="system"] .task-title,
+  :root[data-theme="system"] .setting-row select {
+    color: var(--ink);
+  }
+
+  :root[data-theme="system"] .task-card.is-active {
+    background: linear-gradient(var(--active-surface), var(--active-surface)) padding-box,
+      linear-gradient(110deg, #78d7ff, #6c63ff, #78f2b9, #78d7ff) border-box;
+  }
+
+  :root[data-theme="system"] .task-card.is-active::after {
+    background: var(--active-surface);
+  }
 }
 
 * { box-sizing: border-box; }
@@ -526,18 +753,46 @@ textarea {
   font: inherit;
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+select,
+button {
+  font: inherit;
+}
+
 .topbar {
   position: sticky;
-  top: 0;
+  top: 16px;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 24px;
-  background: rgba(247, 246, 243, 0.94);
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(10px);
+  width: min(1392px, calc(100% - 48px));
+  min-height: 64px;
+  margin: 0 auto;
+  padding: 10px 12px 10px 18px;
+  border: 1px solid rgba(219, 226, 240, 0.86);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 18px 48px rgba(30, 40, 72, 0.1);
+  backdrop-filter: blur(22px);
+}
+
+:root[data-theme="dark"] .topbar {
+  border-color: rgba(61, 76, 108, 0.86);
+  background: rgba(13, 23, 41, 0.84);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+.topbar-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
 }
 
 .brand {
@@ -546,12 +801,18 @@ textarea {
   gap: 10px;
   color: #071236;
   font-weight: 800;
+  min-width: fit-content;
+}
+
+:root[data-theme="dark"] .brand {
+  color: var(--ink);
 }
 
 .brand-mark {
   display: block;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
+  filter: drop-shadow(0 8px 13px rgba(87, 76, 210, 0.18));
 }
 
 .brand-name {
@@ -559,7 +820,198 @@ textarea {
   letter-spacing: 0;
 }
 
-.live-state,
+.board-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.board-switcher label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.board-switcher select {
+  width: min(280px, 100%);
+  min-width: 0;
+  min-height: 38px;
+  border: 1px solid rgba(219, 226, 240, 0.9);
+  border-radius: 999px;
+  padding: 0 34px 0 14px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #2f3c59;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+:root[data-theme="dark"] .board-switcher select,
+:root[data-theme="dark"] .github-stars,
+:root[data-theme="dark"] .settings-button {
+  border-color: rgba(61, 76, 108, 0.9);
+  background: rgba(16, 26, 45, 0.78);
+  color: var(--ink);
+}
+
+.board-switcher.is-empty {
+  display: none;
+}
+
+.header-tools {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: fit-content;
+}
+
+.github-stars,
+.settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid rgba(219, 226, 240, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #2f3c59;
+  font-weight: 800;
+  transition: transform 180ms ease, color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.github-stars {
+  gap: 7px;
+  padding: 0 15px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.github-stars:hover,
+.settings-button:hover {
+  transform: translateY(-2px);
+  color: #071236;
+  border-color: rgba(79, 70, 216, 0.26);
+  background: #fff;
+}
+
+.github-stars svg {
+  width: 16px;
+  height: 16px;
+  color: #4f46d8;
+  fill: currentColor;
+}
+
+.settings-wrap {
+  position: relative;
+}
+
+.settings-button {
+  position: relative;
+  gap: 8px;
+  width: 44px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.settings-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #1f9d69;
+  box-shadow: 0 0 0 4px rgba(31, 157, 105, 0.12);
+}
+
+.live-dot.offline {
+  background: var(--yellow-text);
+  box-shadow: 0 0 0 4px rgba(149, 100, 0, 0.12);
+}
+
+.settings-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid rgba(219, 226, 240, 0.96);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 64px rgba(30, 40, 72, 0.16);
+  backdrop-filter: blur(20px);
+}
+
+:root[data-theme="dark"] .settings-popover {
+  border-color: rgba(61, 76, 108, 0.96);
+  background: rgba(16, 26, 45, 0.96);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+}
+
+.settings-popover[hidden] {
+  display: none;
+}
+
+.settings-heading {
+  margin-bottom: 12px;
+}
+
+.settings-heading .eyebrow {
+  margin-bottom: 6px;
+}
+
+.settings-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.setting-row {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.setting-row label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.setting-row select {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #fff;
+  color: #2f3437;
+}
+
+:root[data-theme="dark"] .setting-row select {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -623,6 +1075,12 @@ h1 {
   margin-bottom: 0;
   color: #2f3437;
   line-height: 1.55;
+}
+
+:root[data-theme="dark"] .goal-tranche,
+:root[data-theme="dark"] .task-title,
+:root[data-theme="dark"] .setting-row select {
+  color: var(--ink);
 }
 
 .goal-meta {
@@ -708,6 +1166,7 @@ h1 {
 }
 
 .task-card {
+  position: relative;
   width: 100%;
   min-height: 138px;
   display: flex;
@@ -720,8 +1179,14 @@ h1 {
   color: inherit;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
   transition: transform 160ms ease, border-color 160ms ease;
   will-change: transform, opacity;
+}
+
+.task-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .task-card:hover {
@@ -736,8 +1201,78 @@ h1 {
 }
 
 .task-card.is-active {
-  border-color: #a8cfe7;
+  border-color: transparent;
+  background: linear-gradient(#fbfdfe, #fbfdfe) padding-box,
+    linear-gradient(110deg, #78d7ff, #4f46d8, #78f2b9, #78d7ff) border-box;
+  box-shadow: 0 14px 38px rgba(31, 108, 159, 0.12);
+}
+
+.task-card.is-active::before {
+  position: absolute;
+  inset: -2px;
+  z-index: 0;
+  content: "";
+  background: conic-gradient(from 0deg, transparent 0 58%, rgba(79, 70, 216, 0.28), rgba(120, 215, 255, 0.44), transparent 78% 100%);
+  opacity: 0.86;
+  animation: active-card-orbit 2.8s linear infinite;
+}
+
+.task-card.is-active::after {
+  position: absolute;
+  inset: 2px;
+  z-index: 0;
+  content: "";
+  border-radius: 6px;
   background: #fbfdfe;
+}
+
+:root[data-theme="dark"] .task-card.is-active {
+  background: linear-gradient(var(--active-surface), var(--active-surface)) padding-box,
+    linear-gradient(110deg, #78d7ff, #6c63ff, #78f2b9, #78d7ff) border-box;
+}
+
+:root[data-theme="dark"] .task-card.is-active::after {
+  background: var(--active-surface);
+}
+
+:root[data-density="compact"] .shell {
+  padding-top: 20px;
+}
+
+:root[data-density="compact"] .board {
+  gap: 12px;
+}
+
+:root[data-density="compact"] .column-header {
+  padding: 12px;
+}
+
+:root[data-density="compact"] .card-list {
+  gap: 8px;
+  padding: 10px;
+}
+
+:root[data-density="compact"] .task-card {
+  min-height: 110px;
+  gap: 9px;
+  padding: 11px;
+}
+
+:root[data-density="compact"] .task-title {
+  font-size: 14px;
+}
+
+:root[data-completed-visibility="collapse"] .column[data-column-id="completed"] .card-list {
+  display: none;
+}
+
+:root[data-completed-visibility="collapse"] .column[data-column-id="completed"] {
+  max-height: 80px;
+  overflow: hidden;
+}
+
+@keyframes active-card-orbit {
+  to { transform: rotate(360deg); }
 }
 
 .task-card.is-moving {
@@ -776,6 +1311,14 @@ h1 {
 .badge.status-done { background: var(--green-bg); color: var(--green-text); }
 .badge.status-blocked { background: var(--red-bg); color: var(--red-text); }
 .badge.role { background: var(--yellow-bg); color: var(--yellow-text); }
+.badge.subgoal { background: #ece8ff; color: #5c43c6; }
+.badge.subgoal.status-blocked { background: var(--red-bg); color: var(--red-text); }
+.badge.subgoal.status-done { background: var(--green-bg); color: var(--green-text); }
+
+:root[data-theme="dark"] .badge.subgoal {
+  background: #263052;
+  color: #c7d2ff;
+}
 
 .empty {
   padding: 18px;
@@ -784,9 +1327,27 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .github-stars,
+  .settings-button,
   .task-card {
     transition: none;
   }
+
+  .task-card.is-active::before {
+    animation: none;
+    opacity: 0.26;
+  }
+}
+
+:root[data-motion="reduce"] .github-stars,
+:root[data-motion="reduce"] .settings-button,
+:root[data-motion="reduce"] .task-card {
+  transition: none;
+}
+
+:root[data-motion="reduce"] .task-card.is-active::before {
+  animation: none;
+  opacity: 0.26;
 }
 
 .modal[hidden] {
@@ -811,7 +1372,7 @@ h1 {
 
 .modal-panel {
   position: relative;
-  width: min(760px, 100%);
+  width: min(1080px, 100%);
   max-height: min(760px, calc(100vh - 48px));
   overflow: auto;
   border: 1px solid var(--line);
@@ -896,8 +1457,92 @@ h1 {
 .detail-section ul {
   margin: 0;
   padding-left: 18px;
-  color: #2f3437;
+  color: var(--ink);
   line-height: 1.55;
+}
+
+.detail-section li {
+  color: var(--ink);
+}
+
+.subgoal-section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface-muted);
+}
+
+.subgoal-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.subgoal-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.subgoal-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.subgoal-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.subgoal-column {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.subgoal-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.subgoal-column-header h4 {
+  margin: 0;
+  font-size: 12px;
+}
+
+.subgoal-card-list {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+}
+
+.subgoal-task-card {
+  min-height: 74px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 9px;
+  background: var(--surface);
+}
+
+.subgoal-task-card.is-active {
+  border-color: #8e9cff;
+  background: var(--active-surface);
+}
+
+.subgoal-task-title {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 pre.note {
@@ -907,7 +1552,7 @@ pre.note {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--canvas);
-  color: #2f3437;
+  color: var(--ink);
   font-family: "Geist Mono", "SF Mono", monospace;
   font-size: 12px;
   line-height: 1.55;
@@ -926,10 +1571,27 @@ pre.note {
   .board {
     grid-template-columns: 1fr;
   }
+
+  .subgoal-board {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
-  .topbar,
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .topbar-primary {
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+
+  .board-switcher select {
+    width: 100%;
+  }
+
   .shell {
     padding-left: 14px;
     padding-right: 14px;
@@ -949,28 +1611,191 @@ pre.note {
 function boardJs() {
   return `let currentBoard = null;
 let eventSource = null;
+let currentSettings = null;
 
 const boardEl = document.getElementById("board");
 const liveStateEl = document.getElementById("live-state");
+const liveDotEl = document.getElementById("live-dot");
+const boardSwitcherEl = document.getElementById("board-switcher");
+const settingsButtonEl = document.getElementById("settings-button");
+const settingsPopoverEl = document.getElementById("settings-popover");
+const githubStarsEl = document.getElementById("github-stars");
 const modalEl = document.getElementById("task-modal");
 const modalTitleEl = document.getElementById("modal-title");
 const modalKickerEl = document.getElementById("modal-kicker");
 const modalBodyEl = document.getElementById("modal-body");
+const settingsStorageKey = "goalbuddy.localBoardSettings.v1";
+const settingsDefaults = {
+  theme: "system",
+  density: "comfortable",
+  completedVisibility: "show",
+  boardOpenBehavior: "last",
+  motion: "system",
+  lastBoardPath: "",
+};
+const settingsOptions = {
+  theme: new Set(["system", "light", "dark"]),
+  density: new Set(["comfortable", "compact"]),
+  completedVisibility: new Set(["show", "collapse"]),
+  boardOpenBehavior: new Set(["last", "newest"]),
+  motion: new Set(["system", "reduce", "allow"]),
+};
 
 document.addEventListener("click", (event) => {
   const card = event.target.closest("[data-task-id]");
   if (card) openTask(card.dataset.taskId);
   if (event.target.matches("[data-close-modal]")) closeModal();
+  if (settingsPopoverEl.hidden) return;
+  if (!event.target.closest(".settings-wrap")) closeSettings();
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeModal();
+  if (event.key === "Escape") {
+    closeModal();
+    closeSettings();
+  }
+});
+
+boardSwitcherEl.addEventListener("change", () => {
+  if (boardSwitcherEl.value && boardSwitcherEl.value !== window.location.href) {
+    window.location.href = boardSwitcherEl.value;
+  }
+});
+
+settingsButtonEl.addEventListener("click", () => {
+  if (settingsPopoverEl.hidden) {
+    openSettings();
+  } else {
+    closeSettings();
+  }
+});
+
+settingsPopoverEl.addEventListener("change", (event) => {
+  const control = event.target.closest("[data-setting]");
+  if (!control) return;
+  saveSettings({ ...currentSettings, [control.dataset.setting]: control.value });
 });
 
 async function loadBoard() {
   const response = await fetch("./api/board", { cache: "no-store" });
   if (!response.ok) throw new Error("Board request failed");
   renderBoard(await response.json());
+}
+
+async function loadBoardSwitcher() {
+  const response = await fetch("../api/boards", { cache: "no-store" });
+  if (!response.ok) return;
+  const payload = await response.json();
+  renderBoardSwitcher(payload.boards || []);
+}
+
+async function loadSettings() {
+  try {
+    const response = await fetch("../api/settings", { cache: "no-store" });
+    if (!response.ok) throw new Error("Settings request failed");
+    const payload = await response.json();
+    currentSettings = normalizeSettings(payload.settings);
+    window.localStorage?.setItem(settingsStorageKey, JSON.stringify(currentSettings));
+  } catch {
+    currentSettings = readStoredSettings();
+  }
+  applySettings(currentSettings);
+}
+
+async function saveSettings(nextSettings) {
+  currentSettings = normalizeSettings(nextSettings);
+  window.localStorage?.setItem(settingsStorageKey, JSON.stringify(currentSettings));
+  applySettings(currentSettings);
+  try {
+    const response = await fetch("../api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ settings: currentSettings }),
+    });
+    if (!response.ok) throw new Error("Settings save failed");
+    const payload = await response.json();
+    currentSettings = normalizeSettings(payload.settings);
+    window.localStorage?.setItem(settingsStorageKey, JSON.stringify(currentSettings));
+    applySettings(currentSettings);
+  } catch {
+    // Keep the localStorage fallback active when the local settings API is unavailable.
+  }
+  return currentSettings;
+}
+
+function readStoredSettings() {
+  try {
+    return normalizeSettings(JSON.parse(window.localStorage?.getItem(settingsStorageKey) || "{}"));
+  } catch {
+    return { ...settingsDefaults };
+  }
+}
+
+function normalizeSettings(settings) {
+  const normalized = { ...settingsDefaults };
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) return normalized;
+  for (const [key, allowed] of Object.entries(settingsOptions)) {
+    if (allowed.has(settings[key])) normalized[key] = settings[key];
+  }
+  if (typeof settings.lastBoardPath === "string" && /^\\/[a-z0-9][a-z0-9-]*\\/$/.test(settings.lastBoardPath)) {
+    normalized.lastBoardPath = settings.lastBoardPath;
+  }
+  return normalized;
+}
+
+function applySettings(settings) {
+  const normalized = normalizeSettings(settings);
+  document.documentElement.dataset.theme = normalized.theme;
+  document.documentElement.dataset.density = normalized.density;
+  document.documentElement.dataset.completedVisibility = normalized.completedVisibility;
+  document.documentElement.dataset.boardOpenBehavior = normalized.boardOpenBehavior;
+  document.documentElement.dataset.motion = normalized.motion;
+  for (const control of settingsPopoverEl.querySelectorAll("[data-setting]")) {
+    control.value = normalized[control.dataset.setting] || settingsDefaults[control.dataset.setting];
+  }
+}
+
+function rememberCurrentBoard() {
+  const boardPath = normalizePath(window.location.pathname);
+  if (!/^\\/[a-z0-9][a-z0-9-]*\\/$/.test(boardPath)) return;
+  const nextSettings = normalizeSettings({ ...currentSettings, lastBoardPath: boardPath });
+  currentSettings = nextSettings;
+  window.localStorage?.setItem(settingsStorageKey, JSON.stringify(nextSettings));
+  fetch("../api/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ settings: nextSettings }),
+  }).catch(() => {});
+}
+
+function openSettings() {
+  settingsPopoverEl.hidden = false;
+  settingsButtonEl.setAttribute("aria-expanded", "true");
+  settingsPopoverEl.querySelector("[data-setting]")?.focus();
+}
+
+function closeSettings() {
+  settingsPopoverEl.hidden = true;
+  settingsButtonEl.setAttribute("aria-expanded", "false");
+}
+
+function formatStars(count) {
+  if (count >= 1000) return \`\${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}k\`;
+  return String(count);
+}
+
+async function loadGithubStars() {
+  if (!githubStarsEl) return;
+  try {
+    const response = await fetch("https://api.github.com/repos/tolibear/goalbuddy", {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!response.ok) throw new Error("GitHub API unavailable");
+    const repo = await response.json();
+    githubStarsEl.textContent = \`\${formatStars(repo.stargazers_count)} stars\`;
+  } catch {
+    githubStarsEl.textContent = "GitHub";
+  }
 }
 
 function connectEvents() {
@@ -1007,6 +1832,20 @@ function renderBoard(board) {
   }, delay);
 }
 
+function renderBoardSwitcher(boards) {
+  boardSwitcherEl.closest(".board-switcher").classList.toggle("is-empty", boards.length <= 1);
+  const currentPath = normalizePath(window.location.pathname);
+  const options = boards.map((board) => {
+    const option = document.createElement("option");
+    option.value = board.url;
+    option.textContent = boardOptionLabel(board);
+    const boardPath = normalizePath(new URL(board.url, window.location.href).pathname);
+    if (boardPath === currentPath) option.selected = true;
+    return option;
+  });
+  boardSwitcherEl.replaceChildren(...options);
+}
+
 function renderColumn(column) {
   const section = el("section", "column");
   section.dataset.columnId = column.id;
@@ -1037,6 +1876,7 @@ function renderCard(task) {
 
   const footer = el("div", "card-footer");
   footer.append(el("span", "badge role", task.assignee || task.type || "PM"));
+  if (task.subgoal) footer.append(subgoalBadge(task.subgoal));
   if (task.receipt?.present) footer.append(el("span", "badge status-done", "Receipt"));
 
   button.append(topline, el("h3", "task-title", task.title), footer);
@@ -1156,6 +1996,7 @@ function renderTaskDetail(task) {
     grid.append(item);
   }
   root.append(grid);
+  if (task.subgoal) root.append(renderSubgoal(task.subgoal));
   root.append(detailText("Objective", task.objective));
   root.append(detailList("Inputs", task.inputs));
   root.append(detailList("Constraints", task.constraints));
@@ -1174,6 +2015,61 @@ function renderTaskDetail(task) {
     root.append(section);
   }
   return root;
+}
+
+function renderSubgoal(subgoal) {
+  const section = el("section", "detail-section subgoal-section");
+  const header = el("div", "subgoal-header");
+  const titleWrap = el("div");
+  const board = subgoal.board;
+  titleWrap.append(
+    el("h3", "subgoal-title", board?.goal?.title || "Sub-goal"),
+    el("p", "subgoal-meta", [
+      subgoal.path,
+      subgoal.owner ? \`owner: \${subgoal.owner}\` : "",
+      subgoal.depth ? \`depth: \${subgoal.depth}\` : "",
+    ].filter(Boolean).join(" · ")),
+  );
+  header.append(titleWrap, subgoalBadge(subgoal));
+  section.append(header);
+
+  if (!board?.columns?.length) {
+    section.append(el("p", "", "No child board payload."));
+    return section;
+  }
+
+  const boardEl = el("div", "subgoal-board");
+  for (const column of board.columns) {
+    const columnEl = el("section", "subgoal-column");
+    const columnHeader = el("header", "subgoal-column-header");
+    columnHeader.append(el("h4", "", column.title), el("span", "column-count", String(column.tasks.length)));
+    const list = el("div", "subgoal-card-list");
+    if (column.tasks.length === 0) {
+      list.append(el("p", "empty", "No cards"));
+    } else {
+      for (const task of column.tasks) list.append(renderSubgoalTask(task));
+    }
+    columnEl.append(columnHeader, list);
+    boardEl.append(columnEl);
+  }
+  section.append(boardEl);
+
+  if (subgoal.rollupReceipt) {
+    section.append(detailText("Roll-up Receipt", subgoal.rollupReceipt));
+  }
+
+  return section;
+}
+
+function renderSubgoalTask(task) {
+  const card = el("article", \`subgoal-task-card \${task.active ? "is-active" : ""}\`);
+  const topline = el("div", "card-topline");
+  topline.append(el("span", "task-id", task.id), statusBadge(task.status));
+  const footer = el("div", "card-footer");
+  footer.append(el("span", "badge role", task.assignee || task.type || "PM"));
+  if (task.receipt?.present) footer.append(el("span", "badge status-done", "Receipt"));
+  card.append(topline, el("h4", "subgoal-task-title", task.title), footer);
+  return card;
 }
 
 function detailText(title, value) {
@@ -1200,9 +2096,24 @@ function statusBadge(status) {
   return el("span", \`badge status-\${status}\`, label);
 }
 
+function subgoalBadge(subgoal) {
+  return el("span", \`badge subgoal status-\${subgoal.status}\`, \`Sub-goal \${subgoal.status || "linked"}\`);
+}
+
 function setLiveState(text, live) {
   liveStateEl.textContent = text;
-  liveStateEl.classList.toggle("offline", !live);
+  liveDotEl.classList.toggle("offline", !live);
+  settingsButtonEl.setAttribute("aria-label", \`Settings. Board status: \${text}\`);
+  settingsButtonEl.title = \`Settings · \${text}\`;
+}
+
+function normalizePath(pathname) {
+  return pathname.endsWith("/") ? pathname : pathname + "/";
+}
+
+function boardOptionLabel(board) {
+  const title = board.title || board.slug || board.goalDir || "GoalBuddy board";
+  return /[/\\\\]subgoals[/\\\\]/.test(board.goalDir || "") ? \`Child: \${title}\` : title;
 }
 
 function el(tag, className = "", text = "") {
@@ -1212,9 +2123,14 @@ function el(tag, className = "", text = "") {
   return node;
 }
 
-loadBoard()
+loadSettings()
+  .then(loadBoard)
   .then(() => {
     setLiveState("Live", true);
+    rememberCurrentBoard();
+    loadGithubStars();
+    loadBoardSwitcher();
+    window.setInterval(loadBoardSwitcher, 5000);
     connectEvents();
   })
   .catch((error) => {

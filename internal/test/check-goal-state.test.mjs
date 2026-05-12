@@ -362,6 +362,163 @@ test("rejects root evidence, units, artifacts, or stray markdown", () => {
   }
 });
 
+test("accepts depth-1 subgoals inside the parent goal root", () => {
+  const root = makeRoot();
+  try {
+    mkdirSync(join(root, "subgoals", "T003-child", "notes"), { recursive: true });
+    writeFileSync(join(root, "subgoals", "T003-child", "goal.md"), "# Child\n");
+    writeFileSync(join(root, "subgoals", "T003-child", "state.yaml"), `
+version: 2
+goal:
+  title: "Child board"
+  slug: "child-board"
+  kind: specific
+  tranche: "Child branch."
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T001
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Do child work."
+    allowed_files:
+      - src/child.ts
+    verify:
+      - npm test
+    stop_if:
+      - "Verification fails twice."
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    writeState(root, `
+version: 2
+goal:
+  title: "Parent board"
+  slug: "parent-board"
+  kind: specific
+  tranche: "Parent with child."
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T003
+tasks:
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Run a bounded child branch."
+    allowed_files:
+      - src/parent.ts
+    verify:
+      - npm test
+    stop_if:
+      - "Verification fails twice."
+    subgoal:
+      status: active
+      path: subgoals/T003-child/state.yaml
+      owner: Worker
+      created_from: T003
+      depth: 1
+      rollup_receipt: null
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects subgoals outside root, missing child files, and nested child subgoals", () => {
+  const outside = makeRoot();
+  try {
+    writeState(outside, validScoutBoard.replace(
+      "receipt: null",
+      `subgoal:
+      status: active
+      path: ../outside/state.yaml
+      owner: Worker
+      depth: 1
+    receipt: null`,
+    ));
+    const result = runChecker(outside);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /subgoal\.path must stay inside the goal root/i);
+  } finally {
+    rmSync(outside, { recursive: true, force: true });
+  }
+
+  const missing = makeRoot();
+  try {
+    writeState(missing, validScoutBoard.replace(
+      "receipt: null",
+      `subgoal:
+      status: active
+      path: subgoals/missing/state.yaml
+      owner: Worker
+      depth: 1
+    receipt: null`,
+    ));
+    const result = runChecker(missing);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /subgoal state file not found/i);
+  } finally {
+    rmSync(missing, { recursive: true, force: true });
+  }
+
+  const nested = makeRoot();
+  try {
+    mkdirSync(join(nested, "subgoals", "T001-child", "subgoals", "T001-grandchild", "notes"), { recursive: true });
+    mkdirSync(join(nested, "subgoals", "T001-child", "notes"), { recursive: true });
+    writeFileSync(join(nested, "subgoals", "T001-child", "goal.md"), "# Child\n");
+    writeFileSync(join(nested, "subgoals", "T001-child", "subgoals", "T001-grandchild", "goal.md"), "# Grandchild\n");
+    writeFileSync(join(nested, "subgoals", "T001-child", "subgoals", "T001-grandchild", "state.yaml"), validScoutBoard);
+    writeFileSync(join(nested, "subgoals", "T001-child", "state.yaml"), validScoutBoard.replace(
+      "receipt: null",
+      `subgoal:
+      status: active
+      path: subgoals/T001-grandchild/state.yaml
+      owner: Worker
+      depth: 1
+    receipt: null`,
+    ));
+    writeState(nested, validScoutBoard.replace(
+      "receipt: null",
+      `subgoal:
+      status: active
+      path: subgoals/T001-child/state.yaml
+      owner: Worker
+      depth: 1
+    receipt: null`,
+    ));
+
+    const result = runChecker(nested);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /child task T001 must not contain a nested subgoal/i);
+  } finally {
+    rmSync(nested, { recursive: true, force: true });
+  }
+});
+
 test("accepts done goal only with final Judge or PM audit receipt", () => {
   const root = makeRoot();
   try {
@@ -498,6 +655,70 @@ checks:
     const errors = result.stdout.errors.join("\n");
     assert.match(errors, /changed file outside allowed_files: package\.json/i);
     assert.match(errors, /non-passing command status: fail/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("accepts done Worker changed files that match allowed_files globs", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "Agent contract update"
+  slug: "agent-contract-update"
+  kind: specific
+  tranche: "Update agent files."
+  status: done
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: null
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Update agent contracts."
+    allowed_files:
+      - goalbuddy/agents/**
+      - plugins/goalbuddy/**
+    verify:
+      - npm test
+    stop_if:
+      - "Verification fails twice."
+    receipt:
+      result: done
+      changed_files:
+        - goalbuddy/agents/goal_scout.toml
+        - plugins/goalbuddy/agents/goal-scout.md
+      commands:
+        - cmd: npm test
+          status: pass
+      summary: "Agent contracts updated."
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit completion."
+    receipt:
+      result: done
+      decision: complete
+      summary: "Complete."
+checks:
+  dirty_fingerprint: clean
+  last_verification:
+    result: pass
+    task: T001
+    commands:
+      - cmd: npm test
+        status: pass
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

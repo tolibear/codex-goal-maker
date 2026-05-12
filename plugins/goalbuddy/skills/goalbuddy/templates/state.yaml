@@ -109,6 +109,14 @@ tasks:
       - "Need files outside allowed_files."
       - "Behavior is ambiguous."
       - "Verification fails twice."
+    # Optional depth-1 child board promoted by PM when a task needs bounded branching work:
+    # subgoal:
+    #   status: active # active | blocked | done
+    #   path: subgoals/T003-child/state.yaml
+    #   owner: Worker
+    #   created_from: T003
+    #   depth: 1
+    #   rollup_receipt: null
     receipt: null
   - id: T999
     type: judge

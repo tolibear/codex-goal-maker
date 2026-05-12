@@ -1,14 +1,15 @@
 id: local-goal-board
 name: Local Goal Board
 kind: visualization
-version: 0.1.0
+version: 0.2.0
 source_of_truth: local
-description: Generate and serve a minimal GoalBuddy-branded local Kanban board that updates live from a goal directory's state.yaml and notes.
-local_use_prompt: Run the bundled local board script for docs/goals/<slug>. It writes a tiny web app into docs/goals/<slug>/.goalbuddy-board and serves it on 127.0.0.1 with live SSE updates from state.yaml and notes. Use --once --json for generation checks and no long-running server.
+description: Generate and serve a GoalBuddy-branded local Kanban board that updates live from a goal directory's state.yaml, notes, and linked depth-1 sub-goals.
+local_use_prompt: Run the bundled local board script for docs/goals/<slug>. It writes a tiny web app into docs/goals/<slug>/.goalbuddy-board and serves it through the shared goalbuddy.localhost:41737 local board hub with live SSE updates from state.yaml, notes, and linked depth-1 sub-goals. Multiple active boards are available from the board header switcher. Use --once --json for generation checks and no long-running server.
 use_when:
   - A human wants to watch a GoalBuddy run in a local board UI.
   - The goal needs GitHub-Projects-like visibility without GitHub credentials.
   - state.yaml and notes should remain the source of truth while the browser updates live.
+  - A parent task links a depth-1 child board under subgoals/.
 activation: user_requested
 outputs:
   - Local GoalBuddy board web app
@@ -18,10 +19,11 @@ safe_by_default: true
 reads:
   - docs/goals/<slug>/state.yaml
   - docs/goals/<slug>/notes
+  - docs/goals/<slug>/subgoals
 writes:
   - docs/goals/<slug>/.goalbuddy-board
 side_effects:
-  - Starts a local-only HTTP server when not run with --once.
+  - Starts or reuses the shared local-only HTTP board hub when not run with --once.
 agent_instructions:
   - Use the bundled local-goal-board script; do not build a static-only mockup.
   - Keep state.yaml authoritative; the app is only a viewer.

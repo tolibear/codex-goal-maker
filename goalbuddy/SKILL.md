@@ -85,7 +85,7 @@ Recommended options:
 2. GitHub Projects - best when stakeholders need a shared external board and the user can approve GitHub credentials/project details.
 3. No visual board - best for quick or private goals where the file board is enough.
 
-If the user chooses the local live board, create the goal directory, `notes/`, and an initial minimal `state.yaml` as soon as the slug is known, then run `npx goalbuddy board docs/goals/<slug>` and open the printed local URL in the AI coding agent's in-app browser (the Codex in-app Browser, the Claude Code preview, or the user's regular browser). In short: start the local board before filling the task list so the board pops up right away and cards populate live as `state.yaml` changes. Keep the printed URL in the final prep response as a fallback, but do not make the URL the primary experience.
+If the user chooses the local live board, create the goal directory, `notes/`, and an initial minimal `state.yaml` as soon as the slug is known, then run `npx goalbuddy board docs/goals/<slug>` and open the printed local URL in the AI coding agent's in-app browser (the Codex in-app Browser, the Claude Code preview, or the user's regular browser). The default local hub is `http://goalbuddy.localhost:41737/`, and board URLs normally look like `http://goalbuddy.localhost:41737/<slug>/`. In short: start the local board before filling the task list so the board pops up right away and cards populate live as `state.yaml` changes. Include the printed board URL in the final prep response as the operator fallback, but do not make the URL the primary experience.
 
 If the user chooses GitHub Projects, ask for approval and the required project target before any live write. Create or sync the GitHub Project at the same early point as the local board: after the goal root and skeleton `state.yaml` exist, before the detailed task list is finished, then sync again as tasks populate. Run a dry-run sync first when possible. Missing GitHub credentials or project details should not block local board creation or goal prep; record the missing requirement in `visual_board.github_projects` and seed a PM setup task.
 
@@ -506,7 +506,7 @@ Non-`installed` states are warnings, not false failures, because the main `/goal
 
 | Agent | Thinking level | Write access | Use for |
 |---|---:|---:|---|
-| Scout | medium | no | source/spec/repo evidence mapping |
+| Scout | low | no | targeted source/spec/repo evidence mapping |
 | Worker | low | yes, bounded | one exact implementation or recovery task |
 | Judge | high | no | strategic review, ambiguity, scope, completion skepticism |
 
@@ -537,6 +537,12 @@ reasoning_hint: default # default | low | medium | high | xhigh
 ```
 
 Treat `reasoning_hint` as PM guidance. It does not override task scope, write permissions, stop conditions, or the one-active-task rule.
+
+## Execution Quality Commands
+
+Use `goalbuddy prompt docs/goals/<slug>` to render a compact prompt for the active task. The prompt includes only task-specific material, safe agent metadata, and the expected receipt shape. It should not include broad chat history or dump the whole state file.
+
+Use `goalbuddy parallel-plan docs/goals/<slug>` when the user explicitly asks for parallel agent work. It is read-only: it recommends safe Scout/Judge handoffs and Worker handoffs only when write scopes are known and disjoint. It does not mutate `state.yaml`, create sub-goals, apply receipts, or spawn agents.
 
 ## Completion
 

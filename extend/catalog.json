@@ -175,8 +175,8 @@
       "kind": "visualization",
       "version": "0.1.0",
       "summary": "Generate and serve a minimal GoalBuddy-branded local Kanban board that updates live from state.yaml and notes.",
-      "description": "A local-only board viewer that writes a tiny app into docs/goals/<slug>/.goalbuddy-board, serves it on 127.0.0.1, and streams state.yaml and notes changes to the browser with no manual reload.",
-      "local_use_prompt": "Run the bundled local board script for docs/goals/<slug>. It writes .goalbuddy-board into the goal directory and serves it locally with live SSE updates from state.yaml and notes. Use --once --json for generation checks and no long-running server.",
+      "description": "A local-only board viewer that writes a tiny app into docs/goals/<slug>/.goalbuddy-board, serves it through the goalbuddy.localhost hub, and streams state.yaml and notes changes to the browser with no manual reload.",
+      "local_use_prompt": "Run the bundled local board script for docs/goals/<slug>. It writes .goalbuddy-board into the goal directory and serves it through the shared goalbuddy.localhost:41737 hub with live SSE updates from state.yaml and notes. Use --once --json for generation checks and no long-running server.",
       "source": "extend/local-goal-board",
       "docs": "README.md",
       "use_when": [
@@ -230,12 +230,12 @@
         {
           "path": "README.md",
           "url": "local-goal-board/README.md",
-          "sha256": "6044f57d5f752bef8e68c32868cde2376435c7a4aaa182a8fa3cbdebbe0df836"
+          "sha256": "05f9624a8b05032a60f7421a08f1876c04816e0375230ea74e5ca280a1dd729c"
         },
         {
           "path": "extension.yaml",
           "url": "local-goal-board/extension.yaml",
-          "sha256": "ea644d9f77e44d31b60e2072f005b0ad105e6b31934e55e54c0c4ea270c5a520"
+          "sha256": "a7c40a81b7ae9ebd5f94b9b002262b2d7db26768834972f7e66fafd1f59f5989"
         },
         {
           "path": "assets/goalbuddy-mark.png",
@@ -245,17 +245,17 @@
         {
           "path": "scripts/local-goal-board.mjs",
           "url": "local-goal-board/scripts/local-goal-board.mjs",
-          "sha256": "df345627c082633ffad6984c432130f4db3cdc2b20c7b5e069915aa3e288fb56"
+          "sha256": "aefb14ba92256eba62f3249e802f593d600114173bc833923a224887eef27556"
         },
         {
           "path": "scripts/lib/goal-board.mjs",
           "url": "local-goal-board/scripts/lib/goal-board.mjs",
-          "sha256": "5d0c7316acf14b567b357860ec043cf25540148dccebf35160a293c5ee5b15a7"
+          "sha256": "99bc0f1e2a70386cbc5442a2253d6cd0fbd682f981f8d3b224891e6f3d84f9e8"
         },
         {
           "path": "test/local-goal-board.test.mjs",
           "url": "local-goal-board/test/local-goal-board.test.mjs",
-          "sha256": "3852a6022a430c26162b2a6bd6ec2b5564bd2d398088d756f3fc1126a0687100"
+          "sha256": "bad09735804e7dfd9d50813f75b7340e0ab8c784c182f5d973eee80a40a9c7d3"
         },
         {
           "path": "examples/sample-goal/state.yaml",

@@ -23,6 +23,155 @@ test("normalizes a dense goal into local board columns", () => {
   assert.equal(scout.receipt.summary, "T001 completed during the progressive board motion demo.");
 });
 
+test("loads depth-1 subgoal boards into parent task payloads", () => {
+  const payload = createBoardPayload(resolve("goalbuddy/extend/local-goal-board/examples/subgoal-parent"));
+  const parentTask = payload.tasks.find((task) => task.id === "T004");
+
+  assert.equal(parentTask.subgoal.status, "active");
+  assert.equal(parentTask.subgoal.path, "subgoals/T004-board-view/state.yaml");
+  assert.equal(parentTask.subgoal.depth, 1);
+  assert.equal(parentTask.subgoal.board.goal.title, "T004 Board View Subgoal");
+  assert.equal(parentTask.subgoal.board.goal.activeTask, "T002");
+  assert.equal(parentTask.subgoal.board.counts.total, 3);
+  assert.equal(parentTask.subgoal.board.tasks.find((task) => task.id === "T002").active, true);
+  assert.equal(parentTask.subgoal.board.tasks.find((task) => task.id === "T002").subgoal, null);
+});
+
+test("uses compact card titles while preserving full objectives", () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-compact-titles-"));
+  try {
+    const goalDir = join(root, "compact-titles");
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    writeFileSync(join(goalDir, "state.yaml"), `version: 2
+goal:
+  title: "Compact titles"
+  slug: "compact-titles"
+  kind: specific
+  tranche: "Title display."
+  status: active
+active_task: T001
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Implement a read-only fixture-backed /admin/enrichment-qa queue slice. Use only admin_seed_metrics.enrichment_qa plus existing contacts, companies, users, evidence_items, and facts. Do not create new APIs."
+    receipt: null
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: blocked
+    objective: "Implement the read-only fixture-backed /contacts/con_aaron_keller route as the next first-milestone slice. Add a clickable path from the Coinbase chat answer matched contact row/name to Aaron Keller's profile."
+    receipt: null
+  - id: T003
+    title: "Human-friendly release title"
+    type: pm
+    assignee: PM
+    status: queued
+    objective: "This objective can stay much more detailed because it belongs in the modal, not on the card face."
+    receipt: null
+`);
+
+    const payload = createBoardPayload(goalDir);
+    assert.equal(payload.tasks.find((task) => task.id === "T001").title, "Implement /admin/enrichment-qa queue slice");
+    assert.equal(payload.tasks.find((task) => task.id === "T001").objective.includes("admin_seed_metrics.enrichment_qa"), true);
+    assert.equal(payload.tasks.find((task) => task.id === "T002").title, "Implement /contacts/con_aaron_keller route");
+    assert.equal(payload.tasks.find((task) => task.id === "T003").title, "Human-friendly release title");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("fails loudly when a linked subgoal state file is missing", () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-missing-subgoal-"));
+  try {
+    const goalDir = join(root, "parent");
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    writeFileSync(join(goalDir, "state.yaml"), `version: 2
+goal:
+  title: "Missing child"
+  slug: "missing-child"
+  kind: specific
+  tranche: "Missing child."
+  status: active
+active_task: T001
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Render child."
+    subgoal:
+      status: active
+      path: subgoals/missing/state.yaml
+      owner: Worker
+      depth: 1
+    receipt: null
+`);
+
+    assert.throws(
+      () => createBoardPayload(goalDir),
+      /Missing sub-goal state for T001: subgoals\/missing\/state\.yaml/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("refuses to render subgoal boards outside the parent goal root", () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-outside-subgoal-"));
+  try {
+    const goalDir = join(root, "parent");
+    const outsideDir = join(root, "outside");
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    mkdirSync(outsideDir, { recursive: true });
+    writeFileSync(join(outsideDir, "state.yaml"), `version: 2
+goal:
+  title: "Outside child"
+  slug: "outside-child"
+  kind: specific
+  tranche: "Outside."
+  status: active
+active_task: T001
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Read."
+    receipt: null
+`);
+    writeFileSync(join(goalDir, "state.yaml"), `version: 2
+goal:
+  title: "Outside child parent"
+  slug: "outside-child-parent"
+  kind: specific
+  tranche: "Reject outside child."
+  status: active
+active_task: T001
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Render child."
+    subgoal:
+      status: active
+      path: ../outside/state.yaml
+      owner: Worker
+      depth: 1
+    receipt: null
+`);
+
+    assert.throws(
+      () => createBoardPayload(goalDir),
+      /Invalid sub-goal path for T001: \.\.\/outside\/state\.yaml must stay inside the goal root/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("writes a minimal GoalBuddy web app into the goal directory", () => {
   const appDir = writeBoardApp(resolve("extend/local-goal-board/examples/sample-goal"));
   const html = readFileSync(join(appDir, "index.html"), "utf8");
@@ -31,24 +180,156 @@ test("writes a minimal GoalBuddy web app into the goal directory", () => {
   const logo = readFileSync(join(appDir, "goalbuddy-mark.png"));
 
   assert.match(html, /goalbuddy-mark\.png/);
+  assert.match(html, /class="topbar-primary"/);
+  assert.match(html, /class="board-switcher is-empty"/);
+  assert.match(html, /class="github-stars"/);
+  assert.match(html, /id="settings-button"/);
+  assert.match(html, /id="settings-popover"/);
   assert.match(css, /--canvas: #f7f6f3/);
-  assert.doesNotMatch(css, /gradient/i);
+  assert.match(css, /\.topbar-primary/);
+  assert.match(css, /\.board-switcher\.is-empty \{\n  display: none;/);
+  assert.match(css, /active-card-orbit/);
+  assert.match(css, /:root\[data-motion="reduce"\] \.task-card\.is-active::before/);
+  assert.match(css, /:root\[data-theme="dark"\]/);
+  assert.match(css, /:root\[data-density="compact"\] \.task-card/);
+  assert.match(css, /:root\[data-completed-visibility="collapse"\]/);
+  assert.match(css, /\.subgoal-board/);
   assert.match(js, /new EventSource\("\.\/events"\)/);
+  assert.match(js, /fetch\("\.\.\/api\/boards"/);
+  assert.match(js, /fetch\("\.\.\/api\/settings"/);
+  assert.match(js, /fetch\("https:\/\/api\.github\.com\/repos\/tolibear\/goalbuddy"/);
+  assert.match(js, /goalbuddy\.localBoardSettings\.v1/);
+  assert.match(js, /document\.documentElement\.dataset\.theme/);
+  assert.match(js, /rememberCurrentBoard/);
+  assert.match(js, /settingsButtonEl\.setAttribute\("aria-label"/);
   assert.match(js, /animateCardMoves/);
   assert.match(js, /card\.animate/);
   assert.match(js, /highlightMovingCards/);
+  assert.match(js, /renderSubgoal/);
+  assert.match(js, /boardOptionLabel/);
   assert.match(js, /duration: changedColumn \? 980 : 520/);
   assert.equal(logo.subarray(1, 4).toString("ascii"), "PNG");
 });
 
+test("serves global local board settings with defensive normalization", async () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-local-board-settings-"));
+  const goalDir = join(root, "settings-goal");
+  const settingsPath = join(root, "settings.json");
+  const previousSettingsPath = process.env.GOALBUDDY_LOCAL_BOARD_SETTINGS_PATH;
+  try {
+    process.env.GOALBUDDY_LOCAL_BOARD_SETTINGS_PATH = settingsPath;
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    writeFileSync(join(goalDir, "state.yaml"), stateYaml("active", { title: "Settings Goal", slug: "settings-goal" }));
+
+    const server = await startBoardServer({ goalDir, host: "127.0.0.1", port: 0 });
+    try {
+      const initialResponse = await fetch(`${server.hubUrl}api/settings`);
+      assert.equal(initialResponse.status, 200);
+      assert.deepEqual((await initialResponse.json()).settings, {
+        theme: "system",
+        density: "comfortable",
+        completedVisibility: "show",
+        boardOpenBehavior: "last",
+        motion: "system",
+        lastBoardPath: "",
+      });
+
+      const updateResponse = await fetch(`${server.hubUrl}api/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          settings: {
+            theme: "dark",
+            density: "compact",
+            completedVisibility: "collapse",
+            boardOpenBehavior: "newest",
+            motion: "reduce",
+            lastBoardPath: "/settings-goal/",
+            unexpected: "ignored",
+          },
+        }),
+      });
+      assert.equal(updateResponse.status, 200);
+      assert.deepEqual((await updateResponse.json()).settings, {
+        theme: "dark",
+        density: "compact",
+        completedVisibility: "collapse",
+        boardOpenBehavior: "newest",
+        motion: "reduce",
+        lastBoardPath: "/settings-goal/",
+      });
+      assert.match(readFileSync(settingsPath, "utf8"), /"theme": "dark"/);
+
+      const invalidResponse = await fetch(`${server.hubUrl}api/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: { theme: "neon", density: "tiny", motion: "allow" } }),
+      });
+      assert.equal(invalidResponse.status, 200);
+      assert.deepEqual((await invalidResponse.json()).settings, {
+        theme: "system",
+        density: "comfortable",
+        completedVisibility: "show",
+        boardOpenBehavior: "last",
+        motion: "allow",
+        lastBoardPath: "",
+      });
+    } finally {
+      await server.close();
+    }
+  } finally {
+    if (previousSettingsPath === undefined) {
+      delete process.env.GOALBUDDY_LOCAL_BOARD_SETTINGS_PATH;
+    } else {
+      process.env.GOALBUDDY_LOCAL_BOARD_SETTINGS_PATH = previousSettingsPath;
+    }
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("parses CLI options", () => {
+  assert.equal(parseArgs(["--goal", "docs/goals/demo"]).port, 41737);
+  assert.equal(parseArgs(["--goal", "docs/goals/demo"]).host, "127.0.0.1");
+  assert.equal(parseArgs(["--goal", "docs/goals/demo"]).publicHost, "goalbuddy.localhost");
   assert.deepEqual(parseArgs(["--goal", "docs/goals/demo", "--port", "0", "--once", "--json"]), {
     goal: "docs/goals/demo",
     host: "127.0.0.1",
+    publicHost: "goalbuddy.localhost",
     port: 0,
     once: true,
     json: true,
   });
+  assert.deepEqual(parseArgs(["--goal", "docs/goals/demo", "--host", "localhost"]), {
+    goal: "docs/goals/demo",
+    host: "localhost",
+    publicHost: "localhost",
+    port: 41737,
+    once: false,
+    json: false,
+  });
+});
+
+test("advertises goalbuddy.localhost while binding to loopback", async () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-local-board-public-host-"));
+  const goalDir = join(root, "goal");
+  try {
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    writeFileSync(join(goalDir, "state.yaml"), stateYaml("active", { title: "Public Host Goal", slug: "public-host-goal" }));
+
+    const server = await startBoardServer({ goalDir, port: 0 });
+    try {
+      const url = new URL(server.url);
+      assert.equal(url.hostname, "goalbuddy.localhost");
+      assert.equal(url.pathname, "/public-host-goal/");
+
+      const loopbackResponse = await fetch(`http://127.0.0.1:${url.port}/api/boards`);
+      assert.equal(loopbackResponse.status, 200);
+    } finally {
+      await server.close();
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("runs when installed under a symlinked temp path", () => {
@@ -83,6 +364,7 @@ test("serves board JSON and streams live state changes over SSE", async () => {
 
     const server = await startBoardServer({ goalDir, host: "127.0.0.1", port: 0 });
     try {
+      assert.match(server.url, /\/live-board\/$/);
       const boardResponse = await fetch(`${server.url}api/board`);
       assert.equal(boardResponse.status, 200);
       const board = await boardResponse.json();
@@ -108,6 +390,116 @@ test("serves board JSON and streams live state changes over SSE", async () => {
   }
 });
 
+test("streams parent board updates when linked child subgoal state changes", async () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-local-board-subgoal-live-"));
+  const goalDir = join(root, "parent-goal");
+  const childDir = join(goalDir, "subgoals", "T001-child");
+  try {
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    mkdirSync(join(childDir, "notes"), { recursive: true });
+    writeFileSync(join(goalDir, "state.yaml"), parentWithSubgoalYaml());
+    writeFileSync(join(childDir, "state.yaml"), stateYaml("active", { title: "Child Goal", slug: "child-goal" }));
+
+    const server = await startBoardServer({ goalDir, host: "127.0.0.1", port: 0 });
+    try {
+      const controller = new AbortController();
+      const events = await fetch(`${server.url}events`, { signal: controller.signal });
+      assert.equal(events.status, 200);
+      const reader = events.body.getReader();
+
+      await readUntil(reader, /"title":"Child Goal"/);
+      writeFileSync(join(childDir, "state.yaml"), stateYaml("blocked", { title: "Child Goal", slug: "child-goal" }));
+      const update = await readUntil(reader, /"status":"blocked"/);
+      assert.match(update, /"Child Goal"/);
+
+      controller.abort();
+      await reader.cancel().catch(() => {});
+    } finally {
+      await server.close();
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("serves multiple local boards from one shared hub URL", async () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-local-board-hub-"));
+  const firstGoalDir = join(root, "first-goal");
+  const secondGoalDir = join(root, "second-goal");
+  const previousSettingsPath = process.env.GOALBUDDY_LOCAL_BOARD_SETTINGS_PATH;
+  try {
+    process.env.GOALBUDDY_LOCAL_BOARD_SETTINGS_PATH = join(root, "hub-settings.json");
+    mkdirSync(join(firstGoalDir, "notes"), { recursive: true });
+    mkdirSync(join(secondGoalDir, "notes"), { recursive: true });
+    writeFileSync(join(firstGoalDir, "state.yaml"), stateYaml("active", { title: "First Goal", slug: "first-goal" }));
+    writeFileSync(join(secondGoalDir, "state.yaml"), stateYaml("blocked", { title: "Second Goal", slug: "second-goal" }));
+
+    const server = await startBoardServer({ goalDir: firstGoalDir, host: "127.0.0.1", port: 0 });
+    try {
+      const registerResponse = await fetch(server.apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goalDir: secondGoalDir }),
+      });
+      assert.equal(registerResponse.status, 200);
+      const second = await registerResponse.json();
+
+      const firstUrl = new URL(server.url);
+      const secondUrl = new URL(second.url);
+      assert.equal(secondUrl.origin, firstUrl.origin);
+      assert.equal(firstUrl.pathname, "/first-goal/");
+      assert.equal(secondUrl.pathname, "/second-goal/");
+
+      const hubResponse = await fetch(server.hubUrl, { redirect: "manual" });
+      assert.equal(hubResponse.status, 302);
+      assert.equal(hubResponse.headers.get("location"), `${firstUrl.origin}/first-goal/`);
+
+      const noSlashResponse = await fetch(`${secondUrl.origin}/second-goal`, { redirect: "manual" });
+      assert.equal(noSlashResponse.status, 302);
+      assert.equal(noSlashResponse.headers.get("location"), `${secondUrl.origin}/second-goal/`);
+
+      const boardsResponse = await fetch(server.apiUrl);
+      assert.equal(boardsResponse.status, 200);
+      const boards = await boardsResponse.json();
+      assert.deepEqual(boards.boards.map((board) => board.title), ["First Goal", "Second Goal"]);
+
+      const newestSettingsResponse = await fetch(`${firstUrl.origin}/api/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: { boardOpenBehavior: "newest" } }),
+      });
+      assert.equal(newestSettingsResponse.status, 200);
+      const newestHubResponse = await fetch(server.hubUrl, { redirect: "manual" });
+      assert.equal(newestHubResponse.status, 302);
+      assert.equal(newestHubResponse.headers.get("location"), `${firstUrl.origin}/second-goal/`);
+
+      const lastSettingsResponse = await fetch(`${firstUrl.origin}/api/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: { boardOpenBehavior: "last", lastBoardPath: "/first-goal/" } }),
+      });
+      assert.equal(lastSettingsResponse.status, 200);
+      const lastHubResponse = await fetch(server.hubUrl, { redirect: "manual" });
+      assert.equal(lastHubResponse.status, 302);
+      assert.equal(lastHubResponse.headers.get("location"), `${firstUrl.origin}/first-goal/`);
+
+      const secondBoardResponse = await fetch(`${second.url}api/board`);
+      assert.equal(secondBoardResponse.status, 200);
+      const secondBoard = await secondBoardResponse.json();
+      assert.equal(secondBoard.goal.title, "Second Goal");
+    } finally {
+      await server.close();
+    }
+  } finally {
+    if (previousSettingsPath === undefined) {
+      delete process.env.GOALBUDDY_LOCAL_BOARD_SETTINGS_PATH;
+    } else {
+      process.env.GOALBUDDY_LOCAL_BOARD_SETTINGS_PATH = previousSettingsPath;
+    }
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 async function readUntil(reader, pattern) {
   const decoder = new TextDecoder();
   let text = "";
@@ -123,11 +515,35 @@ async function readUntil(reader, pattern) {
   assert.fail(`Timed out waiting for ${pattern}. Received:\n${text}`);
 }
 
-function stateYaml(status) {
+function parentWithSubgoalYaml() {
   return `version: 2
 goal:
-  title: "Live board"
-  slug: "live-board"
+  title: "Parent Goal"
+  slug: "parent-goal"
+  kind: specific
+  tranche: "Verify child live updates."
+  status: active
+active_task: T001
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Watch child state."
+    subgoal:
+      status: active
+      path: subgoals/T001-child/state.yaml
+      owner: Worker
+      depth: 1
+    receipt: null
+`;
+}
+
+function stateYaml(status, { title = "Live board", slug = "live-board" } = {}) {
+  return `version: 2
+goal:
+  title: "${title}"
+  slug: "${slug}"
   kind: specific
   tranche: "Verify live updates."
   status: active

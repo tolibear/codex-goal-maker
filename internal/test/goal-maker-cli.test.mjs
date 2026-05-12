@@ -214,6 +214,23 @@ test("doctor reports native goal runtime readiness and supports strict goal-read
   }
 });
 
+test("bundled agent contracts stay strict and receipt-shaped", () => {
+  const scout = readFileSync("goalbuddy/agents/goal_scout.toml", "utf8");
+  const judge = readFileSync("goalbuddy/agents/goal_judge.toml", "utf8");
+  const worker = readFileSync("goalbuddy/agents/goal_worker.toml", "utf8");
+  assert.match(scout, /model_reasoning_effort = "low"/);
+  assert.match(scout, /Read only/);
+  assert.match(scout, /goalbuddy_receipt_v1/);
+  assert.match(judge, /Parallel Worker work is safe only with provably disjoint allowed_files/);
+  assert.match(judge, /Routine checks belong to the checker/);
+  assert.match(worker, /Edit only files matching allowed_files/);
+  assert.match(worker, /verification_attempts/);
+
+  assert.equal(readFileSync("plugins/goalbuddy/skills/goalbuddy/agents/goal_scout.toml", "utf8"), scout);
+  assert.equal(readFileSync("plugins/goalbuddy/skills/goalbuddy/agents/goal_judge.toml", "utf8"), judge);
+  assert.equal(readFileSync("plugins/goalbuddy/skills/goalbuddy/agents/goal_worker.toml", "utf8"), worker);
+});
+
 test("install bundles core visual board backends into the skill", () => {
   const codexHome = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
@@ -246,6 +263,319 @@ test("check-update reports newer published GoalBuddy versions", () => {
   assert.equal(human.status, 0, human.stderr || human.stdout);
   assert.match(human.stdout, /GoalBuddy 99\.0\.0 is available/);
   assert.match(human.stdout, /Update with: npx goalbuddy/);
+});
+
+test("prompt renders a compact active task prompt without dumping full state", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const goal = join(root, "goal");
+    mkdirSync(goal, { recursive: true });
+    writeFileSync(join(goal, "state.yaml"), `version: 2
+goal:
+  title: "Prompt test"
+  slug: "prompt-test"
+  kind: specific
+  tranche: "Render a prompt."
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T002
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Old work."
+    receipt:
+      result: done
+      summary: "A previous finding that should not force a full state dump."
+      evidence:
+        - README.md
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Patch the prompt renderer."
+    allowed_files:
+      - goalbuddy/scripts/**
+    verify:
+      - npm test
+    stop_if:
+      - "Need files outside allowed_files."
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+
+    const result = runGoalMaker(["prompt", goal, "--json"]);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.metadata.recommended_agent, "goal_worker");
+    assert.equal(report.metadata.sandbox, "workspace-write");
+    assert.equal(report.task.id, "T002");
+    assert.deepEqual(report.task.allowed_files, ["goalbuddy/scripts/**"]);
+    assert.equal(result.stdout.includes("A previous finding that should not force a full state dump."), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("parallel-plan allows read-only active tasks and does not mutate state", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const goal = join(root, "goal");
+    const child = join(goal, "subgoals", "T001-child");
+    mkdirSync(child, { recursive: true });
+    writeFileSync(join(child, "state.yaml"), `version: 2
+goal:
+  title: "Child"
+  slug: "child"
+  kind: specific
+  tranche: "Judge child."
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T010
+tasks:
+  - id: T010
+    type: judge
+    assignee: Judge
+    status: active
+    objective: "Judge child evidence."
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    const parentState = `version: 2
+goal:
+  title: "Parent"
+  slug: "parent"
+  kind: specific
+  tranche: "Scout parent."
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T001
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Scout parent evidence."
+    subgoal:
+      status: active
+      path: subgoals/T001-child/state.yaml
+      owner: Judge
+      depth: 1
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`;
+    writeFileSync(join(goal, "state.yaml"), parentState);
+
+    const result = runGoalMaker(["parallel-plan", goal, "--json"]);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.mutated, false);
+    assert.equal(report.spawned_agents, false);
+    assert.equal(report.candidates.length, 2);
+    assert.equal(report.candidates.every((candidate) => candidate.safe_to_parallelize), true);
+    assert.equal(readFileSync(join(goal, "state.yaml"), "utf8"), parentState);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("parallel-plan rejects overlapping active Worker write scopes", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const goal = join(root, "goal");
+    const child = join(goal, "subgoals", "T001-child");
+    mkdirSync(child, { recursive: true });
+    writeFileSync(join(child, "state.yaml"), `version: 2
+goal:
+  title: "Child"
+  slug: "child"
+  kind: specific
+  tranche: "Patch child."
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T010
+tasks:
+  - id: T010
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Patch same area."
+    allowed_files:
+      - src/router.ts
+    verify:
+      - npm test
+    stop_if:
+      - "Need files outside allowed_files."
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    writeFileSync(join(goal, "state.yaml"), `version: 2
+goal:
+  title: "Parent"
+  slug: "parent"
+  kind: specific
+  tranche: "Patch parent."
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T001
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Patch broad area."
+    allowed_files:
+      - src/**
+    verify:
+      - npm test
+    stop_if:
+      - "Need files outside allowed_files."
+    subgoal:
+      status: active
+      path: subgoals/T001-child/state.yaml
+      owner: Worker
+      depth: 1
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+
+    const result = runGoalMaker(["parallel-plan", goal, "--json"]);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.candidates.length, 2);
+    assert.equal(report.candidates.every((candidate) => candidate.safe_to_parallelize === false), true);
+    assert.match(report.candidates[0].reason, /overlaps|cannot be compared/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("parallel-plan treats overlapping Worker glob patterns as unsafe", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const goal = join(root, "goal");
+    const child = join(goal, "subgoals", "T001-child");
+    mkdirSync(child, { recursive: true });
+    writeFileSync(join(child, "state.yaml"), `version: 2
+goal:
+  title: "Child"
+  slug: "child"
+  kind: specific
+  tranche: "Patch child."
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T010
+tasks:
+  - id: T010
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Patch possible TypeScript peer."
+    allowed_files:
+      - src/foo.*
+    verify:
+      - npm test
+    stop_if:
+      - "Need files outside allowed_files."
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    writeFileSync(join(goal, "state.yaml"), `version: 2
+goal:
+  title: "Parent"
+  slug: "parent"
+  kind: specific
+  tranche: "Patch parent."
+  status: active
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T001
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Patch TypeScript files."
+    allowed_files:
+      - src/*.ts
+    verify:
+      - npm test
+    stop_if:
+      - "Need files outside allowed_files."
+    subgoal:
+      status: active
+      path: subgoals/T001-child/state.yaml
+      owner: Worker
+      depth: 1
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+
+    const result = runGoalMaker(["parallel-plan", goal, "--json"]);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.candidates.length, 2);
+    assert.equal(report.candidates.every((candidate) => candidate.safe_to_parallelize === false), true);
+    assert.match(report.candidates[0].reason, /overlaps|cannot be compared/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("plugin install adds marketplace, caches plugin, and enables config", () => {

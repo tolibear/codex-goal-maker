@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.5 — Subgoals, Parallel Agents, and Dark Mode (2026-05-12)
+
+- **Subgoals for bounded branching work.** Parent tasks can link to depth-1 child `state.yaml` boards under `subgoals/`, the checker validates child shape and containment, and the local board renders the child board inside the parent task detail.
+- **Parallel-agent-ready boards.** `goalbuddy parallel-plan` reports safe read-only Scout/Judge handoffs and Worker handoffs only when write scopes are known and disjoint. It does not mutate state or spawn agents.
+- **Dark mode and a sharper live board.** The local board now has readable dark mode, global viewer settings, compact mode, completed-task collapse, a site-aligned header, GitHub stars, and active-card motion with reduced-motion handling.
+- **Multi-board local hub navigation.** Multiple local boards share one readable `goalbuddy.localhost` hub with an in-header board selector, and parent boards stream updates when linked child subgoal state changes.
+- **More durable execution plumbing.** Scout/Judge/Worker contracts are stricter, `goalbuddy prompt` emits compact task prompts, Worker write-scope checks fail closed for ambiguous overlap, and source/plugin tests cover the new branching and parallel-safety surfaces.
+
 ## 0.3.2 — Harden Codex plugin cache updates (2026-05-11)
 
 - **Fixed Codex plugin updates when stale preserved-extension folders exist.** The updater now ignores non-version cache directories like `.goalbuddy-preserved-extend-*` while selecting the active plugin skill, so a leftover temporary folder cannot make `npx goalbuddy update` fail with `Unsupported version`.

@@ -1,7 +1,7 @@
 {
   "name": "goalbuddy",
-  "version": "0.3.2",
-  "description": "Turn broad Claude Code work into verified GoalBuddy boards with Scout, Judge, Worker, visual boards, and receipts.",
+  "version": "0.3.5",
+  "description": "Turn broad Claude Code work into verified GoalBuddy boards with subgoals, parallel-agent-ready handoffs, dark mode, and receipts.",
   "author": {
     "name": "tolibear",
     "email": "support@tolibear.com",

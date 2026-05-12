@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { basename, dirname, join, resolve, sep } from "node:path";
 
 const statePath = process.argv[2];
+const isChildCheck = process.argv.includes("--child");
 
 if (!statePath) {
   console.error("Usage: node scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml");
@@ -98,6 +100,7 @@ function parseTasks() {
     verify: taskList(task, "verify"),
     stopIf: taskList(task, "stop_if"),
     receipt: taskReceipt(task),
+    subgoal: taskSubgoal(task),
   }));
 }
 
@@ -149,6 +152,32 @@ function taskReceipt(task) {
   };
 }
 
+function taskSubgoal(task) {
+  const lines = task.raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^\s{4}subgoal:\s*/.test(line));
+  if (start === -1) return { present: false };
+
+  const subgoalLines = [];
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (/^\s{4}\S/.test(lines[i])) break;
+    subgoalLines.push(lines[i]);
+  }
+  const raw = subgoalLines.join("\n");
+  const scalar = (key) => {
+    const match = raw.match(new RegExp(`^\\s{6}${key}:\\s*(.*?)\\s*$`, "m"));
+    return match ? clean(match[1]) : null;
+  };
+
+  return {
+    present: true,
+    raw,
+    status: scalar("status"),
+    path: scalar("path"),
+    owner: scalar("owner"),
+    depth: scalar("depth"),
+  };
+}
+
 function receiptList(raw, key) {
   const lines = raw.split(/\r?\n/);
   const start = lines.findIndex((line) => new RegExp(`^\\s{6}${key}:\\s*$`).test(line));
@@ -169,16 +198,16 @@ function receiptCommandStatuses(raw) {
 }
 
 function rootEntryErrors() {
-  const allowed = new Set(["goal.md", "state.yaml", "notes", ".goalbuddy-board"]);
+  const allowed = new Set(["goal.md", "state.yaml", "notes", ".goalbuddy-board", "subgoals"]);
   const unexpected = [];
   for (const entry of readdirSync(root).filter((item) => item !== ".DS_Store")) {
     const path = join(root, entry);
     const stats = statSync(path);
     if (!allowed.has(entry)) {
       unexpected.push(entry);
-    } else if ((entry === "notes" || entry === ".goalbuddy-board") && !stats.isDirectory()) {
+    } else if ((entry === "notes" || entry === ".goalbuddy-board" || entry === "subgoals") && !stats.isDirectory()) {
       unexpected.push(`${entry} (must be a directory)`);
-    } else if (entry !== "notes" && entry !== ".goalbuddy-board" && !stats.isFile()) {
+    } else if (!["notes", ".goalbuddy-board", "subgoals"].includes(entry) && !stats.isFile()) {
       unexpected.push(`${entry} (must be a file)`);
     }
   }
@@ -241,7 +270,7 @@ if (!existsSync(join(root, "notes")) || !statSync(join(root, "notes")).isDirecto
 
 const unexpected = rootEntryErrors();
 if (unexpected.length > 0) {
-  errors.push(`unexpected root entries; v2 goal roots may contain only goal.md, state.yaml, notes/, and .goalbuddy-board/: ${unexpected.join(", ")}`);
+  errors.push(`unexpected root entries; v2 goal roots may contain only goal.md, state.yaml, notes/, subgoals/, and .goalbuddy-board/: ${unexpected.join(", ")}`);
 }
 
 const tasks = parseTasks();
@@ -298,6 +327,10 @@ if (activeTasks.length === 1 && activeTask !== activeTasks[0].id) {
 if (activeTask && !ids.has(activeTask)) errors.push(`active_task points to unknown task: ${activeTask}`);
 
 for (const task of tasks) {
+  if (task.subgoal.present) {
+    validateSubgoal(task);
+  }
+
   const hasReceipt = task.receipt.present && task.receipt.value !== null;
   const receiptResult = hasReceipt ? task.receipt.scalar("result") : null;
   if (task.status === "done" && !hasReceipt) {
@@ -319,8 +352,11 @@ for (const task of tasks) {
       if (!task.receipt.has(key)) errors.push(`Worker receipt for ${task.id} missing ${key}`);
     }
     const changedFiles = task.receipt.list("changed_files");
+    if (changedFiles.length === 0) {
+      errors.push(`Worker receipt for ${task.id} changed_files must list at least one file`);
+    }
     for (const changedFile of changedFiles) {
-      if (!task.allowedFiles.includes(changedFile)) {
+      if (!matchesAllowedFile(changedFile, task.allowedFiles)) {
         errors.push(`Worker receipt for ${task.id} changed file outside allowed_files: ${changedFile}`);
       }
     }
@@ -343,6 +379,80 @@ for (const task of tasks) {
   if (task.type === "judge" && task.status === "done" && hasReceipt && !task.receipt.has("decision")) {
     errors.push(`Judge receipt for ${task.id} missing decision`);
   }
+}
+
+function validateSubgoal(task) {
+  if (isChildCheck) {
+    errors.push(`child task ${task.id} must not contain a nested subgoal`);
+    return;
+  }
+
+  if (!["active", "blocked", "done"].includes(task.subgoal.status)) {
+    errors.push(`task ${task.id} subgoal.status must be active, blocked, or done; got ${task.subgoal.status || "<missing>"}`);
+  }
+  if (task.subgoal.depth !== 1) {
+    errors.push(`task ${task.id} subgoal.depth must be 1; got ${task.subgoal.depth || "<missing>"}`);
+  }
+  if (!task.subgoal.path) {
+    errors.push(`task ${task.id} subgoal.path is required`);
+    return;
+  }
+
+  const rootPath = resolve(root);
+  const childStatePath = resolve(rootPath, task.subgoal.path);
+  if (childStatePath !== rootPath && !childStatePath.startsWith(`${rootPath}${sep}`)) {
+    errors.push(`task ${task.id} subgoal.path must stay inside the goal root: ${task.subgoal.path}`);
+    return;
+  }
+  if (basename(childStatePath) !== "state.yaml") {
+    errors.push(`task ${task.id} subgoal.path must point to a state.yaml file`);
+    return;
+  }
+  if (!existsSync(childStatePath)) {
+    errors.push(`task ${task.id} subgoal state file not found: ${task.subgoal.path}`);
+    return;
+  }
+
+  const result = spawnSync(process.execPath, [process.argv[1], childStatePath, "--child"], {
+    encoding: "utf8",
+  });
+  let report = null;
+  try {
+    report = JSON.parse(result.stdout);
+  } catch {
+    errors.push(`task ${task.id} subgoal checker produced invalid output for ${task.subgoal.path}`);
+    return;
+  }
+  if (result.status !== 0 || !report.ok) {
+    for (const childError of report.errors || ["unknown child state error"]) {
+      errors.push(`task ${task.id} subgoal invalid: ${childError}`);
+    }
+  }
+}
+
+function matchesAllowedFile(file, allowedFiles) {
+  return allowedFiles.some((pattern) => globMatch(pattern, file));
+}
+
+function globMatch(pattern, file) {
+  const normalizedPattern = normalizePathPattern(pattern);
+  const normalizedFile = normalizePathPattern(file);
+  if (normalizedPattern === normalizedFile) return true;
+  const token = "__GOALBUDDY_GLOBSTAR__";
+  const regexSource = escapeRegExp(normalizedPattern)
+    .replace(/\*\*/g, token)
+    .replace(/\*/g, "[^/]*")
+    .replace(new RegExp(token, "g"), ".*");
+  const regex = new RegExp(`^${regexSource}$`);
+  return regex.test(normalizedFile);
+}
+
+function normalizePathPattern(value) {
+  return String(value || "").replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.+^${}()|[\]\\]/g, "\\$&");
 }
 
 if (goalStatus === "done") {

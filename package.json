@@ -1,7 +1,7 @@
 {
   "name": "goalbuddy",
-  "version": "0.3.2",
-  "description": "A /goal operating system for Codex and Claude Code: Scout/Judge/Worker boards with visual board surfaces, receipts, and verification.",
+  "version": "0.3.5",
+  "description": "A /goal operating system for Codex and Claude Code: subgoals, parallel-agent-ready boards, dark mode, receipts, and verification.",
   "type": "module",
   "bin": {
     "goalbuddy": "internal/cli/goal-maker.mjs",
@@ -10,6 +10,7 @@
   "files": [
     ".agents/plugins/marketplace.json",
     "README.md",
+    "RELEASE-0.3.5.md",
     "CONTRIBUTING.md",
     "examples",
     "plugins/goalbuddy",
