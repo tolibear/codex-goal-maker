@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>A /goal operating system for Codex and Claude Code: intake, live boards, agents, receipts, and verification.</strong>
+  <strong>A simple operating loop for long <code>/goal</code> runs.</strong>
 </p>
 
 <p align="center">
@@ -16,243 +16,96 @@
   <a href="https://goalbuddy.dev"><img alt="goalbuddy.dev" src="https://img.shields.io/badge/site-goalbuddy.dev-684cff?style=flat-square"></a>
 </p>
 
-GoalBuddy is a local companion for **Codex** and **Claude Code** when the work is too broad to trust to a single prompt. It turns rough intent into a durable operating loop: a `goal.md` charter, a machine-readable `state.yaml` board, optional visual boards, Scout/Judge/Worker task flow, compact receipts, and verification before completion.
+GoalBuddy helps Codex and Claude Code stay oriented during long coding tasks.
 
-```bash
-npx goalbuddy                  # installs for Codex and Claude Code
-npx goalbuddy --target codex   # installs for Codex only
-npx goalbuddy --target claude  # installs for Claude Code only
-```
+It gives `/goal` a small local workspace: a charter, a board, notes, receipts, and a clear next task. The work stays in your repo, so a run can pause, resume, verify, and keep going without re-inventing the plan every turn.
 
-Or install it globally:
+## Start Here
 
-```bash
-npm i -g goalbuddy
-```
-
-Then restart your AI coding agent and invoke the installed skill:
-
-```text
-$goal-prep      # in Codex
-/goal-prep      # in Claude Code
-```
-
-`goal-prep` prepares the GoalBuddy board and prints the `/goal` command to run next. It does not start `/goal` automatically.
-
-## Why GoalBuddy Exists
-
-Long-running goals in Codex and Claude Code drift. A request like "improve this project" can turn into unbounded edits, stale verification, and premature completion claims.
-
-GoalBuddy gives your AI coding agent a durable loop:
-
-```text
-vague goal -> Scout -> Judge -> Worker -> receipt -> verify -> repeat
-```
-
-The main `/goal` thread acts as PM. It owns the board, keeps exactly one active task, delegates when useful, records receipts, and only completes after a Judge or PM audit proves the original outcome is done.
-
-## What You Get Locally
-
-```text
-docs/goals/<slug>/
-  goal.md
-  state.yaml
-  notes/
-```
-
-- `goal.md` is the editable charter: objective, constraints, tranche, and stop rule.
-- `state.yaml` is the board truth: task status, active task, receipts, and verification.
-- `notes/` holds longer Scout, Judge, or PM findings when a task receipt would be too large.
-
-## The Operating Model
-
-GoalBuddy uses four primitives:
-
-- **Charter**: states what this goal is trying to accomplish and what must stay true.
-- **Board**: tracks tasks, status, receipts, and verification freshness.
-- **Task**: exactly one active Scout, Judge, Worker, or PM task.
-- **Receipt**: compact proof for every completed, blocked, or escalated task.
-
-GoalBuddy bundles default agent templates. `goal-prep` records whether matching installed agent configs were actually found; if not, `/goal` can continue through PM fallback, or you can install dedicated agents with:
-
-```bash
-npx goalbuddy agents                  # Codex TOML agents
-npx goalbuddy agents --target claude  # Claude Code markdown subagents
-```
-
-- **Scout** maps repo evidence, workflows, constraints, risks, and candidate next tasks.
-- **Judge** resolves ambiguity, scope, risk, task selection, and completion claims.
-- **Worker** performs one bounded implementation or recovery slice with explicit files and checks.
-
-## Install Everywhere
+Run one command:
 
 ```bash
 npx goalbuddy
 ```
 
-This installs and enables the native Codex plugin in `~/.codex/`, then installs the GoalBuddy skill, Scout/Judge/Worker subagents, and `/goal-prep` slash command into `~/.claude/`. Restart Codex and Claude Code, then use `$goal-prep` in Codex or `/goal-prep` in Claude Code. The Codex plugin bundles the local live board and GitHub Projects visual board backends so Goal Prep can offer a board immediately.
+Restart Codex or Claude Code.
 
-If you prefer a global executable:
+Then prepare a goal:
 
-```bash
-npm i -g goalbuddy
-goalbuddy
+```text
+$goal-prep
 ```
 
-Native Codex `/goal` is still an under-development Codex feature. Before relying on the printed command, confirm your local Codex runtime is logged in and has goals enabled:
-
-```bash
-codex login status
-codex features enable goals
-npx goalbuddy doctor --goal-ready
-```
-
-## Install One Target
-
-Use `--target` when you only want to install or update one agent environment:
-
-```bash
-npx goalbuddy --target codex
-npx goalbuddy --target claude
-```
-
-The Claude Code target installs the GoalBuddy skill, the three Scout/Judge/Worker subagents, and the `/goal-prep` slash command into `~/.claude/`. Restart Claude Code, then run:
+In Claude Code, use:
 
 ```text
 /goal-prep
 ```
 
-Check the local Claude Code install:
+Goal Prep creates the board and prints the exact `/goal` command to run next. That is the whole path.
 
-```bash
-npx goalbuddy doctor --target claude
-```
-
-Use non-default homes:
-
-```bash
-npx goalbuddy --codex-home /path/to/.codex --claude-home /path/to/.claude
-npx goalbuddy --target codex --codex-home /path/to/.codex
-npx goalbuddy --target claude --claude-home /path/to/.claude
-```
-
-`install` and `update` prepare both targets by default. `install`, `update`, `doctor`, and `agents` all accept `--target claude|codex`, and `--json` for structured output.
-
-## Run A Goal
-
-After `goal-prep` creates or repairs the board, start the run with the printed command:
+## What It Creates
 
 ```text
-/goal Follow docs/goals/<slug>/goal.md.
+docs/goals/<your-goal>/
+  goal.md
+  state.yaml
+  notes/
 ```
 
-Check board health at any time:
+`goal.md` says what you want.
+
+`state.yaml` tracks the board.
+
+`notes/` keeps longer findings out of the main thread.
+
+## How It Thinks
+
+```text
+rough idea -> goal prep -> /goal -> scout -> judge -> worker -> receipt -> verify
+```
+
+Scout maps the repo.
+
+Judge chooses the next bounded slice.
+
+Worker changes code and leaves a receipt.
+
+`/goal` keeps the loop honest until the original goal is actually done.
+
+## Update
+
+When a new GoalBuddy version ships:
 
 ```bash
-# Codex
-node ~/.codex/skills/goalbuddy/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
-# Claude Code
-node ~/.claude/skills/goalbuddy/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
+npx goalbuddy update
 ```
 
-For a broad prompt like "Improve my project," the first active task should usually be Scout, not Worker:
+That updates both Codex and Claude Code.
 
-```yaml
-tasks:
-  - id: T001
-    type: scout
-    assignee: Scout
-    status: active
-    objective: "Map repo health and identify improvement candidates."
-    receipt: null
-  - id: T002
-    type: judge
-    assignee: Judge
-    status: queued
-    objective: "Choose the next safe implementation task."
-    receipt: null
-  - id: T003
-    type: worker
-    assignee: Worker
-    status: queued
-    objective: "Execute the safe implementation task selected by Judge."
-    allowed_files: []
-    verify: []
-    stop_if:
-      - "Need files outside allowed_files."
-      - "Verification fails twice."
-    receipt: null
-```
+## Live Boards
 
-## Visual Boards
-
-GoalBuddy can show progress as the goal runs. `goal-prep` can open a local live board inside your AI coding agent before the task list is finished, or prepare a GitHub Projects sync when stakeholders need an external board.
+GoalBuddy can open a local board while the work is running, so you can see the plan, active task, receipts, and verification status without digging through the chat.
 
 <p align="center">
   <img src="internal/assets/goalbuddy-live-board.jpg" alt="GoalBuddy local live board open next to Codex while Scout, Judge, and Worker tasks populate." width="100%">
 </p>
 
-## Extensions
+## Good For
 
-The npm package is the stable core. Local Board and GitHub Projects are bundled into the installed GoalBuddy skill so `goal-prep` can offer a visual board immediately. Other optional extensions live under `extend/` and are discovered from the GitHub-hosted `extend/catalog.json`, so users do not need a new npm release for every integration.
+- broad project improvements
+- release prep
+- bug hunts that need evidence
+- refactors with verification steps
+- anything too large for one prompt
 
-```bash
-npx goalbuddy board docs/goals/<slug>
-npx goalbuddy extend github-projects
-npx goalbuddy extend
-npx goalbuddy extend github-pr-workflow
-npx goalbuddy extend install github-pr-workflow --dry-run
-```
+## For This Repo
 
-`goalbuddy extend` shows available extensions and detail commands. `goalbuddy extend <id>` shows local install state, activation state, credential requirements, safe-by-default status, and missing environment variables.
+GoalBuddy is MIT licensed and published on npm.
 
-Current catalog examples include:
+The implementation lives in this repo, but the happy path is intentionally tiny: install it, run Goal Prep, then let `/goal` work from the generated files.
 
-- `github-pr-workflow`: prepares receipt-aligned commit and PR handoff text.
-- `github-projects`: mirrors GoalBuddy boards into GitHub Projects.
-- `local-goal-board`: serves a local live board that updates from `state.yaml` and `notes/`.
-- `ai-diff-risk-review`: summarizes risk in the current diff.
-- `ci-failure-triage`: maps failing CI back to likely causes and next tasks.
-- `docs-drift-audit`: checks whether docs still match implementation.
-- `codebase-onboarding-map`: creates a concise repo map from files and conventions.
-- `release-readiness`: checks whether a goal is ready to publish.
-
-Extensions can publish, report, intake, or add role guidance. They are not board truth. `state.yaml` remains authoritative.
-
-## Compatibility Window
-
-GoalBuddy was previously published as `goal-maker`. During the migration window, `npx goal-maker` remains available as a compatibility alias and prints the new command:
-
-```bash
-npx goalbuddy
-```
-
-Machine-readable commands such as `npx goal-maker install --json` keep JSON output clean so existing automation can migrate safely.
-
-Release automation for future npm publishes is documented in [RELEASE.md](RELEASE.md).
-
-## Examples
-
-- `examples/improve-goal-maker/`: a small completed reliability run.
-- `examples/extend-catalog-workflow/`: a larger run from product framing through implementation and cleanup.
-- `examples/github-pr-workflow-extension/pr-handoff.md`: an extension-generated PR handoff artifact.
-
-## Repo Map
-
-- `goalbuddy/SKILL.md`: canonical skill definition (shared by Codex and Claude Code)
-- `goalbuddy/agents/`: Scout, Judge, and Worker agent definitions (Codex TOML; Claude Code markdown lives under `plugins/goalbuddy/agents/`)
-- `goalbuddy/templates/`: `goal.md`, `state.yaml`, and `note.md`
-- `goalbuddy/scripts/check-goal-state.mjs`: v2 board checker
-- `internal/cli/goal-maker.mjs`: npm installer CLI for Codex and Claude Code
-- `plugins/goalbuddy/`: Codex plugin (`.codex-plugin/`) and Claude Code plugin (`.claude-plugin/`) scaffolds
-- `extend/` and `extend/catalog.json`: GitHub-hosted extension surface
-- `examples/`: completed sample runs
-
-## Status
-
-`0.3.x` adds first-class Claude Code support alongside the existing Codex target. The v2 board and receipt model intentionally rejects old v1 `gate`, `units`, `artifacts`, and `evidence.jsonl` goal folders instead of auto-migrating them.
-
-Use GoalBuddy to structure autonomous coding-agent work. Keep relying on repo-specific `AGENTS.md`/`CLAUDE.md`, tests, and CI for repo facts.
+For release process details, see [RELEASE.md](RELEASE.md).
 
 ## Star History
 
