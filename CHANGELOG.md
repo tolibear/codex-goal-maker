@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 — Fix duplicate /goal-prep slash entry (2026-05-11)
+
+- **Fixed duplicate `/goal-prep` in the Claude Code slash menu.** Previous installs shipped both a `name: goal-prep` skill and a `commands/goal-prep.md` slash command, so Claude Code listed `/goal-prep` twice with different descriptions. The skill is now the single canonical surface for `/goal-prep`. Existing installs with `~/.claude/commands/goal-prep.md` are migrated automatically: `npx goalbuddy` (and `install` / `update`) removes the legacy file. `goalbuddy doctor --target claude` reports `legacy_command_present` and fails until the legacy file is gone.
+
 ## 0.3.0 — Claude Code and Codex targets
 
 GoalBuddy now installs into both **Codex** and **Claude Code** with a single `npx goalbuddy` run. The shared skill payload and `/goal` workflow are unchanged — this release adds a Claude Code target alongside the existing Codex one and reframes the project as "a /goal operating system for Codex and Claude Code."

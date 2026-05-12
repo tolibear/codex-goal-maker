@@ -195,8 +195,8 @@ Usage:
 Targets: by default, install/update prepares both Codex (~/.codex) and Claude Code (~/.claude). Use --target codex or --target claude to limit the command.
 
 Default:
-  ${canonicalCliName}                  Installs and enables Codex, then installs Claude Code skill + agents + /goal-prep command.
-  ${canonicalCliName} --target claude  Installs ${canonicalProductName} for Claude Code (skill + agents + /goal-prep command).
+  ${canonicalCliName}                  Installs and enables Codex, then installs Claude Code skill + agents (skill surfaces /goal-prep).
+  ${canonicalCliName} --target claude  Installs ${canonicalProductName} for Claude Code (skill + agents; skill surfaces /goal-prep).
   ${canonicalCliName} --target codex   Installs and enables the native Codex plugin.
 
 Compatibility:
@@ -246,8 +246,8 @@ function claudeAgentsRoot() {
   return join(claudeHome(), "agents");
 }
 
-function claudeCommandsRoot() {
-  return join(claudeHome(), "commands");
+function legacyClaudeCommandPath() {
+  return join(claudeHome(), "commands", "goal-prep.md");
 }
 
 function installClaudeSkill({ quiet = false } = {}) {
@@ -311,30 +311,12 @@ function installClaudeAgents({ quiet = false } = {}) {
   return results;
 }
 
-function installClaudeCommands({ quiet = false } = {}) {
-  const source = join(claudePluginSource, "commands");
-  const target = claudeCommandsRoot();
-  const force = hasFlag("--force") || command === "update" || command === "install" || command === "default";
-  mkdirSync(target, { recursive: true });
-
-  const results = [];
-  if (!existsSync(source)) return results;
-  for (const file of readdirSync(source)) {
-    if (!file.endsWith(".md")) continue;
-    const dest = join(target, file);
-    if (existsSync(dest) && !force) {
-      if (!quiet) console.log(`skip existing ${dest} (use --force to overwrite)`);
-      results.push({ file, status: "skipped", path: dest });
-      continue;
-    }
-    const sourceHash = sha256(readFileSync(join(source, file)));
-    const previousHash = existsSync(dest) ? sha256(readFileSync(dest)) : "";
-    cpSync(join(source, file), dest);
-    const status = previousHash ? previousHash === sourceHash ? "unchanged" : "updated" : "installed";
-    if (!quiet) console.log(`installed ${dest}`);
-    results.push({ file, status, path: dest });
-  }
-  return results;
+function cleanupLegacyClaudeCommands({ quiet = false } = {}) {
+  const legacyPath = legacyClaudeCommandPath();
+  if (!existsSync(legacyPath)) return { removed: false, path: legacyPath };
+  rmSync(legacyPath, { force: true });
+  if (!quiet) console.log(`removed legacy ${legacyPath} (skill now surfaces /goal-prep)`);
+  return { removed: true, path: legacyPath };
 }
 
 async function buildClaudeInstallReport() {
@@ -349,7 +331,7 @@ async function buildClaudeInstallReport() {
     claude_home: claudeHome(),
     skill: installClaudeSkill({ quiet }),
     agents: installClaudeAgents({ quiet }),
-    commands: installClaudeCommands({ quiet }),
+    legacy_commands_cleanup: cleanupLegacyClaudeCommands({ quiet }),
     extensions: await extensionDiscoverySummary(),
     warnings: [],
   };
@@ -408,7 +390,6 @@ async function installEverywhere() {
 function doctorClaude() {
   const skillPath = join(claudeSkillRoot(), "SKILL.md");
   const agentsPath = claudeAgentsRoot();
-  const commandsPath = claudeCommandsRoot();
   const installed = existsSync(skillPath);
   const agents = existsSync(agentsPath)
     ? readdirSync(agentsPath).filter((file) => file.startsWith("goal-") && file.endsWith(".md"))
@@ -420,9 +401,8 @@ function doctorClaude() {
     if (!existsSync(installedAgent) || !existsSync(bundledAgent)) return false;
     return sha256(readFileSync(installedAgent)) !== sha256(readFileSync(bundledAgent));
   });
-  const commands = existsSync(commandsPath)
-    ? readdirSync(commandsPath).filter((file) => file === "goal-prep.md")
-    : [];
+  const legacyCommandPath = legacyClaudeCommandPath();
+  const legacyCommandPresent = existsSync(legacyCommandPath);
 
   console.log(JSON.stringify({
     target: "claude",
@@ -432,10 +412,11 @@ function doctorClaude() {
     installed_agents: agents,
     missing_agents: missingAgents,
     stale_agents: staleAgents,
-    installed_commands: commands,
+    legacy_command_present: legacyCommandPresent,
+    legacy_command_path: legacyCommandPath,
   }, null, 2));
 
-  const installOk = installed && missingAgents.length === 0 && staleAgents.length === 0;
+  const installOk = installed && missingAgents.length === 0 && staleAgents.length === 0 && !legacyCommandPresent;
   process.exit(installOk ? 0 : 1);
 }
 
@@ -449,7 +430,9 @@ function printClaudeInstallReport(report) {
   console.log("");
   console.log(`Skill: ${report.skill.status} at ${report.skill.path}`);
   console.log(`Agents: ${summarizeStatuses(report.agents)}`);
-  console.log(`Commands: ${summarizeStatuses(report.commands)}`);
+  if (report.legacy_commands_cleanup?.removed) {
+    console.log(`Removed legacy command: ${report.legacy_commands_cleanup.path}`);
+  }
   if (report.skill.preserved_extensions.length) {
     console.log(`Preserved extensions: ${report.skill.preserved_extensions.join(", ")}`);
   }
@@ -1593,7 +1576,9 @@ function printEverywhereInstallReport(report) {
   } else if (report.claude) {
     console.log(`Claude Code: skill ${report.claude.skill.status} at ${report.claude.skill.path}`);
     console.log(`Claude Code agents: ${summarizeStatuses(report.claude.agents)}`);
-    console.log(`Claude Code commands: ${summarizeStatuses(report.claude.commands)}`);
+    if (report.claude.legacy_commands_cleanup?.removed) {
+      console.log(`Claude Code: removed legacy command at ${report.claude.legacy_commands_cleanup.path}`);
+    }
   }
 
   if (report.errors.length) {

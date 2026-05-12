@@ -345,7 +345,26 @@ test("default command installs Codex and Claude Code when both homes are provide
     assert.equal(existsSync(join(codexHome, "config.toml")), true);
     assert.equal(existsSync(join(claudeHome, "skills", "goalbuddy", "SKILL.md")), true);
     assert.equal(existsSync(join(claudeHome, "agents", "goal-worker.md")), true);
-    assert.equal(existsSync(join(claudeHome, "commands", "goal-prep.md")), true);
+    assert.equal(existsSync(join(claudeHome, "commands", "goal-prep.md")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("install removes a pre-existing legacy ~/.claude/commands/goal-prep.md", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const claudeHome = join(root, "claude-home");
+    const legacyCommand = join(claudeHome, "commands", "goal-prep.md");
+    mkdirSync(join(claudeHome, "commands"), { recursive: true });
+    writeFileSync(legacyCommand, "stale wrapper from older GoalBuddy install\n");
+
+    const install = runGoalMaker(["install", "--target", "claude", "--claude-home", claudeHome, "--json"]);
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const report = JSON.parse(install.stdout);
+    assert.equal(report.legacy_commands_cleanup.removed, true);
+    assert.equal(existsSync(legacyCommand), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
