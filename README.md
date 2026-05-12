@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://goalbuddy.dev">
-    <img src="internal/assets/goalbuddy-readme-hero.png" alt="GoalBuddy: a /goal operating system for Codex and Claude Code with live boards, Scout, Judge, Worker, receipts, and verification." width="100%">
+    <img src="internal/assets/goalbuddy-v0.3.0-release.png" alt="GoalBuddy v0.3.0 release: Claude Code support, npx goalbuddy installs into Codex and Claude Code, and npx goalbuddy update keeps both current." width="100%">
   </a>
 </p>
 
