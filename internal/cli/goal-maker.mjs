@@ -713,13 +713,15 @@ function installPlugin({ quiet = false } = {}) {
     throw new Error(`Failed to add Codex plugin marketplace: ${firstLine(marketplace.stderr || marketplace.stdout)}`);
   }
 
+  const legacySkillPaths = legacyCodexSkillRoots();
   const existingPluginSkillPath = installedPluginSkillRoot();
-  const preservedExtensions = preserveInstalledExtensions([existingPluginSkillPath], { tempRoot: dirname(pluginCachePath) });
+  const preservedExtensions = preserveInstalledExtensions([existingPluginSkillPath, ...legacySkillPaths], { tempRoot: dirname(pluginCachePath) });
   mkdirSync(dirname(pluginCachePath), { recursive: true });
   rmSync(pluginCachePath, { recursive: true, force: true });
   cpSync(pluginSource, pluginCachePath, { recursive: true });
   restoreInstalledExtensions(pluginSkillPath, preservedExtensions.tempPath);
   cleanupPreservedExtensions([preservedExtensions.tempPath]);
+  const removedLegacySkillPaths = cleanupLegacyCodexSkills();
   const configPath = enablePluginConfig();
 
   const report = {
@@ -732,6 +734,7 @@ function installPlugin({ quiet = false } = {}) {
     cache_path: pluginCachePath,
     config_path: configPath,
     preserved_extensions: preservedExtensions.ids,
+    removed_legacy_skill_paths: removedLegacySkillPaths,
   };
 
   if (hasFlag("--json") && !quiet) {
@@ -748,6 +751,9 @@ function installPlugin({ quiet = false } = {}) {
   if (report.preserved_extensions.length) {
     console.log(`Preserved extensions: ${report.preserved_extensions.join(", ")}`);
   }
+  if (report.removed_legacy_skill_paths.length) {
+    console.log(`Removed legacy personal skills: ${report.removed_legacy_skill_paths.join(", ")}`);
+  }
   console.log("");
   console.log("Restart Codex, then use:");
   console.log(`  $${canonicalSkillName}`);
@@ -756,6 +762,20 @@ function installPlugin({ quiet = false } = {}) {
   console.log(`  npx ${canonicalCliName} board docs/goals/<slug>`);
   console.log(`  npx ${canonicalCliName} extend github-projects`);
   return report;
+}
+
+function legacyCodexSkillRoots() {
+  return [installedSkillRoot(), legacyInstalledSkillRoot()];
+}
+
+function cleanupLegacyCodexSkills() {
+  const removed = [];
+  for (const path of legacyCodexSkillRoots()) {
+    if (!existsSync(path)) continue;
+    rmSync(path, { recursive: true, force: true });
+    removed.push(path);
+  }
+  return removed;
 }
 
 function pluginCacheRoot(version) {

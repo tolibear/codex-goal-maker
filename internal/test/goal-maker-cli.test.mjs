@@ -278,6 +278,40 @@ test("plugin install adds marketplace, caches plugin, and enables config", () =>
   }
 });
 
+test("plugin install removes stale personal Codex GoalBuddy skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const codexHome = join(root, "codex-home");
+    const fakeBin = fakeCodexBin(root);
+    const env = {
+      ...process.env,
+      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
+    };
+
+    const staleSkill = join(codexHome, "skills", "goalbuddy");
+    const staleAlias = join(codexHome, "skills", "goal-maker");
+    const staleExtension = join(staleSkill, "extend", "legacy-only");
+    mkdirSync(staleExtension, { recursive: true });
+    mkdirSync(staleAlias, { recursive: true });
+    writeFileSync(join(staleSkill, "SKILL.md"), "stale GoalBuddy skill\n");
+    writeFileSync(join(staleAlias, "SKILL.md"), "stale Goal Maker alias\n");
+    writeFileSync(join(staleExtension, "README.md"), "# Legacy extension\n");
+
+    const install = runGoalMaker(["plugin", "install", "--codex-home", codexHome, "--json"], { env });
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const report = JSON.parse(install.stdout);
+    assert.deepEqual(report.preserved_extensions, ["legacy-only"]);
+    assert.match(report.removed_legacy_skill_paths[0], pathSuffixPattern("skills", "goalbuddy"));
+    assert.match(report.removed_legacy_skill_paths[1], pathSuffixPattern("skills", "goal-maker"));
+    assert.equal(existsSync(staleSkill), false);
+    assert.equal(existsSync(staleAlias), false);
+    assert.equal(existsSync(join(report.cache_path, "skills", "goalbuddy", "extend", "legacy-only", "README.md")), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("plugin install ignores non-version cache directories", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
