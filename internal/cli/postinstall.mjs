@@ -12,7 +12,7 @@ if (!globalInstall || process.env.GOALBUDDY_SKIP_POSTINSTALL) {
   process.exit(0);
 }
 
-const result = spawnSync(process.execPath, [cliPath, "plugin", "install"], {
+const result = spawnSync(process.execPath, [cliPath], {
   encoding: "utf8",
   env: process.env,
   stdio: "inherit",
@@ -23,7 +23,7 @@ if (result.status === 0) {
 }
 
 console.error("");
-console.error("GoalBuddy installed globally, but Codex plugin setup did not complete.");
-console.error("Run this after Codex is available:");
+console.error("GoalBuddy installed globally, but setup did not complete for every target.");
+console.error("Run this after Codex and Claude Code are available:");
 console.error("  goalbuddy");
 process.exit(0);

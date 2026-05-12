@@ -31,6 +31,8 @@ This command requires npm owner authentication and may print an `EOTP` browser/O
 
 After the trusted publisher works, use npm package settings to require 2FA and disallow tokens for publishing. Keep `goal-maker` published during the migration window.
 
+Starting in `0.3.0`, the installer is target-aware: `npx goalbuddy` installs into both `~/.codex/` and `~/.claude/`, and `goalbuddy update` refreshes both by default. Use `--target codex` or `--target claude` to narrow a command. Both targets share the same `goalbuddy/` skill payload and are exercised by the test suite under `internal/test/`.
+
 ## Release Flow
 
 1. Update `package.json` version.
@@ -50,7 +52,8 @@ node internal/cli/check-publish-version.mjs
 ```bash
 npm view goalbuddy name version dist-tags repository bin --json
 npx goalbuddy --help
-npx goalbuddy doctor
+npx goalbuddy doctor --target codex
+npx goalbuddy doctor --target claude
 ```
 
 ## Provenance Expectations

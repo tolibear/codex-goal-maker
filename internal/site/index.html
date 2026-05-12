@@ -3,22 +3,22 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Goal Buddy - Open source Codex /goal companion</title>
+    <title>Goal Buddy - A /goal operating system for Codex and Claude Code</title>
     <meta
       name="description"
-      content="Goal Buddy prepares goal.md and state.yaml for the Codex /goal command, then keeps local goal state ready for optional extensions."
+      content="Goal Buddy prepares goal.md and state.yaml for /goal runs in Codex and Claude Code, then keeps local goal state ready for optional extensions."
     >
     <link rel="canonical" href="https://goalbuddy.dev/">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://goalbuddy.dev/">
-    <meta property="og:title" content="Goal Buddy - Open source Codex /goal companion">
-    <meta property="og:description" content="Prepare goal.md for Codex /goal, keep state.yaml authoritative, and extend goal state to the places your team works.">
+    <meta property="og:title" content="Goal Buddy - A /goal operating system for Codex and Claude Code">
+    <meta property="og:description" content="Prepare goal.md for /goal in Codex and Claude Code, keep state.yaml authoritative, and extend goal state to the places your team works.">
     <meta property="og:image" content="https://goalbuddy.dev/assets/goalbuddy-og.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Goal Buddy - Open source Codex /goal companion">
-    <meta name="twitter:description" content="Prepare goal.md for Codex /goal, keep state.yaml authoritative, and extend goal state to the places your team works.">
+    <meta name="twitter:title" content="Goal Buddy - A /goal operating system for Codex and Claude Code">
+    <meta name="twitter:description" content="Prepare goal.md for /goal in Codex and Claude Code, keep state.yaml authoritative, and extend goal state to the places your team works.">
     <meta name="twitter:image" content="https://goalbuddy.dev/assets/goalbuddy-og.png">
     <link rel="icon" href="./assets/goalbuddy-mark.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,13 +54,13 @@
 
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy" data-animate="hero-copy">
-          <p class="eyebrow">Open source Codex /goal companion</p>
+          <p class="eyebrow">A /goal operating system for Codex &amp; Claude Code</p>
           <h1 id="hero-title">
             <span>Give /goal</span>
             <span>a best friend.</span>
           </h1>
           <p class="hero-subcopy">
-            Goal Buddy prepares a goal.md for the Codex /goal command, keeps state.yaml as local truth, and lets you extend goal state into GitHub, Slack, Linear, and other places when the workflow needs it.
+            Goal Buddy prepares a goal.md for /goal in Codex and Claude Code, keeps state.yaml as local truth, and lets you extend goal state into GitHub, Slack, Linear, and other places when the workflow needs it.
           </p>
           <div class="hero-actions" aria-label="Goal Buddy actions">
             <a class="button button-primary" href="#install" data-copy="npx goalbuddy" data-copy-toast="Copied npx goalbuddy">
@@ -82,7 +82,8 @@
               <span></span>
             </div>
             <pre><code><span>$</span>npx goalbuddy
-<span>$</span>goal-prep
+<span>$</span>$goal-prep            <em># Codex</em>
+<span>$</span>/goal-prep            <em># Claude Code</em>
 
 <em>Prepared docs/goals/improve-project/</em>
   goal.md
@@ -104,7 +105,7 @@
         <article>
           <i data-lucide="file-check-2"></i>
           <h2>Keep one truth</h2>
-          <p>Codex reads and updates local state instead of relying on a hosted tracker.</p>
+          <p>Codex and Claude Code read and update local state instead of relying on a hosted tracker.</p>
         </article>
         <article>
           <i data-lucide="plug"></i>
@@ -115,9 +116,9 @@
 
       <section class="demo-section" id="demo" aria-labelledby="demo-title">
         <div class="section-intro">
-          <h2 id="demo-title">Watch the board appear while Codex keeps working.</h2>
+          <h2 id="demo-title">Watch the board appear while your AI agent keeps working.</h2>
           <p>
-            GoalBuddy can open a local live board inside Codex before the task list is finished, so the work becomes visible as Scout, Judge, and Worker tasks populate.
+            GoalBuddy opens a local live board inside Codex or Claude Code before the task list is finished, so the work becomes visible as Scout, Judge, and Worker tasks populate.
           </p>
         </div>
         <div class="demo-frame" aria-label="GoalBuddy local live board demo">
@@ -142,7 +143,7 @@
       <section class="workflow" id="workflow" aria-labelledby="workflow-title">
         <div class="section-kicker">Scout, Judge, Worker</div>
         <div class="section-intro">
-          <h2 id="workflow-title">A bounded loop for long Codex runs.</h2>
+          <h2 id="workflow-title">A bounded loop for long Codex and Claude Code runs.</h2>
           <p>
             Goal Buddy separates mapping, decision, and implementation so /goal can continue from explicit state instead of re-inferring the project every turn.
           </p>
@@ -175,7 +176,7 @@
           <div class="section-kicker">Local truth</div>
           <h2 id="local-title">Repo files stay authoritative.</h2>
           <p>
-            Goal Buddy writes the goal charter, machine-readable state, and notes into your repository. /goal can resume from those files, and extensions can mirror the state without replacing it.
+            Goal Buddy writes the goal charter, machine-readable state, and notes into your repository. /goal can resume from those files in Codex or Claude Code, and extensions can mirror the state without replacing it.
           </p>
           <img class="local-character" src="./assets/goalbuddy-clipboard.png" alt="Goal Buddy mascot holding a checklist clipboard">
         </div>
@@ -184,7 +185,7 @@
           <article class="file-card file-goal">
             <i data-lucide="file-text"></i>
             <h3>goal.md</h3>
-            <p>Human-readable charter for Codex /goal: intent, scope, acceptance criteria, and run instructions.</p>
+            <p>Human-readable charter for /goal in Codex and Claude Code: intent, scope, acceptance criteria, and run instructions.</p>
             <code># Goal Charter<br>/goal Follow docs/goals/&lt;slug&gt;/goal.md</code>
           </article>
           <article class="file-card file-state">
@@ -202,7 +203,7 @@
           <article class="file-card file-install" id="install">
             <i data-lucide="copy"></i>
             <h3>Install and prepare a board</h3>
-            <p>Run the CLI once to install the Codex plugin. Restart Codex, use $goal-prep, then start with the printed /goal command.</p>
+            <p>Run the CLI once to install GoalBuddy into Codex and Claude Code. Then restart your agent, run <code>$goal-prep</code> (Codex) or <code>/goal-prep</code> (Claude Code), and start with the printed /goal command.</p>
             <button class="copy-command" type="button" data-copy="npx goalbuddy">
               <code>npx goalbuddy</code>
               <span>Copy</span>
@@ -311,7 +312,7 @@
       <section class="final-cta" aria-labelledby="cta-title">
         <img src="./assets/goalbuddy-character.png" alt="">
         <div>
-          <h2 id="cta-title">Give Codex a board, a receipt trail, and a next task.</h2>
+          <h2 id="cta-title">Give Codex &amp; Claude Code a board, a receipt trail, and a next task.</h2>
           <p>MIT licensed. Dependency-free runtime. Built around local goal.md and state.yaml files.</p>
         </div>
         <a class="button button-primary" href="#install" data-copy="npx goalbuddy" data-copy-toast="Copied npx goalbuddy">
