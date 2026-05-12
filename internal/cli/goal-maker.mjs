@@ -1240,6 +1240,7 @@ function installedPluginSkillRoot() {
   const versions = readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
+    .filter(isSupportedVersion)
     .sort(compareVersions)
     .reverse();
   for (const version of versions) {
@@ -1403,9 +1404,9 @@ function preserveInstalledExtensions(targets, { tempRoot = "" } = {}) {
     if (!target) continue;
     const source = join(target, "extend");
     if (!existsSync(source)) continue;
-    mkdirSync(tempPath, { recursive: true });
     for (const entry of readdirSync(source, { withFileTypes: true })) {
       if (bundledCoreExtensionIds.has(entry.name)) continue;
+      mkdirSync(tempPath, { recursive: true });
       const from = join(source, entry.name);
       const to = join(tempPath, entry.name);
       cpSync(from, to, { recursive: true, force: true });
@@ -1637,6 +1638,10 @@ function normalizeVersion(value) {
   const match = String(value).trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/);
   if (!match) throw new Error(`Unsupported version: ${value}`);
   return `${Number(match[1])}.${Number(match[2])}.${Number(match[3])}`;
+}
+
+function isSupportedVersion(value) {
+  return /^v?\d+\.\d+\.\d+(?:[-+].*)?$/.test(String(value).trim());
 }
 
 function compareVersions(left, right) {

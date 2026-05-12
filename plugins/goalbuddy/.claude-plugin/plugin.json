@@ -1,6 +1,6 @@
 {
   "name": "goalbuddy",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Turn broad Claude Code work into verified GoalBuddy boards with Scout, Judge, Worker, visual boards, and receipts.",
   "author": {
     "name": "tolibear",

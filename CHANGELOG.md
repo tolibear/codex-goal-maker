@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2 — Harden Codex plugin cache updates (2026-05-11)
+
+- **Fixed Codex plugin updates when stale preserved-extension folders exist.** The updater now ignores non-version cache directories like `.goalbuddy-preserved-extend-*` while selecting the active plugin skill, so a leftover temporary folder cannot make `npx goalbuddy update` fail with `Unsupported version`.
+- **Stopped leaving empty preserved-extension folders during plugin reinstalls.** The updater only creates the temporary preservation directory when there is a custom extension to copy.
+
 ## 0.3.1 — Fix duplicate /goal-prep slash entry (2026-05-11)
 
 - **Fixed duplicate `/goal-prep` in the Claude Code slash menu.** Previous installs shipped both a `name: goal-prep` skill and a `commands/goal-prep.md` slash command, so Claude Code listed `/goal-prep` twice with different descriptions. The skill is now the single canonical surface for `/goal-prep`. Existing installs with `~/.claude/commands/goal-prep.md` are migrated automatically: `npx goalbuddy` (and `install` / `update`) removes the legacy file. `goalbuddy doctor --target claude` reports `legacy_command_present` and fails until the legacy file is gone.

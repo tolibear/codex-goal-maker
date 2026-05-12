@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -273,6 +273,54 @@ test("plugin install adds marketplace, caches plugin, and enables config", () =>
     const config = readFileSync(join(codexHome, "config.toml"), "utf8");
     assert.match(config, /\[plugins\."goalbuddy@goalbuddy"\]/);
     assert.match(config, /enabled = true/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("plugin install ignores non-version cache directories", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const codexHome = join(root, "codex-home");
+    const fakeBin = fakeCodexBin(root);
+    const env = {
+      ...process.env,
+      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
+    };
+
+    const install = runGoalMaker(["plugin", "install", "--codex-home", codexHome, "--json"], { env });
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const stalePreservePath = join(codexHome, "plugins", "cache", "goalbuddy", "goalbuddy", ".goalbuddy-preserved-extend-123-456");
+    mkdirSync(stalePreservePath, { recursive: true });
+
+    const reinstall = runGoalMaker(["plugin", "install", "--codex-home", codexHome, "--json"], { env });
+    assert.equal(reinstall.status, 0, reinstall.stderr || reinstall.stdout);
+    assert.equal(JSON.parse(reinstall.stdout).version, packageVersion);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("plugin reinstall does not leave empty preserved cache directories", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const codexHome = join(root, "codex-home");
+    const fakeBin = fakeCodexBin(root);
+    const env = {
+      ...process.env,
+      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
+    };
+
+    const install = runGoalMaker(["plugin", "install", "--codex-home", codexHome, "--json"], { env });
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const reinstall = runGoalMaker(["plugin", "install", "--codex-home", codexHome, "--json"], { env });
+    assert.equal(reinstall.status, 0, reinstall.stderr || reinstall.stdout);
+
+    const cacheRoot = join(codexHome, "plugins", "cache", "goalbuddy", "goalbuddy");
+    const preservedDirs = readdirSync(cacheRoot).filter((entry) => entry.startsWith(".goalbuddy-preserved-"));
+    assert.deepEqual(preservedDirs, []);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
