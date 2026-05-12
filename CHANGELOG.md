@@ -1,36 +1,34 @@
 # Changelog
 
-## 0.3.0 — Claude Code first
+## 0.3.0 — Claude Code and Codex targets
 
-GoalBuddy is now built first and foremost for **Claude Code**, with Codex remaining fully supported alongside it.
+GoalBuddy now installs into both **Codex** (default) and **Claude Code** (`--target claude`). The shared skill payload and `/goal` workflow are unchanged — this release adds a Claude Code target alongside the existing Codex one and reframes the project as "a /goal operating system for Codex and Claude Code."
 
 ### Highlights
 
-- **Claude Code is the new default install target.** Running `npx goalbuddy` installs the GoalBuddy skill, the three Scout/Judge/Worker subagents, and the `/goal-prep` slash command into `~/.claude/`.
-- **Codex remains a first-class target.** Use `npx goalbuddy --target codex` (or set `CODEX_HOME`) to install the existing Codex plugin payload, agents, and marketplace manifest exactly as before.
-- **New Claude Code plugin scaffold** at `plugins/goalbuddy/.claude-plugin/plugin.json`, with markdown subagents (`agents/goal-scout.md`, `agents/goal-judge.md`, `agents/goal-worker.md`) and a `/goal-prep` command (`commands/goal-prep.md`).
-- **`/goal-prep` (Claude Code) and `$goal-prep` (Codex)** are now documented as siblings throughout the skill, README, site, and CLI.
-- **Reframed README, site, plugin docs, and SKILL.md** to position the workflow as a goal operating system for any AI coding agent, with Claude Code listed first.
-- **CLI is target-aware.** New flags: `--target claude|codex`, `--claude-home <path>`. Existing `--codex-home` and `CODEX_HOME` continue to work and imply Codex unless `--target claude` is set explicitly.
-- **Doctor checks both targets.** `goalbuddy doctor` defaults to Claude Code; `goalbuddy doctor --target codex` keeps the existing Codex runtime/agent checks.
+- **Codex remains the default install target.** `npx goalbuddy` keeps doing exactly what it did before: install and enable the native Codex plugin in `~/.codex/`.
+- **New Claude Code target.** `npx goalbuddy --target claude` installs the GoalBuddy skill, three Scout/Judge/Worker subagents, and the `/goal-prep` slash command into `~/.claude/`.
+- **Claude Code plugin scaffold** at `plugins/goalbuddy/.claude-plugin/plugin.json` with markdown subagents (`agents/goal-scout.md`, `agents/goal-judge.md`, `agents/goal-worker.md`) and a `/goal-prep` command (`commands/goal-prep.md`).
+- **`$goal-prep` (Codex) and `/goal-prep` (Claude Code)** are documented as sibling entry points throughout the skill, README, site, and CLI.
+- **Reframed README, site, plugin docs, package.json, and SKILL.md** to position the workflow as "a /goal operating system for Codex and Claude Code."
+- **CLI is target-aware.** New flags: `--target codex|claude`, `--claude-home <path>`. Existing `--codex-home` and `CODEX_HOME` continue to work unchanged.
+- **Doctor checks both targets.** Default is Codex; `goalbuddy doctor --target claude` runs the Claude Code skill/agent/command check.
 
 ### Compatibility
 
+- `npx goalbuddy` with no flag installs for Codex exactly as before — no breaking change for existing users.
 - `npx goal-maker` continues to work as a temporary alias and prints the new command.
-- All existing Codex behaviors are preserved under `--target codex`.
-- The shared `goalbuddy/SKILL.md` payload is unchanged in shape; only the framing is bilingual now.
+- The shared `goalbuddy/SKILL.md` payload is unchanged in shape; the framing is now bilingual.
 
 ### Tests
 
-- All 44 tests pass on this release.
-- Added platform-agnostic help-text expectations.
-- Fixed patch-version arithmetic in `check-publish-version` tests so it tolerates minor-version bumps.
+- All 44 tests pass.
+- Help-text and version-arithmetic tests updated for the bilingual usage and the 0.3.0 bump.
 
-### Migration
+### Adding Claude Code
 
-If you previously installed via `npx goalbuddy`, your existing Codex install in `~/.codex/skills/goalbuddy/` is untouched. To install into Claude Code as well, run:
+If you only used Codex before, your install is untouched. To also install into Claude Code:
 
 ```bash
-npx goalbuddy            # installs for Claude Code
-npx goalbuddy --target codex   # reinstalls for Codex
+npx goalbuddy --target claude
 ```

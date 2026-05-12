@@ -6,7 +6,7 @@ GoalBuddy integrations live here as subfolders when they are ready to ship.
 
 The npm package reads the GitHub-hosted catalog at `extend/catalog.json`, so adding or updating non-bundled extension entries here does not require an npm release.
 
-Each extension folder should contain the files referenced by `extend/catalog.json`. Keep catalog entries checksum-pinned so `goalbuddy extend install <id>` can verify downloads before copying them into a local Claude Code or Codex install.
+Each extension folder should contain the files referenced by `extend/catalog.json`. Keep catalog entries checksum-pinned so `goalbuddy extend install <id>` can verify downloads before copying them into a local Codex or Claude Code install.
 
 Use `goalbuddy extend install --all` to install every cataloged extension into the active GoalBuddy skill install. Use `--dry-run` first when testing catalog changes.
 

@@ -1,13 +1,13 @@
 ---
 name: goal-prep
-description: Goal Prep for GoalBuddy. Use for broad, long-running, stalled, vague, detailed, planned, or unhealthy Claude Code or Codex work that needs a structured /goal intake, autonomous task discovery, role-tagged Scout/Judge/Worker delegation, one active task, durable receipts, and a PM-owned rolling board that maximizes the chance of a successful goal run.
+description: Goal Prep for GoalBuddy. Use for broad, long-running, stalled, vague, detailed, planned, or unhealthy Codex or Claude Code work that needs a structured /goal intake, autonomous task discovery, role-tagged Scout/Judge/Worker delegation, one active task, durable receipts, and a PM-owned rolling board that maximizes the chance of a successful goal run.
 ---
 
 # Goal Prep
 
-`$goal-prep` (or `/goal-prep` in Claude Code) prepares a GoalBuddy board. It does not start `/goal` automatically, but the board and starter `/goal` command must be shaped so the next run continues into safe execution by default.
+`$goal-prep` (Codex) or `/goal-prep` (Claude Code) prepares a GoalBuddy board. It does not start `/goal` automatically, but the board and starter `/goal` command must be shaped so the next run continues into safe execution by default.
 
-GoalBuddy is for autonomous, long-running Claude Code or Codex work where the PM thread may need to discover the work, define tasks, sequence them, delegate them, execute them, verify them, and keep going without the human decomposing every step.
+GoalBuddy is for autonomous, long-running Codex or Claude Code work where the PM thread may need to discover the work, define tasks, sequence them, delegate them, execute them, verify them, and keep going without the human decomposing every step.
 
 The loop is:
 
@@ -81,7 +81,7 @@ Do you want to set up a visual board for this?
 
 Recommended options:
 
-1. Local live board (Recommended) - starts immediately, requires no credentials, and lets the user watch tasks populate inside Claude Code or Codex.
+1. Local live board (Recommended) - starts immediately, requires no credentials, and lets the user watch tasks populate inside Codex or Claude Code.
 2. GitHub Projects - best when stakeholders need a shared external board and the user can approve GitHub credentials/project details.
 3. No visual board - best for quick or private goals where the file board is enough.
 

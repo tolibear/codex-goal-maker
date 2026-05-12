@@ -1,7 +1,7 @@
 {
   "name": "goalbuddy",
   "version": "0.3.0",
-  "description": "Turn open-ended Claude Code and Codex goals into GoalBuddy Scout/Judge/Worker boards with visual board surfaces, receipts, and verification.",
+  "description": "A /goal operating system for Codex and Claude Code: Scout/Judge/Worker boards with visual board surfaces, receipts, and verification.",
   "type": "module",
   "bin": {
     "goalbuddy": "internal/cli/goal-maker.mjs",
@@ -34,12 +34,12 @@
     "url": "git+https://github.com/tolibear/goalbuddy.git"
   },
   "keywords": [
-    "claude-code",
-    "claude-code-plugin",
-    "claude-code-skill",
     "codex",
     "codex-skill",
     "openai-codex",
+    "claude-code",
+    "claude-code-plugin",
+    "claude-code-skill",
     "anthropic",
     "goalbuddy",
     "goal",

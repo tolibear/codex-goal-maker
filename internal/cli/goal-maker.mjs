@@ -188,18 +188,18 @@ Usage:
   ${canonicalCliName} extend doctor [<id>] [--codex-home <path>] [--json]
   ${canonicalCliName} board <docs/goals/slug> [--catalog-url <url-or-path>] [--host <host>] [--port <port>] [--once] [--json]
 
-Default target: Claude Code (~/.claude). Pass --target codex for Codex (~/.codex).
+Targets: Codex (default, ~/.codex) and Claude Code (--target claude, ~/.claude). Both share the same skill payload.
 
 Default:
-  ${canonicalCliName}                  Installs ${canonicalProductName} for Claude Code (skill + agents + /goal-prep command).
-  ${canonicalCliName} --target codex   Installs and enables the native Codex plugin.
+  ${canonicalCliName}                  Installs and enables the native Codex plugin.
+  ${canonicalCliName} --target claude  Installs ${canonicalProductName} for Claude Code (skill + agents + /goal-prep command).
 
 Compatibility:
   ${legacyCliName} remains a temporary alias and prints the new npx command for human-facing use.
 
 Environment:
-  CLAUDE_HOME                        Overrides the default ~/.claude target.
-  CODEX_HOME                         Overrides the default ~/.codex target (and selects Codex unless --target claude is set).
+  CODEX_HOME                         Overrides the default ~/.codex target.
+  CLAUDE_HOME                        Overrides the default ~/.claude target (and selects Claude Code unless --target codex is set).
   GOALBUDDY_EXTEND_CATALOG_URL       Overrides the default GitHub-hosted extension catalog.
   GOAL_MAKER_EXTEND_CATALOG_URL      Legacy fallback for the extension catalog.
 `);
@@ -216,10 +216,9 @@ function claudeHome() {
 function targetMode() {
   const value = (optionValue("--target") || "").toLowerCase();
   if (value === "codex" || value === "claude") return value;
-  // Backward compatibility: explicit --codex-home or CODEX_HOME implies Codex target,
-  // unless the user explicitly set --target claude.
-  if (optionValue("--codex-home") || process.env.CODEX_HOME) return "codex";
-  return "claude";
+  // Explicit --claude-home or CLAUDE_HOME implies Claude target unless --target codex is set.
+  if (optionValue("--claude-home") || process.env.CLAUDE_HOME) return "claude";
+  return "codex";
 }
 
 function claudeSkillRoot() {
