@@ -19,8 +19,9 @@
 GoalBuddy is a local companion for **Codex** and **Claude Code** when the work is too broad to trust to a single prompt. It turns rough intent into a durable operating loop: a `goal.md` charter, a machine-readable `state.yaml` board, optional visual boards, Scout/Judge/Worker task flow, compact receipts, and verification before completion.
 
 ```bash
-npx goalbuddy                  # installs for Codex (default)
-npx goalbuddy --target claude  # installs for Claude Code
+npx goalbuddy                  # installs for Codex and Claude Code
+npx goalbuddy --target codex   # installs for Codex only
+npx goalbuddy --target claude  # installs for Claude Code only
 ```
 
 Or install it globally:
@@ -83,13 +84,13 @@ npx goalbuddy agents --target claude  # Claude Code markdown subagents
 - **Judge** resolves ambiguity, scope, risk, task selection, and completion claims.
 - **Worker** performs one bounded implementation or recovery slice with explicit files and checks.
 
-## Install For Codex
+## Install Everywhere
 
 ```bash
 npx goalbuddy
 ```
 
-This installs and enables the native Codex plugin in `~/.codex/`. Restart Codex, then use `$goal-prep`. The plugin bundles the local live board and GitHub Projects visual board backends so Goal Prep can offer a board immediately.
+This installs and enables the native Codex plugin in `~/.codex/`, then installs the GoalBuddy skill, Scout/Judge/Worker subagents, and `/goal-prep` slash command into `~/.claude/`. Restart Codex and Claude Code, then use `$goal-prep` in Codex or `/goal-prep` in Claude Code. The Codex plugin bundles the local live board and GitHub Projects visual board backends so Goal Prep can offer a board immediately.
 
 If you prefer a global executable:
 
@@ -106,13 +107,16 @@ codex features enable goals
 npx goalbuddy doctor --goal-ready
 ```
 
-## Install For Claude Code
+## Install One Target
+
+Use `--target` when you only want to install or update one agent environment:
 
 ```bash
+npx goalbuddy --target codex
 npx goalbuddy --target claude
 ```
 
-This installs the GoalBuddy skill, the three Scout/Judge/Worker subagents, and the `/goal-prep` slash command into `~/.claude/`. Restart Claude Code, then run:
+The Claude Code target installs the GoalBuddy skill, the three Scout/Judge/Worker subagents, and the `/goal-prep` slash command into `~/.claude/`. Restart Claude Code, then run:
 
 ```text
 /goal-prep
@@ -127,11 +131,12 @@ npx goalbuddy doctor --target claude
 Use non-default homes:
 
 ```bash
-npx goalbuddy --codex-home /path/to/.codex
+npx goalbuddy --codex-home /path/to/.codex --claude-home /path/to/.claude
+npx goalbuddy --target codex --codex-home /path/to/.codex
 npx goalbuddy --target claude --claude-home /path/to/.claude
 ```
 
-`install`, `update`, `doctor`, and `agents` all accept `--target claude|codex`, and `--json` for structured output.
+`install` and `update` prepare both targets by default. `install`, `update`, `doctor`, and `agents` all accept `--target claude|codex`, and `--json` for structured output.
 
 ## Run A Goal
 

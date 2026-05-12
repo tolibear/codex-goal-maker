@@ -71,7 +71,9 @@ async function main() {
   maybePrintLegacyNotice();
   switch (command) {
     case "default":
-      if (targetMode() === "codex") {
+      if (installTargetMode() === "all") {
+        await installEverywhere();
+      } else if (installTargetMode() === "codex") {
         installPlugin();
       } else {
         await installClaudeAll();
@@ -79,7 +81,9 @@ async function main() {
       break;
     case "install":
     case "update":
-      if (targetMode() === "codex") {
+      if (installTargetMode() === "all") {
+        await installEverywhere();
+      } else if (installTargetMode() === "codex") {
         await installAll();
       } else {
         await installClaudeAll();
@@ -188,11 +192,12 @@ Usage:
   ${canonicalCliName} extend doctor [<id>] [--codex-home <path>] [--json]
   ${canonicalCliName} board <docs/goals/slug> [--catalog-url <url-or-path>] [--host <host>] [--port <port>] [--once] [--json]
 
-Targets: Codex (default, ~/.codex) and Claude Code (--target claude, ~/.claude). Both share the same skill payload.
+Targets: by default, install/update prepares both Codex (~/.codex) and Claude Code (~/.claude). Use --target codex or --target claude to limit the command.
 
 Default:
-  ${canonicalCliName}                  Installs and enables the native Codex plugin.
+  ${canonicalCliName}                  Installs and enables Codex, then installs Claude Code skill + agents + /goal-prep command.
   ${canonicalCliName} --target claude  Installs ${canonicalProductName} for Claude Code (skill + agents + /goal-prep command).
+  ${canonicalCliName} --target codex   Installs and enables the native Codex plugin.
 
 Compatibility:
   ${legacyCliName} remains a temporary alias and prints the new npx command for human-facing use.
@@ -221,6 +226,18 @@ function targetMode() {
   return "codex";
 }
 
+function installTargetMode() {
+  const value = (optionValue("--target") || "").toLowerCase();
+  if (value === "codex" || value === "claude") return value;
+
+  const hasCodexHomeOption = Boolean(optionValue("--codex-home"));
+  const hasClaudeHomeOption = Boolean(optionValue("--claude-home"));
+  if (hasCodexHomeOption && !hasClaudeHomeOption) return "codex";
+  if (hasClaudeHomeOption && !hasCodexHomeOption) return "claude";
+  if (process.env.CLAUDE_HOME && !hasCodexHomeOption) return "claude";
+  return "all";
+}
+
 function claudeSkillRoot() {
   return join(claudeHome(), "skills", canonicalSkillDirectory);
 }
@@ -242,7 +259,7 @@ function installClaudeSkill({ quiet = false } = {}) {
 
   const previousMetadata = readInstallMetadata(target);
   const previousFingerprint = existsSync(target) ? directoryFingerprint(target, { exclude: installFingerprintExcludes() }) : "";
-  const preservedExtensions = preserveInstalledExtensions([target]);
+  const preservedExtensions = preserveInstalledExtensions([target], { tempRoot: claudeHome() });
   const extensionTempPath = preservedExtensions.tempPath;
   const preservedExtensionIds = preservedExtensions.ids;
 
@@ -320,7 +337,7 @@ function installClaudeCommands({ quiet = false } = {}) {
   return results;
 }
 
-async function installClaudeAll() {
+async function buildClaudeInstallReport() {
   const quiet = true;
   const report = {
     command,
@@ -338,12 +355,54 @@ async function installClaudeAll() {
   };
 
   report.package.previous_version = report.skill.previous_version;
+  return report;
+}
+
+async function installClaudeAll() {
+  const report = await buildClaudeInstallReport();
 
   if (hasFlag("--json")) {
     printJson(report);
   } else {
     printClaudeInstallReport(report);
   }
+}
+
+async function installEverywhere() {
+  const report = {
+    command,
+    package: {
+      name: packageInfo.name,
+      current_version: packageInfo.version,
+    },
+    codex: null,
+    claude: null,
+    errors: [],
+  };
+
+  try {
+    report.codex = installPlugin({ quiet: true });
+  } catch (error) {
+    report.errors.push({ target: "codex", error: error.message });
+    report.codex = { target: "codex", ok: false, error: error.message };
+  }
+
+  try {
+    report.claude = await buildClaudeInstallReport();
+  } catch (error) {
+    report.errors.push({ target: "claude", error: error.message });
+    report.claude = { target: "claude", ok: false, error: error.message };
+  }
+
+  report.ok = report.errors.length === 0;
+
+  if (hasFlag("--json")) {
+    printJson(report);
+  } else {
+    printEverywhereInstallReport(report);
+  }
+
+  if (!report.ok) process.exit(1);
 }
 
 function doctorClaude() {
@@ -431,7 +490,7 @@ function installSkill({ force = true, quiet = false } = {}) {
 
   const previousMetadata = readInstallMetadata(target) || readInstallMetadata(legacyTarget);
   const previousFingerprint = existsSync(target) ? directoryFingerprint(target, { exclude: installFingerprintExcludes() }) : "";
-  const preservedExtensions = preserveInstalledExtensions([target, legacyTarget]);
+  const preservedExtensions = preserveInstalledExtensions([target, legacyTarget], { tempRoot: codexHome() });
   const extensionTempPath = preservedExtensions.tempPath;
   const preservedExtensionIds = preservedExtensions.ids;
 
@@ -655,7 +714,7 @@ Default source:
 `);
 }
 
-function installPlugin() {
+function installPlugin({ quiet = false } = {}) {
   const source = optionValue("--source") || "tolibear/goalbuddy";
   const pluginSource = join(packageRoot, "plugins", pluginName);
   const pluginManifestPath = join(pluginSource, ".codex-plugin", "plugin.json");
@@ -665,35 +724,47 @@ function installPlugin() {
 
   const pluginManifest = JSON.parse(readFileSync(pluginManifestPath, "utf8"));
   const pluginCachePath = pluginCacheRoot(pluginManifest.version);
+  const pluginSkillPath = join(pluginCachePath, "skills", canonicalSkillDirectory);
   const marketplace = runCodex(["plugin", "marketplace", "add", source]);
   if (!marketplace.ok) {
     throw new Error(`Failed to add Codex plugin marketplace: ${firstLine(marketplace.stderr || marketplace.stdout)}`);
   }
 
+  const existingPluginSkillPath = installedPluginSkillRoot();
+  const preservedExtensions = preserveInstalledExtensions([existingPluginSkillPath], { tempRoot: dirname(pluginCachePath) });
   mkdirSync(dirname(pluginCachePath), { recursive: true });
   rmSync(pluginCachePath, { recursive: true, force: true });
   cpSync(pluginSource, pluginCachePath, { recursive: true });
+  restoreInstalledExtensions(pluginSkillPath, preservedExtensions.tempPath);
+  cleanupPreservedExtensions([preservedExtensions.tempPath]);
   const configPath = enablePluginConfig();
 
   const report = {
     installed: true,
+    target: "codex",
     plugin: `${pluginName}@${pluginName}`,
     version: pluginManifest.version,
     codex_home: codexHome(),
     marketplace_source: source,
     cache_path: pluginCachePath,
     config_path: configPath,
+    preserved_extensions: preservedExtensions.ids,
   };
 
-  if (hasFlag("--json")) {
+  if (hasFlag("--json") && !quiet) {
     printJson(report);
-    return;
+    return report;
   }
+
+  if (quiet) return report;
 
   console.log(`Installed ${canonicalProductName} Codex plugin ${pluginManifest.version}`);
   console.log(`Marketplace: ${source}`);
   console.log(`Cache: ${pluginCachePath}`);
   console.log(`Config: ${configPath}`);
+  if (report.preserved_extensions.length) {
+    console.log(`Preserved extensions: ${report.preserved_extensions.join(", ")}`);
+  }
   console.log("");
   console.log("Restart Codex, then use:");
   console.log(`  $${canonicalSkillName}`);
@@ -701,6 +772,7 @@ function installPlugin() {
   console.log("Bundled visual boards:");
   console.log(`  npx ${canonicalCliName} board docs/goals/<slug>`);
   console.log(`  npx ${canonicalCliName} extend github-projects`);
+  return report;
 }
 
 function pluginCacheRoot(version) {
@@ -1339,11 +1411,13 @@ function listFiles(root, { exclude = new Set(), prefix = "" } = {}) {
   return files;
 }
 
-function preserveInstalledExtensions(targets) {
+function preserveInstalledExtensions(targets, { tempRoot = "" } = {}) {
   const ids = [];
-  const tempPath = join(codexHome(), `.goalbuddy-preserved-extend-${process.pid}-${Date.now()}`);
+  const firstTarget = targets.find(Boolean) || codexHome();
+  const tempPath = join(tempRoot || dirname(dirname(firstTarget)), `.goalbuddy-preserved-extend-${process.pid}-${Date.now()}`);
   let hasExtensions = false;
   for (const target of targets) {
+    if (!target) continue;
     const source = join(target, "extend");
     if (!existsSync(source)) continue;
     mkdirSync(tempPath, { recursive: true });
@@ -1497,6 +1571,41 @@ function printInstallReport(report) {
   console.log(`  $${canonicalSkillName}`);
   console.log(`  ${canonicalCliName} extend`);
   console.log(`  ${legacyCliName} remains a temporary compatibility alias.`);
+}
+
+function printEverywhereInstallReport(report) {
+  const verb = report.command === "update" ? "Updated" : "Installed";
+  console.log("");
+  console.log(`${verb} ${canonicalProductName} for Codex and Claude Code ${report.package.current_version}`);
+  console.log("");
+
+  if (report.codex?.ok === false) {
+    console.log(`Codex: not completed (${report.codex.error})`);
+  } else if (report.codex) {
+    console.log(`Codex: plugin ${report.codex.version} enabled at ${report.codex.cache_path}`);
+    if (report.codex.preserved_extensions?.length) {
+      console.log(`Codex preserved extensions: ${report.codex.preserved_extensions.join(", ")}`);
+    }
+  }
+
+  if (report.claude?.ok === false) {
+    console.log(`Claude Code: not completed (${report.claude.error})`);
+  } else if (report.claude) {
+    console.log(`Claude Code: skill ${report.claude.skill.status} at ${report.claude.skill.path}`);
+    console.log(`Claude Code agents: ${summarizeStatuses(report.claude.agents)}`);
+    console.log(`Claude Code commands: ${summarizeStatuses(report.claude.commands)}`);
+  }
+
+  if (report.errors.length) {
+    console.log("");
+    console.log("One or more targets need attention:");
+    for (const error of report.errors) console.log(`  ${error.target}: ${error.error}`);
+  }
+
+  console.log("");
+  console.log("Next:");
+  console.log(`  Restart Codex, then use: $${canonicalSkillName}`);
+  console.log("  Restart Claude Code, then run: /goal-prep");
 }
 
 function summarizeStatuses(items) {

@@ -14,16 +14,17 @@ npm run check
 
 ## Local Install Test
 
-GoalBuddy installs into Codex by default and Claude Code with `--target claude`. Use a temporary home directory so local testing does not overwrite your real install:
+GoalBuddy installs into Codex and Claude Code by default. Use temporary home directories so local testing does not overwrite your real install:
 
 ```bash
-# Codex (default)
-tmp=$(mktemp -d)
-node internal/cli/goal-maker.mjs install --codex-home "$tmp"
-node internal/cli/goal-maker.mjs doctor --codex-home "$tmp"
-rm -rf "$tmp"
+# Both targets
+root=$(mktemp -d)
+node internal/cli/goal-maker.mjs --codex-home "$root/codex" --claude-home "$root/claude"
+node internal/cli/goal-maker.mjs doctor --target codex --codex-home "$root/codex"
+node internal/cli/goal-maker.mjs doctor --target claude --claude-home "$root/claude"
+rm -rf "$root"
 
-# Claude Code
+# One target
 tmp=$(mktemp -d)
 node internal/cli/goal-maker.mjs install --target claude --claude-home "$tmp"
 node internal/cli/goal-maker.mjs doctor --target claude --claude-home "$tmp"
@@ -48,7 +49,7 @@ GoalBuddy publishes from GitHub Actions with npm trusted publishing. See [RELEAS
 
 - Keep the runtime dependency-free unless there is a strong reason.
 - Keep `goalbuddy/` installable as the canonical skill directory.
-- Keep installation working for both Codex (default) and Claude Code.
+- Keep installation working for both Codex and Claude Code.
 - Keep `$goal-maker` working as a generated compatibility alias until the migration window ends.
 - Prefer small, reviewable changes.
 - Update README or templates when behavior changes.

@@ -324,6 +324,68 @@ test("default command installs the native Codex plugin", () => {
   }
 });
 
+test("default command installs Codex and Claude Code when both homes are provided", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const codexHome = join(root, "codex-home");
+    const claudeHome = join(root, "claude-home");
+    const fakeBin = fakeCodexBin(root);
+    const env = {
+      ...process.env,
+      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
+    };
+
+    const install = runGoalMaker(["--codex-home", codexHome, "--claude-home", claudeHome, "--json"], { env });
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const report = JSON.parse(install.stdout);
+    assert.equal(report.ok, true);
+    assert.equal(report.codex.installed, true);
+    assert.equal(report.claude.skill.status, "installed");
+    assert.equal(existsSync(join(codexHome, "config.toml")), true);
+    assert.equal(existsSync(join(claudeHome, "skills", "goalbuddy", "SKILL.md")), true);
+    assert.equal(existsSync(join(claudeHome, "agents", "goal-worker.md")), true);
+    assert.equal(existsSync(join(claudeHome, "commands", "goal-prep.md")), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("update refreshes Codex plugin and Claude Code install together", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const catalogPath = writeCatalog(root);
+    const codexHome = join(root, "codex-home");
+    const claudeHome = join(root, "claude-home");
+    const fakeBin = fakeCodexBin(root);
+    const env = {
+      ...process.env,
+      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
+    };
+
+    const install = runGoalMaker(["--codex-home", codexHome, "--claude-home", claudeHome, "--catalog-url", catalogPath, "--json"], { env });
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const installExtension = runGoalMaker(["extend", "install", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"], { env });
+    assert.equal(installExtension.status, 0, installExtension.stderr || installExtension.stdout);
+
+    writeFileSync(join(claudeHome, "agents", "goal-worker.md"), "stale\n");
+
+    const update = runGoalMaker(["update", "--codex-home", codexHome, "--claude-home", claudeHome, "--catalog-url", catalogPath, "--json"], { env });
+    assert.equal(update.status, 0, update.stderr || update.stdout);
+    const report = JSON.parse(update.stdout);
+    assert.equal(report.ok, true);
+    assert.deepEqual(report.codex.preserved_extensions, ["publish-github-projects"]);
+    assert.equal(report.claude.agents.find((agent) => agent.file === "goal-worker.md").status, "updated");
+
+    const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"], { env });
+    assert.equal(details.status, 0, details.stderr || details.stdout);
+    assert.equal(JSON.parse(details.stdout).extension.state.installed, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("extend shows catalog entries and reports local install state", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {

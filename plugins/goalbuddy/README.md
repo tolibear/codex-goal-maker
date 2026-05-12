@@ -1,6 +1,6 @@
 # GoalBuddy Plugin (Codex + Claude Code)
 
-GoalBuddy packages the canonical `goal-prep` skill as a plugin so teams can install the reusable workflow in either **Codex** (default) or **Claude Code**, while keeping the npm CLI for local setup, doctor checks, and extension management.
+GoalBuddy packages the canonical `goal-prep` skill as a plugin so teams can install the reusable workflow in **Codex** and **Claude Code**, while keeping the npm CLI for local setup, doctor checks, and extension management.
 
 ## What It Contains
 
@@ -21,17 +21,18 @@ npx goalbuddy doctor
 npx goalbuddy check-update
 ```
 
-## Native Codex Install (Default)
+## Install Both Targets
 
 ```bash
 npx goalbuddy
 ```
 
-This installs and enables the native Codex plugin in `~/.codex/`. Restart Codex, then use `$goal-prep`. The plugin bundles the local live board and GitHub Projects visual board backends so Goal Prep can offer a board immediately.
+This installs and enables the native Codex plugin in `~/.codex/`, then installs the GoalBuddy skill, Scout/Judge/Worker subagents, and `/goal-prep` slash command into `~/.claude/`.
 
-## Native Claude Code Install
+## Install One Target
 
 ```bash
+npx goalbuddy --target codex
 npx goalbuddy --target claude
 ```
 
@@ -45,8 +46,9 @@ Or install the npm package globally:
 
 ```bash
 npm i -g goalbuddy
-goalbuddy                  # installs for Codex
-goalbuddy --target claude  # installs for Claude Code
+goalbuddy                  # installs for Codex and Claude Code
+goalbuddy --target codex   # installs for Codex only
+goalbuddy --target claude  # installs for Claude Code only
 ```
 
 For local CLI testing before npm publish:
