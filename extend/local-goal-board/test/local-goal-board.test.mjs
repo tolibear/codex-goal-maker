@@ -55,7 +55,7 @@ test("parses CLI options", () => {
 });
 
 test("runs when installed under a symlinked temp path", () => {
-  const root = mkdtempSync("/tmp/goalbuddy-local-board-direct-");
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-local-board-direct-"));
   try {
     cpSync("extend/local-goal-board/scripts", join(root, "scripts"), { recursive: true });
     cpSync("extend/local-goal-board/assets", join(root, "assets"), { recursive: true });
@@ -106,6 +106,96 @@ test("serves board JSON and streams live state changes over SSE", async () => {
     } finally {
       await server.close();
     }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("ignores malformed deep receipt blocks outside the board fields it renders", () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-local-board-malformed-receipt-"));
+  const goalDir = join(root, "malformed-receipt");
+  try {
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    writeFileSync(join(goalDir, "state.yaml"), `version: 2
+goal:
+  title: "Malformed receipt board"
+  slug: "malformed-receipt-board"
+  kind: specific
+  tranche: "Board rendering should ignore unrelated malformed receipt details."
+  status: active
+active_task: T001
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Render the active board card."
+    verify:
+      - "npm test"
+    stop_if:
+      - "Verification fails twice."
+    receipt:
+      result: done
+      summary: "Task still has a visible receipt summary."
+      selected_task:
+        id: T099
+        category: verification
+        verify:
+      - "this malformed deep list should not take down the board"
+        stop_if:
+          - "Still parse the board."
+`);
+
+    const payload = createBoardPayload(goalDir);
+    assert.equal(payload.goal.title, "Malformed receipt board");
+    assert.equal(payload.tasks.length, 1);
+    assert.equal(payload.tasks[0].id, "T001");
+    assert.equal(payload.tasks[0].receipt.summary, "Task still has a visible receipt summary.");
+    assert.deepEqual(payload.tasks[0].verify, ["npm test"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("accepts legacy complete and completed task status aliases", () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-local-board-status-aliases-"));
+  const goalDir = join(root, "status-aliases");
+  try {
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    writeFileSync(join(goalDir, "state.yaml"), `version: 2
+goal:
+  title: "Status aliases"
+  slug: "status-aliases"
+  kind: specific
+  tranche: "Normalize old task statuses."
+  status: active
+active_task: T003
+tasks:
+  - id: T001
+    type: judge
+    assignee: Judge
+    status: complete
+    objective: "Already audited."
+    receipt: null
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: completed
+    objective: "Already implemented."
+    receipt: null
+  - id: T003
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Find the next slice."
+    receipt: null
+`);
+
+    const payload = createBoardPayload(goalDir);
+    assert.equal(payload.counts.completed, 2);
+    assert.equal(payload.tasks.find((task) => task.id === "T001").status, "done");
+    assert.equal(payload.tasks.find((task) => task.id === "T002").status, "done");
+    assert.equal(payload.tasks.find((task) => task.id === "T003").status, "active");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

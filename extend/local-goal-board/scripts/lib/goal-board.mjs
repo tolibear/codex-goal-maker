@@ -107,7 +107,7 @@ export function normalizeTask(task, index) {
   }
 
   const id = cleanText(task.id);
-  const status = cleanText(task.status);
+  const status = normalizeTaskStatus(task.status);
   if (!id) throw new GoalBoardError(`Task ${index + 1} is missing id.`);
   if (!VALID_STATUSES.has(status)) {
     throw new GoalBoardError(`Task ${id} has unsupported status "${status}".`);
@@ -254,14 +254,249 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function normalizeTaskStatus(value) {
+  const status = cleanText(value).toLowerCase();
+  if (status === "complete" || status === "completed") return "done";
+  return status;
+}
+
 export function parseGoalStateText(text) {
-  const lines = tokenizeYaml(text);
-  if (!lines.length) throw new GoalBoardError("Goal state is empty.");
-  const [value, nextIndex] = parseBlock(lines, 0, lines[0].indent);
-  if (nextIndex < lines.length) {
-    throw new GoalBoardError(`Could not parse line ${lines[nextIndex].number}.`);
+  try {
+    const lines = tokenizeYaml(text);
+    if (!lines.length) throw new GoalBoardError("Goal state is empty.");
+    const [value, nextIndex] = parseBlock(lines, 0, lines[0].indent);
+    if (nextIndex < lines.length) {
+      throw new GoalBoardError(`Could not parse line ${lines[nextIndex].number}.`);
+    }
+    return value;
+  } catch (error) {
+    if (!(error instanceof GoalBoardError) || !/Could not parse line|Expected key\/value pair/.test(error.message)) {
+      throw error;
+    }
+    return parseGoalBoardSubset(text);
   }
-  return value;
+}
+
+function parseGoalBoardSubset(text) {
+  const version = topScalar(text, "version");
+  if (version === null) throw new GoalBoardError("Goal state is empty.");
+
+  return {
+    version,
+    goal: {
+      title: nestedScalar(text, "goal", "title") ?? "",
+      slug: nestedScalar(text, "goal", "slug") ?? "",
+      kind: nestedScalar(text, "goal", "kind") ?? "",
+      tranche: nestedScalar(text, "goal", "tranche") ?? "",
+      status: nestedScalar(text, "goal", "status") ?? "",
+    },
+    active_task: topScalar(text, "active_task"),
+    tasks: parseTaskSubset(text),
+  };
+}
+
+function parseTaskSubset(text) {
+  const body = sectionText(text, "tasks");
+  if (!body) return [];
+
+  const lines = body.split(/\r?\n/);
+  const tasks = [];
+  let currentId = null;
+  let currentLines = [];
+
+  function finishCurrent() {
+    if (!currentId) return;
+    tasks.push(buildTaskSubset(currentId, currentLines.join("\n")));
+  }
+
+  for (const line of lines) {
+    const idMatch = line.match(/^\s{2}-\s+id:\s*(.+?)\s*$/);
+    if (idMatch) {
+      finishCurrent();
+      currentId = cleanYamlValue(idMatch[1]);
+      currentLines = [line];
+      continue;
+    }
+    if (currentId) currentLines.push(line);
+  }
+  finishCurrent();
+  return tasks;
+}
+
+function buildTaskSubset(id, raw) {
+  return {
+    id,
+    title: taskScalar(raw, "title") ?? "",
+    type: taskScalar(raw, "type") ?? "",
+    assignee: taskScalar(raw, "assignee") ?? "",
+    status: taskScalar(raw, "status") ?? "",
+    objective: taskScalar(raw, "objective") ?? "",
+    inputs: taskList(raw, "inputs"),
+    constraints: taskList(raw, "constraints"),
+    expected_output: taskList(raw, "expected_output"),
+    allowed_files: taskList(raw, "allowed_files"),
+    verify: taskList(raw, "verify"),
+    stop_if: taskList(raw, "stop_if"),
+    receipt: taskReceipt(raw),
+    subgoal: taskSubgoal(raw),
+  };
+}
+
+function taskScalar(raw, key) {
+  const match = raw.match(new RegExp(`^\\s{4}${key}:\\s*(.*?)\\s*$`, "m"));
+  return match ? cleanYamlValue(match[1]) : null;
+}
+
+function taskList(raw, key) {
+  const lines = raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => new RegExp(`^\\s{4}${key}:\\s*$`).test(line));
+  if (start === -1) return [];
+
+  const values = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^\s{4}\S/.test(lines[index])) break;
+    const item = lines[index].match(/^\s{6}-\s*(.+?)\s*$/);
+    if (item) values.push(cleanYamlValue(item[1]));
+  }
+  return values.filter((value) => value !== null);
+}
+
+function taskReceipt(raw) {
+  const lines = raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^\s{4}receipt:\s*/.test(line));
+  if (start === -1) return null;
+
+  const inline = cleanYamlValue(lines[start].replace(/^\s{4}receipt:\s*/, ""));
+  if (inline !== null && inline !== "object") return inline;
+  if (inline === null && !/^(\s{6}|\s{8})/.test(lines[start + 1] || "")) return null;
+
+  const receiptLines = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^\s{4}\S/.test(lines[index])) break;
+    receiptLines.push(lines[index]);
+  }
+  const receiptRaw = receiptLines.join("\n");
+  return {
+    result: receiptScalar(receiptRaw, "result"),
+    summary: receiptScalar(receiptRaw, "summary"),
+    decision: receiptScalar(receiptRaw, "decision"),
+    note: receiptScalar(receiptRaw, "note"),
+    changed_files: receiptList(receiptRaw, "changed_files"),
+    commands: receiptCommands(receiptRaw),
+    evidence: receiptList(receiptRaw, "evidence"),
+  };
+}
+
+function taskSubgoal(raw) {
+  const lines = raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^\s{4}subgoal:\s*/.test(line));
+  if (start === -1) return null;
+
+  const subgoalLines = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^\s{4}\S/.test(lines[index])) break;
+    subgoalLines.push(lines[index]);
+  }
+  const subgoalRaw = subgoalLines.join("\n");
+  return {
+    status: receiptScalar(subgoalRaw, "status"),
+    path: receiptScalar(subgoalRaw, "path"),
+    owner: receiptScalar(subgoalRaw, "owner"),
+    depth: receiptScalar(subgoalRaw, "depth"),
+    rollup_receipt: receiptScalar(subgoalRaw, "rollup_receipt"),
+  };
+}
+
+function receiptScalar(raw, key) {
+  const match = raw.match(new RegExp(`^\\s{6}${key}:\\s*(.*?)\\s*$`, "m"));
+  return match ? cleanYamlValue(match[1]) : null;
+}
+
+function receiptList(raw, key) {
+  const lines = raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => new RegExp(`^\\s{6}${key}:\\s*$`).test(line));
+  if (start === -1) return [];
+
+  const values = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^\s{6}\S/.test(lines[index])) break;
+    const item = lines[index].match(/^\s{8}-\s*(.+?)\s*$/);
+    if (item) values.push(cleanYamlValue(item[1]));
+  }
+  return values.filter((value) => value !== null);
+}
+
+function receiptCommands(raw) {
+  const lines = raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^\s{6}commands:\s*$/.test(line));
+  if (start === -1) return [];
+
+  const commands = [];
+  let current = null;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (/^\s{6}\S/.test(line)) break;
+
+    const stringMatch = line.match(/^\s{8}-\s*(.+?)\s*$/);
+    if (stringMatch) {
+      if (current) commands.push(current);
+      current = { cmd: cleanYamlValue(stringMatch[1]), status: "" };
+      continue;
+    }
+
+    const cmdMatch = line.match(/^\s{10}cmd:\s*(.+?)\s*$/);
+    if (cmdMatch) {
+      if (current) commands.push(current);
+      current = { cmd: cleanYamlValue(cmdMatch[1]), status: "" };
+      continue;
+    }
+
+    const statusMatch = line.match(/^\s{10}status:\s*(.+?)\s*$/);
+    if (statusMatch) {
+      if (!current) current = { cmd: "", status: "" };
+      current.status = cleanYamlValue(statusMatch[1]) || "";
+    }
+  }
+  if (current) commands.push(current);
+  return commands.filter((command) => command.cmd || command.status);
+}
+
+function topScalar(text, key) {
+  const match = text.match(new RegExp(`^${key}:\\s*(.*?)\\s*$`, "m"));
+  return match ? cleanYamlValue(match[1]) : null;
+}
+
+function nestedScalar(text, section, key) {
+  const body = sectionText(text, section);
+  if (!body) return null;
+  const match = body.match(new RegExp(`^\\s{2}${key}:\\s*(.*?)\\s*$`, "m"));
+  return match ? cleanYamlValue(match[1]) : null;
+}
+
+function sectionText(text, section) {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const start = lines.findIndex((line) => new RegExp(`^${section}:\\s*$`).test(line));
+  if (start === -1) return "";
+
+  const collected = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^\S/.test(lines[index])) break;
+    collected.push(lines[index]);
+  }
+  return collected.join("\n");
+}
+
+function cleanYamlValue(value) {
+  if (value === undefined || value === null) return null;
+  const trimmed = String(value).trim();
+  if (trimmed === "" || trimmed === "null" || trimmed === "~") return null;
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+  if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return unquote(trimmed);
+  }
+  return trimmed;
 }
 
 function tokenizeYaml(text) {
