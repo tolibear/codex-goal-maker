@@ -38,6 +38,9 @@ test("writes a minimal GoalBuddy web app into the goal directory", () => {
   assert.match(js, /card\.animate/);
   assert.match(js, /highlightMovingCards/);
   assert.match(js, /duration: changedColumn \? 980 : 520/);
+  assert.match(js, /if \(board\.error\)/);
+  assert.match(js, /Board error/);
+  assert.match(js, /GoalBuddy could not parse the current board state\./);
   assert.equal(logo.subarray(1, 4).toString("ascii"), "PNG");
 });
 

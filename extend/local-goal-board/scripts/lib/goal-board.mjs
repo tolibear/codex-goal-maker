@@ -1002,9 +1002,30 @@ function renderBoard(board) {
 
   const delay = movingTaskIds.size ? 260 : 0;
   window.setTimeout(() => {
+    if (board.error) {
+      boardEl.replaceChildren(renderBoardError(board.error));
+      return;
+    }
     boardEl.replaceChildren(...board.columns.map(renderColumn));
     animateCardMoves(previousPositions, movingTaskIds);
   }, delay);
+}
+
+function renderBoardError(message) {
+  const section = el("section", "column");
+  const header = el("header", "column-header");
+  const titleWrap = el("div");
+  titleWrap.append(
+    el("h2", "", "Board error"),
+    el("p", "", "GoalBuddy could not parse the current board state."),
+  );
+  header.append(titleWrap, el("span", "badge status-blocked", "Error"));
+
+  const list = el("div", "card-list");
+  list.append(el("p", "empty", message || "Unknown board error."));
+
+  section.append(header, list);
+  return section;
 }
 
 function renderColumn(column) {
