@@ -22,7 +22,8 @@
     "goal-prep/extend",
     "goal-prep/templates",
     "goalbuddy/SKILL.md",
-    "deep-intake/SKILL.md"
+    "deep-intake/SKILL.md",
+    "deep-intake/agents"
   ],
   "scripts": {
     "check": "node --check internal/cli/*.mjs goal-prep/scripts/*.mjs && node --test internal/test/*.test.mjs",

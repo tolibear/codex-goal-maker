@@ -63,6 +63,20 @@ tasks:
     status: active
     reasoning_hint: default # default | low | medium | high | xhigh
     objective: "Map repo purpose, architecture, verification commands, health signals, and improvement candidates."
+    # Optional vision_anchor binding (added v0.3.6). When non-null, this task carries a
+    # verbatim user-phrase from notes/raw-input.md whose semantic must survive into delivered
+    # artifacts. check-goal-state.mjs PRESENCE rule requires {term, check_condition.bash,
+    # check_condition.judge_fallback}; SATISFACTION rule requires receipt.vision_anchor_evidence
+    # for status: done. The bash check is the mechanical floor; judge_fallback is the
+    # semantic escape-hatch when the term survives implicitly. Set by /deep-intake or
+    # /goal-prep when a task maps to a numbered deliverable carrying a distinctive user-term.
+    # Schema:
+    # vision_anchor:
+    #   term: "<verbatim user-phrase from notes/raw-input.md>"
+    #   check_condition:
+    #     bash: "grep -qF '<verbatim term>' docs/goals/<slug>/notes/<expected-artifact>.md docs/goals/<slug>/goal.md"
+    #     judge_fallback: "If bash-grep fails, Judge assesses whether semantic of '<term>' is preserved in delivered artifacts. Returns evidence-text proving semantic survival OR rejects task."
+    vision_anchor: null
     inputs:
       - README.md
       - package.json
@@ -84,6 +98,7 @@ tasks:
     status: queued
     reasoning_hint: default
     objective: "Review Scout findings and choose the first safe implementation task."
+    vision_anchor: null # See T001 for schema.
     inputs:
       - "T001 receipt"
     constraints:
@@ -103,6 +118,7 @@ tasks:
     status: queued
     reasoning_hint: default
     objective: "Execute the first safe implementation task selected by Judge."
+    vision_anchor: null # See T001 for schema.
     allowed_files: []
     verify: []
     stop_if:
@@ -124,6 +140,7 @@ tasks:
     status: queued
     reasoning_hint: default
     objective: "Audit whether the implemented slice satisfies the original user outcome for this tranche."
+    vision_anchor: null # See T001 for schema.
     inputs:
       - "All done task receipts"
       - "Last verification"

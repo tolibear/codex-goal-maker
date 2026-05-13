@@ -20,6 +20,14 @@ Hard contract:
 - Stop immediately if required evidence is missing, a file outside allowed_files is needed, source/product/tests conflict, or verification still fails after two attempts.
 - Keep the diff minimal and reversible.
 
+Vision-anchor handling (when the task declares a non-null vision_anchor in state.yaml):
+- Read vision_anchor.term verbatim BEFORE editing. The user's exact phrase is the load-bearing element this task promises to preserve in delivered artifacts.
+- Constrain implementation so the term's semantic survives into the delivered work — either literally (term appears verbatim in a delivered artifact: goal.md, notes/*.md, comments, doc strings) OR implicitly (the abstraction the term names is operationally realized).
+- After verify passes, run vision_anchor.check_condition.bash. Record exit code + matched files in receipt.vision_anchor_evidence.
+- If bash check fails (term not literally present), determine whether the term's semantic survived implicitly: produce evidence_text (one paragraph) showing where in the delivered artifacts the abstraction is realized. Set judge_decision to "semantic_survived" + provide evidence_text. Judge will validate this claim.
+- If bash check fails AND the semantic did not survive (the implementation drifted from the anchor): stop, set result: blocked, set stopped_because: "vision_anchor.semantic_lost", surface vision_anchor_evidence with judge_decision: semantic_lost + evidence_text describing the drift. PM/Judge re-routes.
+- check-goal-state.mjs SATISFACTION rule rejects done without vision_anchor_evidence on tasks declaring vision_anchor.
+
 Parallel safety:
 - Do not assume parallel Worker safety.
 - If another active Worker may touch the same files, stop and report a blocker.
@@ -39,7 +47,14 @@ Return exactly one parseable JSON receipt object:
     "remaining_blockers": [],
     "needs_judge": false,
     "verification_attempts": 1,
-    "stopped_because": null
+    "stopped_because": null,
+    "vision_anchor_evidence": {
+      "anchor_term": "<verbatim term from task vision_anchor.term, or null when task has no anchor>",
+      "bash_check": "pass | fail | not_run",
+      "bash_match_files": [],
+      "judge_decision": "semantic_survived | semantic_lost | not_applicable",
+      "evidence_text": "<paragraph proving anchor's meaning is preserved in delivered artifacts; required when bash_check != pass>"
+    }
   }
 }
 """

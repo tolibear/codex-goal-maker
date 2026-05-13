@@ -96,12 +96,44 @@ function parseTasks() {
     assignee: taskScalar(task, "assignee"),
     status: taskScalar(task, "status"),
     objective: taskScalar(task, "objective"),
+    visionAnchor: taskVisionAnchor(task),
     allowedFiles: taskList(task, "allowed_files"),
     verify: taskList(task, "verify"),
     stopIf: taskList(task, "stop_if"),
     receipt: taskReceipt(task),
     subgoal: taskSubgoal(task),
   }));
+}
+
+function taskVisionAnchor(task) {
+  const lines = task.raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^\s{4}vision_anchor:\s*/.test(line));
+  if (start === -1) return { present: false, value: null };
+  const inline = clean(lines[start].replace(/^\s{4}vision_anchor:\s*/, ""));
+  // clean() returns null for both the literal string "null" and an empty inline value.
+  if (inline === null) {
+    if (!/^(\s{6}|\s{8})/.test(lines[start + 1] || "")) return { present: true, value: null };
+  }
+  const blockLines = [];
+  for (let i = start + 1; i < lines.length; i += 1) {
+    if (/^\s{4}\S/.test(lines[i])) break;
+    blockLines.push(lines[i]);
+  }
+  const raw = blockLines.join("\n");
+  const termMatch = raw.match(/^\s{6}term:\s*(.*?)\s*$/m);
+  const bashMatch = raw.match(/^\s{8}bash:\s*(.*?)\s*$/m);
+  const judgeFallbackMatch = raw.match(/^\s{8}judge_fallback:\s*(.*?)\s*$/m);
+  return {
+    present: true,
+    value: {
+      term: termMatch ? clean(termMatch[1]) : null,
+      checkCondition: {
+        bash: bashMatch ? clean(bashMatch[1]) : null,
+        judgeFallback: judgeFallbackMatch ? clean(judgeFallbackMatch[1]) : null,
+      },
+    },
+    raw,
+  };
 }
 
 function taskScalar(task, key) {
@@ -298,6 +330,17 @@ for (const task of tasks) {
     errors.push(`task ${task.id} status must be queued, active, blocked, or done`);
   }
   if (!task.objective) errors.push(`task ${task.id} missing objective`);
+  // vision_anchor PRESENCE rule: if non-null, require term + check_condition.bash + check_condition.judge_fallback.
+  if (task.visionAnchor && task.visionAnchor.present && task.visionAnchor.value !== null) {
+    const { term, checkCondition } = task.visionAnchor.value;
+    if (!term) errors.push(`task ${task.id} vision_anchor missing term (verbatim user-phrase from notes/raw-input.md)`);
+    if (!checkCondition || !checkCondition.bash) {
+      errors.push(`task ${task.id} vision_anchor missing check_condition.bash (mechanical grep)`);
+    }
+    if (!checkCondition || !checkCondition.judgeFallback) {
+      errors.push(`task ${task.id} vision_anchor missing check_condition.judge_fallback (semantic-survival escape-hatch)`);
+    }
+  }
 }
 
 if (tasks.length === 0) errors.push("tasks must contain at least one task");
@@ -378,6 +421,14 @@ for (const task of tasks) {
   }
   if (task.type === "judge" && task.status === "done" && hasReceipt && !task.receipt.has("decision")) {
     errors.push(`Judge receipt for ${task.id} missing decision`);
+  }
+  // vision_anchor SATISFACTION rule: any done task with a non-null vision_anchor must include
+  // receipt.vision_anchor_evidence proving anchor's semantic survived (either bash-PASS or
+  // judge semantic_survived assessment per anchor's check_condition).
+  if (task.status === "done" && hasReceipt && task.visionAnchor && task.visionAnchor.present && task.visionAnchor.value !== null) {
+    if (!task.receipt.has("vision_anchor_evidence")) {
+      errors.push(`done task ${task.id} declares vision_anchor but receipt missing vision_anchor_evidence (Worker/Scout/Judge must surface either bash-grep PASS or judge semantic_survived assessment per anchor's check_condition)`);
+    }
   }
 }
 

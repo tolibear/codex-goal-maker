@@ -1122,3 +1122,231 @@ checks:
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+// --- vision_anchor rules (v0.3.6) -------------------------------------------
+
+test("accepts a board with vision_anchor: null on every task (backward-compat)", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/objective: "Map the repo and identify improvement candidates."/, `objective: "Map the repo and identify improvement candidates."
+    vision_anchor: null`));
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor PRESENCE rule rejects when term is missing", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/    receipt: null\n  - id: T002/, `    vision_anchor:
+      check_condition:
+        bash: "grep -qF 'foo' notes/x.md"
+        judge_fallback: "If grep fails, Judge assesses semantic survival."
+    receipt: null
+  - id: T002`));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /vision_anchor missing term/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor PRESENCE rule rejects when check_condition.bash is missing", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/    receipt: null\n  - id: T002/, `    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        judge_fallback: "Semantic survival check."
+    receipt: null
+  - id: T002`));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /vision_anchor missing check_condition\.bash/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor PRESENCE rule rejects when check_condition.judge_fallback is missing", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/    receipt: null\n  - id: T002/, `    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        bash: "grep -qF 'natural' notes/x.md"
+    receipt: null
+  - id: T002`));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /vision_anchor missing check_condition\.judge_fallback/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor PRESENCE rule accepts a fully populated anchor", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/    receipt: null\n  - id: T002/, `    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        bash: "grep -qF 'natural' notes/x.md"
+        judge_fallback: "Judge asserts semantic survival when grep fails."
+    receipt: null
+  - id: T002`));
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor SATISFACTION rule rejects done task missing receipt.vision_anchor_evidence", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+
+goal:
+  title: "Satisfaction rule test"
+  slug: "satisfaction-rule-test"
+  kind: open_ended
+  tranche: "anchor-evidence-required-on-done"
+  status: active
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+active_task: T002
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Map the repo and identify improvement candidates."
+    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        bash: "grep -qF 'natural' notes/d1.md"
+        judge_fallback: "Judge semantic survival."
+    inputs:
+      - README.md
+    receipt:
+      result: done
+      summary: "Mapped. Anchor candidates surfaced."
+      evidence:
+        - README.md
+  - id: T002
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Continue mapping the repo."
+    inputs:
+      - package.json
+    receipt: null
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /vision_anchor.*receipt missing vision_anchor_evidence/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor SATISFACTION rule accepts done task with receipt.vision_anchor_evidence", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+
+goal:
+  title: "Satisfaction rule test"
+  slug: "satisfaction-rule-test-ok"
+  kind: open_ended
+  tranche: "anchor-evidence-present-on-done"
+  status: active
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+active_task: T002
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Map the repo and identify improvement candidates."
+    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        bash: "grep -qF 'natural' notes/d1.md"
+        judge_fallback: "Judge semantic survival."
+    inputs:
+      - README.md
+    receipt:
+      result: done
+      summary: "Mapped. Anchor candidates surfaced."
+      evidence:
+        - README.md
+      vision_anchor_evidence:
+        anchor_term: "natural Rückvollziehung"
+        bash_check: pass
+        bash_match_files:
+          - README.md
+        judge_decision: not_applicable
+  - id: T002
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Continue mapping the repo."
+    inputs:
+      - package.json
+    receipt: null
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

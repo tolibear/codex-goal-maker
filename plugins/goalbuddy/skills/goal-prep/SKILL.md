@@ -280,6 +280,7 @@ type: scout | judge | worker | pm
 assignee: Scout | Judge | Worker | PM
 status: queued | active | blocked | done
 objective: "<one sentence>"
+vision_anchor: null # optional — see Vision Anchors section
 inputs: []
 constraints: []
 expected_output: []
@@ -295,6 +296,42 @@ stop_if: []
 ```
 
 The PM owns the board. Scout, Judge, and Worker return receipts; they do not select the next active task or mark the goal complete.
+
+## Vision Anchors
+
+(Added v0.3.6 — optional, backward-compatible.)
+
+When the user's input carries distinctive verbatim phrasing — coined terms, load-bearing abstractions, named concepts they specifically want preserved — the prep stage can bind that phrasing to individual tasks as a `vision_anchor`. The anchor is the user's exact phrase plus a Hybrid check (mechanical bash-grep floor + semantic Judge-fallback ceiling) ensuring the task's delivered work preserves the abstraction the phrase names.
+
+Why it exists: without an anchor, a task can pass its `verify` commands while drifting from the meaning the user wanted preserved. The audit script confirms code shape; the anchor confirms intent shape.
+
+Schema:
+
+```yaml
+- id: T003
+  type: worker
+  objective: "<one sentence>"
+  vision_anchor:
+    term: "<verbatim user phrase from notes/raw-input.md — exact wording>"
+    check_condition:
+      bash: "grep -qF '<verbatim term>' docs/goals/<slug>/notes/<expected-artifact>.md docs/goals/<slug>/goal.md"
+      judge_fallback: "If bash-grep fails, Judge assesses whether semantic of '<term>' is preserved in delivered artifacts. Returns evidence-text proving semantic survival OR rejects task."
+  allowed_files: []
+  verify: []
+  stop_if: []
+  receipt: null
+```
+
+`check-goal-state.mjs` enforces two rules when `vision_anchor` is non-null:
+
+- **PRESENCE** (per task, all states): requires `term`, `check_condition.bash`, `check_condition.judge_fallback` to be non-empty.
+- **SATISFACTION** (only when `status: done`): requires `receipt.vision_anchor_evidence` to be present. The role agent (Worker / Scout / Judge) populates this with the bash-check exit code, matched files, and — when bash fails — a Judge-validated `semantic_survived` assessment + evidence text.
+
+Setting `vision_anchor: null` (the default) opts the task out — the rules do not fire and no receipt evidence is required.
+
+Subgoal inheritance (v0.3.5+): when a parent task launches a depth-1 child board via `subgoal`, the child tasks inherit the parent's `vision_anchor` unless they explicitly override it. The child board's checker resolves inheritance: a child task with `vision_anchor: null` and a parent with non-null anchor is treated as carrying the parent's anchor for SATISFACTION purposes. Explicit override (child task sets its own `vision_anchor: { term: ..., check_condition: ... }`) replaces the inherited binding entirely.
+
+Vision anchors are intentionally optional. They add value when the user's input has distinctive load-bearing terminology; they add overhead without benefit for generic boilerplate goals. The intake compiler (or `deep-intake` companion) decides whether to bind anchors based on the input shape and verbatim-term density of the user's source material.
 
 ## Seed Boards
 
@@ -411,6 +448,29 @@ receipt:
       status: pass
   summary: "invoice.paid now routes through eventRouter.dispatch; regression test added."
 ```
+
+When a task declares a non-null `vision_anchor`, the role-agent's receipt also carries `vision_anchor_evidence`. Worker example:
+
+```yaml
+receipt:
+  result: done
+  changed_files:
+    - src/router/event-bus.ts
+  commands:
+    - cmd: npm test -- test/router/event-bus.test.ts
+      status: pass
+  summary: "<=120 words>"
+  vision_anchor_evidence:
+    anchor_term: "natürliche Rückvollziehung"
+    bash_check: pass
+    bash_match_files:
+      - src/router/event-bus.ts
+      - docs/goals/<slug>/notes/d3-evidence.md
+    judge_decision: not_applicable
+    evidence_text: ""
+```
+
+When `bash_check: fail`, the Worker must surface a `semantic_survived` assessment + `evidence_text` paragraph proving the abstraction the term names is operationally present in the delivered artifacts. Judge then validates that claim in its own receipt's `vision_anchor_evidence` (`validation: approve | reject` + rationale). The SATISFACTION rule in `check-goal-state.mjs` rejects `status: done` when `vision_anchor` is non-null and `vision_anchor_evidence` is absent.
 
 For long findings or decisions, write `notes/<task-id>-<slug>.md` and point to it:
 

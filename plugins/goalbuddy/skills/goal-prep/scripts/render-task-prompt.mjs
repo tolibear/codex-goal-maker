@@ -177,6 +177,17 @@ function receiptSchema(role) {
       summary: "<=120 words",
       remaining_blockers: [],
       needs_judge: false,
+      // Required when this task declares a non-null vision_anchor. The Worker MUST surface
+      // either bash-PASS evidence (grep verbatim term in delivered artifact succeeded) OR
+      // judge_decision: semantic_survived + evidence-text proving semantic survival despite
+      // bash-grep miss. check-goal-state.mjs SATISFACTION rule rejects done without this.
+      vision_anchor_evidence: {
+        anchor_term: "<verbatim term from vision_anchor.term>",
+        bash_check: "pass | fail | not_run",
+        bash_match_files: [],
+        judge_decision: "semantic_survived | semantic_lost | not_applicable",
+        evidence_text: "<paragraph proving anchor's meaning is preserved in delivered artifacts; required when bash_check != pass>",
+      },
     };
   }
   if (role === "judge") {
@@ -187,6 +198,15 @@ function receiptSchema(role) {
       next_allowed_task: null,
       blocked_tasks: [],
       required_board_updates: [],
+      // Judge surfaces vision_anchor validation for the task it's auditing. When validating
+      // a Worker receipt's vision_anchor_evidence, Judge confirms or rejects the
+      // semantic_survived claim. Final T999 audit MUST roll up per-task anchor verdicts.
+      vision_anchor_evidence: {
+        anchor_term: "<verbatim term>",
+        validation: "approve | reject",
+        rationale: "<one-paragraph: why anchor survives or fails per delivered artifacts>",
+        gaps: [],
+      },
     };
   }
   return {
@@ -196,6 +216,13 @@ function receiptSchema(role) {
     facts: [],
     contradictions: [],
     ambiguity_requiring_judge: [],
+    // Scout surfaces evidence of where the anchor term appears in artifacts under audit.
+    vision_anchor_evidence: {
+      anchor_term: "<verbatim term>",
+      occurrences: [{ file: "<path>", line: 0, excerpt: "<verbatim context>" }],
+      semantic_assessment: "literal_present | implicit_present | absent | not_applicable",
+      notes: "<observations about anchor's preservation across the scouted surface>",
+    },
   };
 }
 

@@ -19,6 +19,14 @@ Hard contract:
 - Reject completion unless the full original outcome is mapped to receipts and current verification.
 - Do not choose the active task or mutate state.
 
+Vision-anchor handling (when the task under audit, or any task this Judge is rolling up, declared a non-null vision_anchor):
+- Validate the Worker/Scout receipt's vision_anchor_evidence: confirm bash_check status matches actual artifact state by re-running vision_anchor.check_condition.bash if practical (read-only — no edits).
+- If receipt claims judge_decision: semantic_survived, read the evidence_text + the cited delivered artifacts. Confirm the anchor's semantic is genuinely realized — not just rhetorically referenced. Reject the claim if the abstraction the term names is not operationally present.
+- A passing bash_check is NOT automatic approval. Even when the term appears literally, validate it appears in a meaningful place (artifact body / spec / docstring / decision-record) not just in a comment that says "this addresses X term".
+- For T999 final audits: roll up per-task vision_anchor verdicts. full_outcome_complete: true REQUIRES every task with a non-null vision_anchor to have receipt.vision_anchor_evidence.judge_decision in {semantic_survived, not_applicable} AND no anchor-related blockers outstanding.
+- Surface your validation in the Judge receipt's vision_anchor_evidence field with: anchor_term, validation (approve | reject), rationale, gaps.
+- Reject the next task transition if vision_anchor evidence is missing, semantically false, or contradicted by the artifacts you read.
+
 Return exactly one parseable JSON receipt object:
 
 {
@@ -35,7 +43,13 @@ Return exactly one parseable JSON receipt object:
     "parallel_safety": null,
     "blocked_tasks": [],
     "missing_evidence": [],
-    "required_board_updates": []
+    "required_board_updates": [],
+    "vision_anchor_evidence": {
+      "anchor_term": "<verbatim term, or null when no anchor>",
+      "validation": "approve | reject",
+      "rationale": "<one paragraph: why anchor survives or fails per delivered artifacts>",
+      "gaps": []
+    }
   }
 }
 """

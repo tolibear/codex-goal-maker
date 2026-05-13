@@ -75,7 +75,8 @@ board:
 - likely misfire;
 - disappointment or anti-pattern fences;
 - scope and non-goals;
-- first board shape and safest initial active task.
+- first board shape and safest initial active task;
+- per-deliverable vision anchors (when the user's input carries distinctive verbatim phrasing — see Verbatim-Term Mining below).
 
 Ask this once during the route:
 
@@ -85,6 +86,39 @@ What would disappoint you -- how would you notice that /goal reported done but b
 
 Convert the answer into `likely_misfire`, Anti-Patterns, and final-audit
 rejection criteria.
+
+### Verbatim-Term Mining
+
+The Intake Loop is the right place to mine the user's distinctive verbatim
+phrasing — coined terms, load-bearing abstractions, named concepts they
+specifically want preserved through `/goal` execution. Without anchored
+terminology, a task can pass its `verify` commands while drifting from the
+meaning the user wanted preserved. Mining is integral to deep alignment, not
+optional decoration.
+
+During each sparring turn:
+
+1. When the user uses a distinctive phrase (a coined term, a non-standard
+   compound, an emotionally weighted word), capture it verbatim into
+   `notes/discussion.md` as part of the resolution. Reflect the decision back
+   in the user's own wording — do not paraphrase. ("OK — so the *Harnessmitte*
+   is `onari-ambient`, not 'the harness core layer'.")
+2. After enough sparring to draft the deliverables, propose a mapping from
+   distinctive verbatim terms to specific tasks. Each task that maps to a
+   numbered deliverable should carry one anchor term — the load-bearing phrase
+   that deliverable promises to preserve.
+3. Ask the user to confirm or adjust the mapping in one AskUserQuestion turn:
+   "I'm binding 'X' as the anchor of D2 and 'Y' as the anchor of D3 — meaning
+   if implementation drifts from those abstractions, the deliverables aren't
+   done even if verify commands exit 0. Confirm or adjust?"
+
+If a candidate deliverable has no distinctive verbatim anchor — only generic
+wording — that is a signal the deliverable is too generic. Keep probing the
+sparring loop until a load-bearing term surfaces, or split the deliverable
+into two more-anchored ones, or accept it without an anchor (set
+`vision_anchor: null` in state.yaml; the SATISFACTION rule will not fire).
+Generic deliverables without anchors are still valid — but they lose the
+per-deliverable vision-fidelity gate that `check-goal-state.mjs` enforces.
 
 ## Grounding Reads
 
@@ -124,7 +158,10 @@ Compile Deep Intake artifacts through the current Goal Prep compiler surface:
    memory.
 1. Fill `goal.md` from the Goal Prep charter template and embed Deep Intake
    decisions in the normal Intake Summary, constraints, completion proof, likely
-   misfire, and anti-pattern fences.
+   misfire, and anti-pattern fences. For each numbered deliverable, embed an
+   explicit `Vision-Anchor: "<verbatim user phrase>"` inline clause when an
+   anchor was bound during Verbatim-Term Mining. Deliverables without anchors
+   omit the clause and rely on the standard verify/audit gates.
 2. Add a `## Goal Prep Compiler Source` section to `goal.md`. It must state the
    board was compiled against the current sibling `goal-prep/SKILL.md` and Goal
    Prep templates/checkers.
@@ -135,12 +172,21 @@ Compile Deep Intake artifacts through the current Goal Prep compiler surface:
 4. Add a `## Deep Intake Trace` section to `goal.md`. It maps the user's
    important wording and resolved discussion decisions to the concrete board
    choices they produced: completion proof, likely misfire, non-goals, first
-   validation task, and final audit fences.
+   validation task, final audit fences, and the per-task `vision_anchor`
+   bindings produced by Verbatim-Term Mining. The Trace is the audit surface
+   for "what user-phrase routed to which board element?"
 5. Fill `state.yaml` from the Goal Prep state template with exactly one active
-   task, role-tagged tasks, truthful agent states, and normal GoalBuddy receipts.
+   task, role-tagged tasks, truthful agent states, and normal GoalBuddy
+   receipts. For each task that maps to a numbered deliverable with a confirmed
+   anchor, populate `vision_anchor` with `{term, check_condition.bash,
+   check_condition.judge_fallback}` — see goal-prep `## Vision Anchors`
+   section for the schema. For tasks without anchors (typically T001 Scout
+   discovery, generic Workers, T999 final audit), set `vision_anchor: null`.
 6. Add only the Deep Intake notes under `notes/`; do not add a new root-level
    artifact type.
-7. Run the normal state checker:
+7. Run the normal state checker (it enforces the vision_anchor PRESENCE rule
+   on every task with a non-null anchor; SATISFACTION rule activates per-task
+   only when `status: done`):
 
    ```bash
    node ../goal-prep/scripts/check-goal-state.mjs docs/goals/<slug>/state.yaml
@@ -167,7 +213,9 @@ Before printing the handoff, write `notes/quality.md` and confirm:
 - likely misfire and Anti-Patterns are present;
 - scope and non-goals are explicit;
 - `state.yaml` routes Deep Intake notes into the first validation task and `T999`;
-- `check-goal-state.mjs docs/goals/<slug>/state.yaml` passes when the checker is available.
+- per-deliverable `vision_anchor` bindings (when present) trace verbatim back to entries in `notes/discussion.md` — every anchor.term must appear in raw-input.md or discussion.md;
+- the Deep Intake Trace section documents the deliverable→anchor mapping completely;
+- `check-goal-state.mjs docs/goals/<slug>/state.yaml` passes when the checker is available — this includes the vision_anchor PRESENCE rule;
 - `check-deep-intake-artifacts.mjs docs/goals/<slug>` passes when the checker is available.
 
 If the gate fails, do not print `/goal`. Ask another intake question or repair
@@ -175,11 +223,28 @@ the artifacts first.
 
 ## Handoff
 
-Print the board path, a short quality summary, and the exact command:
+Print the board path, a short quality summary, and the exact command. Use the
+**complete** form (with the audit-script stop condition and turn cap) when the
+prep stage generated a per-goal audit script — this is the form that gives
+Claude Code's fresh Haiku evaluator a transcript-demonstrable stop signal and
+prevents both premature stop and runaway overbaking:
+
+```text
+/goal Follow docs/goals/<slug>/goal.md until "<audit command>" exits 0, or stop after <N> turns.
+```
+
+When no per-goal audit script was generated (research/audit-shape goals, or
+charters that only seed a Scout task), the bare form is acceptable:
 
 ```text
 /goal Follow docs/goals/<slug>/goal.md.
 ```
+
+Pick `<N>` to match the goal's shape: 40 turns for research/plan-shape goals,
+60 turns for tactical code-execution goals, ≤20 turns for narrow single-slice
+work. Calibrate to the deliverable count and the METR reliability horizon of
+the executor model (~5h Opus 4.5 50% reliability). Larger spans should split
+into sequenced tranches rather than push past the cliff in one cook.
 
 Then ask whether to start `/goal`, refine the board, or stop. Do not start
 `/goal` automatically.
