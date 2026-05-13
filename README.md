@@ -44,6 +44,25 @@ In Claude Code, use:
 
 Goal Prep creates the board and prints the exact `/goal` command to run next. That is the whole path.
 
+## Codex Install Model
+
+For Codex, the canonical install is the native plugin plus bundled agents:
+
+```text
+~/.codex/plugins/cache/goalbuddy/goalbuddy/<version>/
+~/.codex/agents/goal_judge.toml
+~/.codex/agents/goal_scout.toml
+~/.codex/agents/goal_worker.toml
+```
+
+The Codex plugin bundles `$goal-prep`; a clean Codex install should not need personal `~/.codex/skills/goalbuddy` or `~/.codex/skills/goal-maker` folders. Native Codex `/goal` is a separate OpenAI-gated feature. GoalBuddy prepares local boards and handoff prompts for it, but it does not enable or replace native `/goal`.
+
+To verify a Codex install:
+
+```bash
+npx goalbuddy doctor --target codex --goal-ready
+```
+
 ## What It Creates
 
 ```text

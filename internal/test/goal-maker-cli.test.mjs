@@ -76,6 +76,14 @@ function fakeCodexBin(root, { loggedIn = true, goalsEnabled = true } = {}) {
   return bin;
 }
 
+function fakeCodexEnv(root, options = {}) {
+  const fakeBin = fakeCodexBin(root, options);
+  return {
+    ...process.env,
+    PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
+  };
+}
+
 function sha256(text) {
   return createHash("sha256").update(text).digest("hex");
 }
@@ -142,47 +150,53 @@ function writeCatalog(root) {
 }
 
 test("doctor fails when a required bundled agent is missing", () => {
-  const codexHome = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
-    const install = runGoalMaker(["install", "--codex-home", codexHome]);
+    const codexHome = join(root, "codex-home");
+    const env = fakeCodexEnv(root);
+    const install = runGoalMaker(["install", "--codex-home", codexHome], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
 
     unlinkSync(join(codexHome, "agents", "goal_worker.toml"));
 
-    const doctor = runGoalMaker(["doctor", "--codex-home", codexHome]);
+    const doctor = runGoalMaker(["doctor", "--codex-home", codexHome], { env });
     assert.equal(doctor.status, 1, doctor.stderr || doctor.stdout);
 
     const report = JSON.parse(doctor.stdout);
-    assert.equal(report.skill_installed, true);
-    assert.equal(report.compatibility_skill_installed, true);
-    assert.match(report.skill_path, pathSuffixPattern("skills", "goalbuddy", "SKILL.md"));
-    assert.match(report.compatibility_skill_path, pathSuffixPattern("skills", "goal-maker", "SKILL.md"));
+    assert.equal(report.codex_install_model, "plugin");
+    assert.equal(report.plugin.skill_installed, true);
+    assert.equal(report.plugin.enabled, true);
+    assert.equal(report.skill_installed, false);
+    assert.equal(report.compatibility_skill_installed, false);
     assert.deepEqual(report.missing_agents, ["goal_worker.toml"]);
+    assert.match(report.errors.join("\n"), /Missing GoalBuddy Codex agent: goal_worker\.toml/);
   } finally {
-    rmSync(codexHome, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
   }
 });
 
 test("doctor fails when a bundled agent is stale and update refreshes it", () => {
-  const codexHome = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
-    const install = runGoalMaker(["install", "--codex-home", codexHome]);
+    const codexHome = join(root, "codex-home");
+    const env = fakeCodexEnv(root);
+    const install = runGoalMaker(["install", "--codex-home", codexHome], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
 
     writeFileSync(join(codexHome, "agents", "goal_worker.toml"), "stale\n");
 
-    const staleDoctor = runGoalMaker(["doctor", "--codex-home", codexHome]);
+    const staleDoctor = runGoalMaker(["doctor", "--codex-home", codexHome], { env });
     assert.equal(staleDoctor.status, 1, staleDoctor.stderr || staleDoctor.stdout);
     assert.deepEqual(JSON.parse(staleDoctor.stdout).stale_agents, ["goal_worker.toml"]);
 
-    const update = runGoalMaker(["update", "--codex-home", codexHome]);
+    const update = runGoalMaker(["update", "--codex-home", codexHome], { env });
     assert.equal(update.status, 0, update.stderr || update.stdout);
 
-    const refreshedDoctor = runGoalMaker(["doctor", "--codex-home", codexHome]);
+    const refreshedDoctor = runGoalMaker(["doctor", "--codex-home", codexHome], { env });
     assert.equal(refreshedDoctor.status, 0, refreshedDoctor.stderr || refreshedDoctor.stdout);
     assert.deepEqual(JSON.parse(refreshedDoctor.stdout).stale_agents, []);
   } finally {
-    rmSync(codexHome, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
   }
 });
 
@@ -190,11 +204,7 @@ test("doctor reports native goal runtime readiness and supports strict goal-read
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
     const codexHome = join(root, "codex-home");
-    const fakeBin = fakeCodexBin(root, { loggedIn: false, goalsEnabled: false });
-    const env = {
-      ...process.env,
-      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
-    };
+    const env = fakeCodexEnv(root, { loggedIn: false, goalsEnabled: false });
 
     const install = runGoalMaker(["install", "--codex-home", codexHome], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
@@ -232,16 +242,18 @@ test("bundled agent contracts stay strict and receipt-shaped", () => {
 });
 
 test("install bundles core visual board backends into the skill", () => {
-  const codexHome = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
-    const install = runGoalMaker(["install", "--codex-home", codexHome, "--json"]);
+    const codexHome = join(root, "codex-home");
+    const env = fakeCodexEnv(root);
+    const install = runGoalMaker(["install", "--codex-home", codexHome, "--json"], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
 
-    const skillRoot = join(codexHome, "skills", "goalbuddy");
+    const skillRoot = join(JSON.parse(install.stdout).cache_path, "skills", "goalbuddy");
     assert.equal(existsSync(join(skillRoot, "extend", "local-goal-board", "scripts", "local-goal-board.mjs")), true);
     assert.equal(existsSync(join(skillRoot, "extend", "github-projects", "scripts", "sync-github-project.mjs")), true);
   } finally {
-    rmSync(codexHome, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
   }
 });
 
@@ -610,6 +622,16 @@ test("plugin install adds marketplace, caches plugin, and enables config", () =>
     const config = readFileSync(join(codexHome, "config.toml"), "utf8");
     assert.match(config, /\[plugins\."goalbuddy@goalbuddy"\]/);
     assert.match(config, /enabled = true/);
+
+    const doctor = runGoalMaker(["doctor", "--target", "codex", "--goal-ready", "--codex-home", codexHome], { env });
+    assert.equal(doctor.status, 0, doctor.stderr || doctor.stdout);
+    const doctorReport = JSON.parse(doctor.stdout);
+    assert.equal(doctorReport.codex_install_model, "plugin");
+    assert.equal(doctorReport.plugin.skill_installed, true);
+    assert.equal(doctorReport.skill_installed, false);
+    assert.equal(doctorReport.compatibility_skill_installed, false);
+    assert.deepEqual(doctorReport.warnings, []);
+    assert.deepEqual(doctorReport.errors, []);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -701,14 +723,11 @@ test("plugin install output points to Goal Prep and bundled visual boards", () =
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
     const codexHome = join(root, "codex-home");
-    const fakeBin = fakeCodexBin(root);
-    const env = {
-      ...process.env,
-      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
-    };
+    const env = fakeCodexEnv(root);
 
     const install = runGoalMaker(["plugin", "install", "--codex-home", codexHome], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
+    assert.match(install.stdout, /Agents: 3 installed/);
     assert.match(install.stdout, /\$goal-prep/);
     assert.match(install.stdout, /Bundled visual boards/);
     assert.match(install.stdout, /npx goalbuddy board docs\/goals\/<slug>/);
@@ -718,15 +737,32 @@ test("plugin install output points to Goal Prep and bundled visual boards", () =
   }
 });
 
+test("--help on mutating commands prints help without installing", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const codexHome = join(root, "codex-home");
+    const claudeHome = join(root, "claude-home");
+
+    const pluginHelp = runGoalMaker(["plugin", "install", "--help", "--codex-home", codexHome]);
+    assert.equal(pluginHelp.status, 0, pluginHelp.stderr || pluginHelp.stdout);
+    assert.match(pluginHelp.stdout, /GoalBuddy Plugin/);
+    assert.equal(existsSync(codexHome), false);
+
+    const updateHelp = runGoalMaker(["update", "--help", "--codex-home", codexHome, "--claude-home", claudeHome]);
+    assert.equal(updateHelp.status, 0, updateHelp.stderr || updateHelp.stdout);
+    assert.match(updateHelp.stdout, /goalbuddy update/);
+    assert.equal(existsSync(codexHome), false);
+    assert.equal(existsSync(claudeHome), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("default command installs the native Codex plugin", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
     const codexHome = join(root, "codex-home");
-    const fakeBin = fakeCodexBin(root);
-    const env = {
-      ...process.env,
-      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
-    };
+    const env = fakeCodexEnv(root);
 
     const install = runGoalMaker(["--codex-home", codexHome, "--json"], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
@@ -734,6 +770,9 @@ test("default command installs the native Codex plugin", () => {
     const report = JSON.parse(install.stdout);
     assert.equal(report.installed, true);
     assert.equal(report.plugin, "goalbuddy@goalbuddy");
+    assert.equal(report.agents.length, 3);
+    assert.equal(existsSync(join(codexHome, "skills", "goalbuddy", "SKILL.md")), false);
+    assert.equal(existsSync(join(codexHome, "agents", "goal_worker.toml")), true);
 
     const config = readFileSync(join(codexHome, "config.toml"), "utf8");
     assert.match(config, /\[plugins\."goalbuddy@goalbuddy"\]/);
@@ -748,11 +787,7 @@ test("default command installs Codex and Claude Code when both homes are provide
   try {
     const codexHome = join(root, "codex-home");
     const claudeHome = join(root, "claude-home");
-    const fakeBin = fakeCodexBin(root);
-    const env = {
-      ...process.env,
-      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
-    };
+    const env = fakeCodexEnv(root);
 
     const install = runGoalMaker(["--codex-home", codexHome, "--claude-home", claudeHome, "--json"], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
@@ -795,11 +830,7 @@ test("update refreshes Codex plugin and Claude Code install together", () => {
     const catalogPath = writeCatalog(root);
     const codexHome = join(root, "codex-home");
     const claudeHome = join(root, "claude-home");
-    const fakeBin = fakeCodexBin(root);
-    const env = {
-      ...process.env,
-      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
-    };
+    const env = fakeCodexEnv(root);
 
     const install = runGoalMaker(["--codex-home", codexHome, "--claude-home", claudeHome, "--catalog-url", catalogPath, "--json"], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
@@ -905,8 +936,9 @@ test("extend installs all catalog extensions", () => {
   try {
     const catalogPath = writeCatalog(root);
     const codexHome = join(root, "codex-home");
+    const env = fakeCodexEnv(root);
 
-    const installCore = runGoalMaker(["install", "--codex-home", codexHome]);
+    const installCore = runGoalMaker(["install", "--codex-home", codexHome], { env });
     assert.equal(installCore.status, 0, installCore.stderr || installCore.stdout);
 
     const dryRun = runGoalMaker(["extend", "install", "--all", "--catalog-url", catalogPath, "--codex-home", codexHome, "--dry-run", "--json"]);
@@ -936,11 +968,7 @@ test("extend installs into the plugin skill after default plugin install", () =>
   try {
     const catalogPath = writeCatalog(root);
     const codexHome = join(root, "codex-home");
-    const fakeBin = fakeCodexBin(root);
-    const env = {
-      ...process.env,
-      PATH: `${fakeBin}${delimiter}${process.env.PATH}`,
-    };
+    const env = fakeCodexEnv(root);
 
     const installPlugin = runGoalMaker(["--codex-home", codexHome, "--json"], { env });
     assert.equal(installPlugin.status, 0, installPlugin.stderr || installPlugin.stdout);
@@ -960,23 +988,21 @@ test("extend installs into the plugin skill after default plugin install", () =>
   }
 });
 
-test("install reports extension discovery in json mode", () => {
+test("install reports Codex plugin state in json mode", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
     const catalogPath = writeCatalog(root);
     const codexHome = join(root, "codex-home");
-    const result = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    const env = fakeCodexEnv(root);
+    const result = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"], { env });
     assert.equal(result.status, 0, result.stderr || result.stdout);
 
     const report = JSON.parse(result.stdout);
-    assert.equal(report.command, "install");
-    assert.equal(report.package.name, "goalbuddy");
-    assert.equal(report.skill.status, "installed");
-    assert.match(report.skill.path, pathSuffixPattern("skills", "goalbuddy"));
-    assert.match(report.skill.compatibility_path, pathSuffixPattern("skills", "goal-maker"));
-    assert.equal(report.extensions.available_count, 1);
-    assert.equal(report.extensions.available[0].id, "publish-github-projects");
-    assert.equal(report.extensions.recommended.length, 0);
+    assert.equal(report.installed, true);
+    assert.equal(report.plugin, "goalbuddy@goalbuddy");
+    assert.match(report.cache_path, pathSuffixPattern("plugins", "cache", "goalbuddy", "goalbuddy", packageVersion));
+    assert.equal(report.agents.length, 3);
+    assert.equal(existsSync(join(codexHome, "skills", "goalbuddy")), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -989,6 +1015,7 @@ test("legacy goal-maker invocation prints rebrand notice only for human output",
     const env = {
       ...process.env,
       GOALBUDDY_INVOKED_AS: "goal-maker",
+      PATH: `${fakeCodexBin(root)}${delimiter}${process.env.PATH}`,
     };
 
     const human = runGoalMaker(["--help"], { env });
@@ -1002,7 +1029,7 @@ test("legacy goal-maker invocation prints rebrand notice only for human output",
     assert.equal(json.status, 0, json.stderr || json.stdout);
     assert.equal(json.stderr, "");
     const report = JSON.parse(json.stdout);
-    assert.equal(report.package.name, "goalbuddy");
+    assert.equal(report.plugin, "goalbuddy@goalbuddy");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -1013,6 +1040,7 @@ test("install migrates legacy skill extensions and metadata to GoalBuddy paths",
   try {
     const catalogPath = writeCatalog(root);
     const codexHome = join(root, "codex-home");
+    const env = fakeCodexEnv(root);
     const legacySkill = join(codexHome, "skills", "goal-maker");
     const legacyExtension = join(legacySkill, "extend", "legacy-only");
     mkdirSync(legacyExtension, { recursive: true });
@@ -1022,19 +1050,18 @@ test("install migrates legacy skill extensions and metadata to GoalBuddy paths",
       package_version: "0.2.9",
     }));
 
-    const install = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    const install = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
     const report = JSON.parse(install.stdout);
-    assert.deepEqual(report.skill.preserved_extensions, ["legacy-only"]);
-    assert.equal(report.skill.previous_version, "0.2.9");
+    assert.deepEqual(report.preserved_extensions, ["legacy-only"]);
+    assert.match(report.removed_legacy_skill_paths[0], pathSuffixPattern("skills", "goal-maker"));
 
-    const doctor = runGoalMaker(["doctor", "--codex-home", codexHome]);
+    const doctor = runGoalMaker(["doctor", "--codex-home", codexHome], { env });
     assert.equal(doctor.status, 0, doctor.stderr || doctor.stdout);
     const doctorReport = JSON.parse(doctor.stdout);
-    assert.equal(doctorReport.skill_installed, true);
-    assert.equal(doctorReport.compatibility_skill_installed, true);
-    assert.match(doctorReport.skill_path, pathSuffixPattern("skills", "goalbuddy", "SKILL.md"));
-    assert.match(doctorReport.compatibility_skill_path, pathSuffixPattern("skills", "goal-maker", "SKILL.md"));
+    assert.equal(doctorReport.plugin.skill_installed, true);
+    assert.equal(doctorReport.skill_installed, false);
+    assert.equal(doctorReport.compatibility_skill_installed, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -1045,8 +1072,9 @@ test("extend installs a catalog extension with checksum verification", () => {
   try {
     const catalogPath = writeCatalog(root);
     const codexHome = join(root, "codex-home");
+    const env = fakeCodexEnv(root);
 
-    const installCore = runGoalMaker(["install", "--codex-home", codexHome]);
+    const installCore = runGoalMaker(["install", "--codex-home", codexHome], { env });
     assert.equal(installCore.status, 0, installCore.stderr || installCore.stdout);
 
     const dryRun = runGoalMaker(["extend", "install", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--dry-run", "--json"]);
@@ -1072,6 +1100,7 @@ test("board command installs and launches the local board extension", () => {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
   try {
     const codexHome = join(root, "codex-home");
+    const env = fakeCodexEnv(root);
     const goalDir = join(root, "docs", "goals", "demo");
     mkdirSync(join(goalDir, "notes"), { recursive: true });
     writeFileSync(join(goalDir, "goal.md"), "# Demo\n");
@@ -1103,7 +1132,7 @@ checks:
     commands: []
 `);
 
-    const installCore = runGoalMaker(["install", "--codex-home", codexHome]);
+    const installCore = runGoalMaker(["install", "--codex-home", codexHome], { env });
     assert.equal(installCore.status, 0, installCore.stderr || installCore.stdout);
 
     const board = runGoalMaker([
@@ -1132,19 +1161,19 @@ test("update preserves installed extensions and reports unchanged files", () => 
   try {
     const catalogPath = writeCatalog(root);
     const codexHome = join(root, "codex-home");
+    const env = fakeCodexEnv(root);
 
-    const installCore = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    const installCore = runGoalMaker(["install", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"], { env });
     assert.equal(installCore.status, 0, installCore.stderr || installCore.stdout);
 
     const installExtension = runGoalMaker(["extend", "install", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
     assert.equal(installExtension.status, 0, installExtension.stderr || installExtension.stdout);
 
-    const update = runGoalMaker(["update", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"]);
+    const update = runGoalMaker(["update", "--codex-home", codexHome, "--catalog-url", catalogPath, "--json"], { env });
     assert.equal(update.status, 0, update.stderr || update.stdout);
     const report = JSON.parse(update.stdout);
-    assert.equal(report.command, "update");
-    assert.equal(report.skill.status, "unchanged");
-    assert.deepEqual(report.skill.preserved_extensions, ["publish-github-projects"]);
+    assert.equal(report.installed, true);
+    assert.deepEqual(report.preserved_extensions, ["publish-github-projects"]);
 
     const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"]);
     assert.equal(details.status, 0, details.stderr || details.stdout);

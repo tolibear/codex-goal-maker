@@ -1,6 +1,6 @@
 {
   "name": "goalbuddy",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "A /goal operating system for Codex and Claude Code: subgoals, parallel-agent-ready boards, dark mode, receipts, and verification.",
   "type": "module",
   "bin": {

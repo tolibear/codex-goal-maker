@@ -1,12 +1,29 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 
 const canonicalSkill = readFileSync("goalbuddy/SKILL.md", "utf8");
 const pluginSkill = readFileSync("plugins/goalbuddy/skills/goalbuddy/SKILL.md", "utf8");
+
+function fakeCodexBin(root) {
+  const bin = join(root, "bin");
+  mkdirSync(bin, { recursive: true });
+  const path = join(bin, "codex");
+  writeFileSync(path, [
+    "#!/bin/sh",
+    "if [ \"$1\" = \"--version\" ]; then echo \"codex-cli 0.128.0\"; exit 0; fi",
+    "if [ \"$1\" = \"login\" ] && [ \"$2\" = \"status\" ]; then echo \"Logged in with ChatGPT\"; exit 0; fi",
+    "if [ \"$1\" = \"features\" ] && [ \"$2\" = \"list\" ]; then echo \"goals                               under development  true\"; exit 0; fi",
+    "if [ \"$1\" = \"plugin\" ] && [ \"$2\" = \"marketplace\" ] && [ \"$3\" = \"add\" ]; then echo \"Added marketplace goalbuddy\"; exit 0; fi",
+    "exit 2",
+    "",
+  ].join("\n"));
+  chmodSync(path, 0o755);
+  return bin;
+}
 
 test("Goal Prep invocation boundary keeps $goal-prep prepare-only", () => {
   for (const text of [canonicalSkill, pluginSkill]) {
@@ -27,9 +44,14 @@ test("Goal Prep invocation boundary keeps $goal-prep prepare-only", () => {
   }
 });
 
-test("Goal Maker compatibility alias inherits the same prepare-only boundary", () => {
-  const codexHome = mkdtempSync(join(tmpdir(), "goalbuddy-policy-"));
+test("Codex install keeps Goal Prep in the plugin and removes compatibility skill folders", () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-policy-"));
   try {
+    const codexHome = join(root, "codex-home");
+    const env = {
+      ...process.env,
+      PATH: `${fakeCodexBin(root)}${delimiter}${process.env.PATH}`,
+    };
     const install = spawnSync(process.execPath, [
       "internal/cli/goal-maker.mjs",
       "install",
@@ -38,13 +60,15 @@ test("Goal Maker compatibility alias inherits the same prepare-only boundary", (
       "--json",
     ], {
       encoding: "utf8",
+      env,
     });
     assert.equal(install.status, 0, install.stderr);
-    const compatibilitySkill = readFileSync(join(codexHome, "skills", "goal-maker", "SKILL.md"), "utf8");
-    assert.match(compatibilitySkill, /name: goal-maker/);
-    assert.match(compatibilitySkill, /This alias has the same invocation boundary as `\$goal-prep`: prepare the board only/);
-    assert.match(compatibilitySkill, /Do not use or refresh named skills, inspect implementation files, browse references, research, generate assets, or perform the requested work/);
+    const report = JSON.parse(install.stdout);
+    const installedPluginSkill = readFileSync(join(report.cache_path, "skills", "goalbuddy", "SKILL.md"), "utf8");
+    assert.equal(existsSync(join(codexHome, "skills", "goal-maker", "SKILL.md")), false);
+    assert.equal(existsSync(join(codexHome, "skills", "goalbuddy", "SKILL.md")), false);
+    assert.match(installedPluginSkill, /During a `\$goal-prep` turn, do not perform the user's requested work/);
   } finally {
-    rmSync(codexHome, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
   }
 });

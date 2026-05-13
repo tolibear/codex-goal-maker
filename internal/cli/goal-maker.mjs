@@ -83,15 +83,23 @@ async function main() {
       break;
     case "install":
     case "update":
+      if (wantsHelp()) {
+        usage();
+        break;
+      }
       if (installTargetMode() === "all") {
         await installEverywhere();
       } else if (installTargetMode() === "codex") {
-        await installAll();
+        installPlugin();
       } else {
         await installClaudeAll();
       }
       break;
     case "agents":
+      if (wantsHelp()) {
+        usage();
+        break;
+      }
       if (targetMode() === "codex") {
         installAgents();
       } else {
@@ -99,6 +107,10 @@ async function main() {
       }
       break;
     case "doctor":
+      if (wantsHelp()) {
+        usage();
+        break;
+      }
       if (targetMode() === "codex") {
         doctor();
       } else {
@@ -110,6 +122,10 @@ async function main() {
       checkUpdate();
       break;
     case "plugin":
+      if (wantsHelp()) {
+        pluginUsage();
+        break;
+      }
       plugin();
       break;
     case "extend":
@@ -162,6 +178,10 @@ function optionValue(name) {
 
 function hasFlag(name) {
   return args.includes(name);
+}
+
+function wantsHelp() {
+  return hasFlag("--help") || hasFlag("-h");
 }
 
 function positional(index) {
@@ -552,7 +572,7 @@ This alias has the same invocation boundary as \`$${canonicalSkillName}\`: prepa
 function installAgents({ quiet = false } = {}) {
   const source = join(skillSource, "agents");
   const target = join(codexHome(), "agents");
-  const force = hasFlag("--force") || command === "update" || command === "install";
+  const force = hasFlag("--force") || command === "update" || command === "install" || command === "default" || command === "plugin";
   mkdirSync(target, { recursive: true });
 
   const results = [];
@@ -601,6 +621,7 @@ async function installAll() {
 function doctor() {
   const skillPath = join(installedSkillRoot(), "SKILL.md");
   const legacySkillPath = join(legacyInstalledSkillRoot(), "SKILL.md");
+  const plugin = installedCodexPlugin();
   const agentsPath = join(codexHome(), "agents");
   const installed = existsSync(skillPath);
   const legacyInstalled = existsSync(legacySkillPath);
@@ -616,12 +637,38 @@ function doctor() {
   });
   const goalRuntime = codexGoalRuntimeStatus();
   const warnings = [];
+  const errors = [];
   if (!goalRuntime.ready) {
     warnings.push("native Codex /goal runtime is not ready; run `codex login` and `codex features enable goals` before using /goal.");
+  }
+  if (!plugin.skill_installed && !installed) {
+    errors.push("Codex GoalBuddy plugin is not installed; run `npx goalbuddy --target codex`.");
+  }
+  if (plugin.skill_installed && !plugin.enabled) {
+    errors.push("Codex GoalBuddy plugin cache exists but is not enabled in config.toml; run `npx goalbuddy --target codex`.");
+  }
+  for (const file of missingAgents) {
+    errors.push(`Missing GoalBuddy Codex agent: ${file}; run \`npx goalbuddy --target codex\`.`);
+  }
+  for (const file of staleAgents) {
+    errors.push(`Stale GoalBuddy Codex agent: ${file}; run \`npx goalbuddy update --target codex\`.`);
+  }
+  if (hasFlag("--goal-ready") && !goalRuntime.ready) {
+    errors.push("Native Codex /goal runtime is not ready. GoalBuddy $goal-prep and local boards are separate from OpenAI-gated native /goal.");
   }
 
   console.log(JSON.stringify({
     codex_home: codexHome(),
+    codex_install_model: "plugin",
+    expected_state: {
+      plugin_cache: true,
+      bundled_skill: "$goal-prep",
+      standalone_personal_skill: false,
+      compatibility_skill: false,
+      agents: requiredAgentFiles,
+      native_goal: "separate OpenAI-gated Codex feature",
+    },
+    plugin,
     skill_installed: installed,
     skill_path: skillPath,
     compatibility_skill_installed: legacyInstalled,
@@ -631,11 +678,14 @@ function doctor() {
     stale_agents: staleAgents,
     goal_runtime: goalRuntime,
     warnings,
+    errors,
   }, null, 2));
 
-  const installOk = installed && missingAgents.length === 0 && staleAgents.length === 0;
+  const pluginOk = plugin.skill_installed && plugin.enabled;
+  const legacySkillOk = installed;
+  const installOk = (pluginOk || legacySkillOk) && missingAgents.length === 0 && staleAgents.length === 0;
   const goalReadyOk = !hasFlag("--goal-ready") || goalRuntime.ready;
-  process.exit(installOk && goalReadyOk ? 0 : 1);
+  process.exit(installOk && goalReadyOk && errors.length === 0 ? 0 : 1);
 }
 
 function checkUpdate() {
@@ -680,6 +730,10 @@ function updateReport() {
 
 function plugin() {
   const subcommand = positional(1) || "";
+  if (wantsHelp()) {
+    pluginUsage();
+    return;
+  }
   switch (subcommand) {
     case "install":
       installPlugin();
@@ -733,6 +787,7 @@ function installPlugin({ quiet = false } = {}) {
   cleanupPreservedExtensions([preservedExtensions.tempPath]);
   const removedLegacySkillPaths = cleanupLegacyCodexSkills();
   const configPath = enablePluginConfig();
+  const agents = installAgents({ quiet: true });
 
   const report = {
     installed: true,
@@ -743,6 +798,7 @@ function installPlugin({ quiet = false } = {}) {
     marketplace_source: source,
     cache_path: pluginCachePath,
     config_path: configPath,
+    agents,
     preserved_extensions: preservedExtensions.ids,
     removed_legacy_skill_paths: removedLegacySkillPaths,
   };
@@ -758,6 +814,7 @@ function installPlugin({ quiet = false } = {}) {
   console.log(`Marketplace: ${source}`);
   console.log(`Cache: ${pluginCachePath}`);
   console.log(`Config: ${configPath}`);
+  console.log(`Agents: ${summarizeStatuses(report.agents)}`);
   if (report.preserved_extensions.length) {
     console.log(`Preserved extensions: ${report.preserved_extensions.join(", ")}`);
   }
@@ -1298,8 +1355,24 @@ function installedSkillRoot() {
 }
 
 function installedPluginSkillRoot() {
+  return installedCodexPlugin().skill_path;
+}
+
+function installedCodexPlugin() {
   const root = join(codexHome(), "plugins", "cache", pluginName, pluginName);
-  if (!existsSync(root)) return "";
+  const configPath = join(codexHome(), "config.toml");
+  const base = {
+    installed: false,
+    enabled: pluginConfigEnabled(configPath),
+    name: `${pluginName}@${pluginName}`,
+    version: "",
+    cache_path: "",
+    manifest_path: "",
+    skill_installed: false,
+    skill_path: "",
+    config_path: configPath,
+  };
+  if (!existsSync(root)) return base;
   const versions = readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
@@ -1307,10 +1380,37 @@ function installedPluginSkillRoot() {
     .sort(compareVersions)
     .reverse();
   for (const version of versions) {
-    const skillPath = join(root, version, "skills", canonicalSkillDirectory);
-    if (existsSync(join(skillPath, "SKILL.md"))) return skillPath;
+    const cachePath = join(root, version);
+    const skillPath = join(cachePath, "skills", canonicalSkillDirectory);
+    const manifestPath = join(cachePath, ".codex-plugin", "plugin.json");
+    if (existsSync(join(skillPath, "SKILL.md"))) {
+      return {
+        ...base,
+        installed: true,
+        version,
+        cache_path: cachePath,
+        manifest_path: manifestPath,
+        skill_installed: true,
+        skill_path: skillPath,
+      };
+    }
   }
-  return "";
+  return base;
+}
+
+function pluginConfigEnabled(configPath) {
+  if (!existsSync(configPath)) return false;
+  const lines = readFileSync(configPath, "utf8").split(/\r?\n/);
+  const header = `[plugins."${pluginName}@${pluginName}"]`;
+  const start = lines.findIndex((line) => line.trim() === header);
+  if (start === -1) return false;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (line.startsWith("[")) break;
+    if (/^enabled\s*=\s*true\b/.test(line)) return true;
+    if (/^enabled\s*=/.test(line)) return false;
+  }
+  return false;
 }
 
 function activeSkillRoot() {

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Hardened Codex plugin-only installs.** Codex install/update now use the native plugin path, refresh the bundled Scout/Judge/Worker agents, and leave stale personal `~/.codex/skills/goalbuddy` / `goal-maker` folders out of the expected clean state.
+- **Fixed Codex doctor for plugin-only installs.** `goalbuddy doctor --target codex --goal-ready` now validates the plugin cache, bundled `$goal-prep` skill, enabled plugin config, and GoalBuddy agents instead of failing only because standalone personal skill folders are absent. The report also distinguishes native OpenAI-gated Codex `/goal` from GoalBuddy `$goal-prep` and local boards.
+- **Made mutating command help safe.** `goalbuddy plugin install --help` and `goalbuddy update --help` print help without installing, updating, or touching global Codex/Claude files.
+
 ## 0.3.5 — Subgoals, Parallel Agents, and Dark Mode (2026-05-12)
 
 - **Subgoals for bounded branching work.** Parent tasks can link to depth-1 child `state.yaml` boards under `subgoals/`, the checker validates child shape and containment, and the local board renders the child board inside the parent task detail.

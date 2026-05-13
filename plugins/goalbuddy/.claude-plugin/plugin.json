@@ -1,6 +1,6 @@
 {
   "name": "goalbuddy",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Turn broad Claude Code work into verified GoalBuddy boards with subgoals, parallel-agent-ready handoffs, dark mode, and receipts.",
   "author": {
     "name": "tolibear",
