@@ -1,0 +1,165 @@
+# GoalBuddy v2 state.yaml
+# Board truth lives here. goal.md is the editable charter; notes/ holds long receipts only.
+
+version: 2
+
+goal:
+  title: "<Goal title>"
+  slug: "<goal-slug>"
+  kind: open_ended # specific | open_ended | existing_plan | recovery | audit
+  tranche: "<continuous execution: complete successive safe verified slices until the full original outcome is complete>"
+  status: active # active | blocked | done
+  intake:
+    original_request: "<shortest faithful user request>"
+    interpreted_outcome: "<one sentence>"
+    input_shape: vague # vague | specific | existing_plan | recovery | audit
+    audience: unknown
+    authority: requested # requested | approved | inferred | needs_approval | blocked
+    proof_type: artifact # test | demo | artifact | metric | review | source_backed_answer | decision
+    completion_proof: "<observable signal that proves the full original outcome is complete>"
+    likely_misfire: "<how GoalBuddy could succeed at the wrong thing>"
+    blind_spots_considered: []
+    existing_plan_facts: []
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+  planning_is_not_completion: true
+  queued_required_worker_blocks_completion: true
+  continuous_until_full_outcome: true
+  missing_input_or_credentials_do_not_stop_goal: true
+  preserve_and_validate_existing_plan: true
+  intake_misfire_must_be_audited: true
+
+agents:
+  # installed | bundled_not_installed | missing | unknown
+  # If non-installed, /goal can continue through PM fallback; install agents before /goal only when dedicated delegation is required.
+  scout: unknown
+  worker: unknown
+  judge: unknown
+
+visual_board:
+  # none | local | github_projects | both | unknown
+  selected: unknown
+  local:
+    status: not_requested # not_requested | starting | live | generated | blocked
+    url: null
+    command: "npx goalbuddy board docs/goals/<goal-slug>"
+  github_projects:
+    status: not_requested # not_requested | needs_approval | dry_run_ready | synced | blocked
+    url: null
+    command: "npx goalbuddy extend github-projects"
+    missing: []
+
+active_task: T001
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: active
+    reasoning_hint: default # default | low | medium | high | xhigh
+    objective: "Map repo purpose, architecture, verification commands, health signals, and improvement candidates."
+    # Optional vision_anchor binding (added v0.3.6). When non-null, this task carries a
+    # verbatim user-phrase from notes/raw-input.md whose semantic must survive into delivered
+    # artifacts. check-goal-state.mjs PRESENCE rule requires {term, check_condition.bash,
+    # check_condition.judge_fallback}; SATISFACTION rule requires receipt.vision_anchor_evidence
+    # for status: done. The bash check is the mechanical floor; judge_fallback is the
+    # semantic escape-hatch when the term survives implicitly. Set by /deep-intake or
+    # /goal-prep when a task maps to a numbered deliverable carrying a distinctive user-term.
+    # Schema:
+    # vision_anchor:
+    #   term: "<verbatim user-phrase from notes/raw-input.md>"
+    #   check_condition:
+    #     bash: "grep -qF '<verbatim term>' docs/goals/<slug>/notes/<expected-artifact>.md docs/goals/<slug>/goal.md"
+    #     judge_fallback: "If bash-grep fails, Judge assesses whether semantic of '<term>' is preserved in delivered artifacts. Returns evidence-text proving semantic survival OR rejects task."
+    vision_anchor: null
+    inputs:
+      - README.md
+      - package.json
+      - docs
+      - tests
+    constraints:
+      - "Read-only."
+      - "Do not edit implementation files."
+      - "Prefer concrete file-path evidence over generic advice."
+    expected_output:
+      - "Repo map"
+      - "Verification commands"
+      - "Ranked improvement candidates"
+      - "Candidate next tasks"
+    receipt: null
+  - id: T002
+    type: judge
+    assignee: Judge
+    status: queued
+    reasoning_hint: default
+    objective: "Review Scout findings and choose the first safe implementation task."
+    vision_anchor: null # See T001 for schema.
+    inputs:
+      - "T001 receipt"
+    constraints:
+      - "Do not implement."
+      - "Pick small reviewable work."
+    expected_output:
+      - "Decision"
+      - "Exact Worker objective"
+      - "allowed_files"
+      - "verify"
+      - "stop_if"
+      - "Blocked or deferred tasks"
+    receipt: null
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: queued
+    reasoning_hint: default
+    objective: "Execute the first safe implementation task selected by Judge."
+    vision_anchor: null # See T001 for schema.
+    allowed_files: []
+    verify: []
+    stop_if:
+      - "Need files outside allowed_files."
+      - "Behavior is ambiguous."
+      - "Verification fails twice."
+    # Optional depth-1 child board promoted by PM when a task needs bounded branching work:
+    # subgoal:
+    #   status: active # active | blocked | done
+    #   path: subgoals/T003-child/state.yaml
+    #   owner: Worker
+    #   created_from: T003
+    #   depth: 1
+    #   rollup_receipt: null
+    receipt: null
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: queued
+    reasoning_hint: default
+    objective: "Audit whether the implemented slice satisfies the original user outcome for this tranche."
+    vision_anchor: null # See T001 for schema.
+    inputs:
+      - "All done task receipts"
+      - "Last verification"
+      - "Current dirty diff"
+    constraints:
+      - "Do not implement."
+      - "Reject completion if required Worker work is still queued or active."
+      - "Reject completion if the broader original outcome still has safe local follow-up slices."
+      - "Reject stopping only because a slice needs owner input, credentials, production access, destructive operations, or policy decisions."
+    expected_output:
+      - "complete | not_complete"
+      - "full_outcome_complete: true | false"
+      - "missing evidence"
+      - "next task if not complete"
+    receipt: null
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []

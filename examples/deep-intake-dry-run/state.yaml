@@ -1,0 +1,113 @@
+version: 2
+
+goal:
+  title: "Deep Intake Dry Run"
+  slug: "deep-intake-dry-run"
+  kind: open_ended
+  tranche: "compile and validate a deep-intake board without implementation"
+  status: active
+  intake:
+    original_request: "Improve a broad feature, but sharpen the goal first."
+    interpreted_outcome: "A Deep Intake board exists with preserved decisions, proof anchors, and final audit fences."
+    input_shape: open_ended
+    audience: maintainers
+    authority: requested
+    proof_type: artifact
+    completion_proof: "Both GoalBuddy checkers pass for this goal root."
+    likely_misfire: "The board is structurally valid but loses the user's Deep Intake decisions."
+    blind_spots_considered:
+      - "proof surface"
+      - "scope and non-goals"
+      - "final audit rejection criteria"
+    existing_plan_facts: []
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+  planning_is_not_completion: true
+  queued_required_worker_blocks_completion: true
+  continuous_until_full_outcome: true
+  intake_misfire_must_be_audited: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+active_task: T001
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Map the proof surface and confirm the Deep Intake decisions are represented in the board."
+    inputs:
+      - "docs/goals/deep-intake-dry-run/goal.md"
+      - "docs/goals/deep-intake-dry-run/state.yaml"
+      - "notes/raw-input.md"
+      - "notes/discussion.md"
+      - "notes/quality.md"
+    constraints:
+      - "Read-only."
+      - "Do not implement the broad feature."
+    expected_output:
+      - "Proof surface map"
+      - "Missing anchor list"
+    receipt: null
+  - id: T002
+    type: judge
+    assignee: Judge
+    status: queued
+    objective: "Decide whether the board is ready for a first Worker slice or needs more intake."
+    inputs:
+      - "T001 receipt"
+    constraints:
+      - "Do not implement."
+    expected_output:
+      - "ready | needs_more_intake"
+      - "first Worker objective if ready"
+    receipt: null
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: queued
+    objective: "Execute the first bounded Worker task selected by Judge."
+    allowed_files: []
+    verify: []
+    stop_if:
+      - "Need files outside allowed_files."
+      - "Behavior is ambiguous."
+      - "Verification fails twice."
+    receipt: null
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: queued
+    objective: "Audit whether the final outcome satisfies the Deep Intake decisions and original user outcome."
+    inputs:
+      - "All done task receipts"
+      - "Last verification"
+      - "Current dirty diff"
+      - "notes/raw-input.md"
+      - "notes/discussion.md"
+      - "notes/quality.md"
+    constraints:
+      - "Do not implement."
+      - "Reject completion if the result contradicts Deep Intake decisions."
+      - "Reject completion if the likely misfire or anti-pattern fences were ignored."
+    expected_output:
+      - "complete | not_complete"
+      - "full_outcome_complete: true | false"
+      - "missing evidence"
+    receipt: null
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []

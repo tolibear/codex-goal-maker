@@ -36,13 +36,25 @@ Then prepare a goal:
 $goal-prep
 ```
 
+For deeper sparring before the board is written:
+
+```text
+$deep-intake
+```
+
 In Claude Code, use:
 
 ```text
 /goal-prep
 ```
 
-Goal Prep creates the board and prints the exact `/goal` command to run next. That is the whole path.
+Or, for the deeper route:
+
+```text
+/deep-intake
+```
+
+Goal Prep creates the board and prints the exact `/goal` command to run next. Deep Intake does the same after the alignment pass; you do not run Goal Prep again afterward.
 
 ## Codex Install Model
 
@@ -50,12 +62,15 @@ For Codex, the canonical install is the native plugin plus bundled agents:
 
 ```text
 ~/.codex/plugins/cache/goalbuddy/goalbuddy/<version>/
+  skills/goal-prep/SKILL.md
+  skills/deep-intake/SKILL.md
+  skills/goalbuddy/SKILL.md      # legacy alias
 ~/.codex/agents/goal_judge.toml
 ~/.codex/agents/goal_scout.toml
 ~/.codex/agents/goal_worker.toml
 ```
 
-The Codex plugin bundles `$goal-prep`; a clean Codex install should not need personal `~/.codex/skills/goalbuddy` or `~/.codex/skills/goal-maker` folders. Native Codex `/goal` is a separate OpenAI-gated feature. GoalBuddy prepares local boards and handoff prompts for it, but it does not enable or replace native `/goal`.
+The Codex plugin bundles `$goal-prep` and `$deep-intake`; a clean Codex install should not need personal `~/.codex/skills/goal-prep`, `~/.codex/skills/goalbuddy`, or `~/.codex/skills/goal-maker` folders. Native Codex `/goal` is a separate OpenAI-gated feature. GoalBuddy prepares local boards and handoff prompts for it, but it does not enable or replace native `/goal`.
 
 To verify a Codex install:
 

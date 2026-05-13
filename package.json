@@ -16,14 +16,17 @@
     "plugins/goalbuddy",
     "internal/assets",
     "internal/cli",
+    "goal-prep/SKILL.md",
+    "goal-prep/agents",
+    "goal-prep/scripts",
+    "goal-prep/extend",
+    "goal-prep/templates",
     "goalbuddy/SKILL.md",
-    "goalbuddy/agents",
-    "goalbuddy/scripts",
-    "goalbuddy/extend",
-    "goalbuddy/templates"
+    "deep-intake/SKILL.md",
+    "deep-intake/agents"
   ],
   "scripts": {
-    "check": "node --check internal/cli/*.mjs goalbuddy/scripts/*.mjs && node --test internal/test/*.test.mjs",
+    "check": "node --check internal/cli/*.mjs goal-prep/scripts/*.mjs && node --test internal/test/*.test.mjs",
     "test": "node --test internal/test/*.test.mjs",
     "pack:dry-run": "npm pack --dry-run",
     "postinstall": "node internal/cli/postinstall.mjs",

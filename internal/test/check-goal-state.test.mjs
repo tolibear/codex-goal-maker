@@ -5,7 +5,8 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const checker = resolve("goalbuddy/scripts/check-goal-state.mjs");
+const checker = resolve("goal-prep/scripts/check-goal-state.mjs");
+const deepIntakeChecker = resolve("goal-prep/scripts/check-deep-intake-artifacts.mjs");
 
 function makeRoot() {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-test-"));
@@ -20,6 +21,17 @@ function writeState(root, body) {
 
 function runChecker(root) {
   const result = spawnSync(process.execPath, [checker, join(root, "state.yaml")], {
+    encoding: "utf8",
+  });
+  return {
+    status: result.status,
+    stdout: JSON.parse(result.stdout),
+    stderr: result.stderr,
+  };
+}
+
+function runDeepIntakeChecker(target) {
+  const result = spawnSync(process.execPath, [deepIntakeChecker, target], {
     encoding: "utf8",
   });
   return {
@@ -98,6 +110,110 @@ test("accepts a valid v2 board with one active Scout task", () => {
     assert.equal(result.stdout.ok, true);
     assert.equal(result.stdout.version, 2);
     assert.equal(result.stdout.active_task, "T001");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("accepts the Deep Intake dry-run fixture", () => {
+  const result = runDeepIntakeChecker(resolve("examples/deep-intake-dry-run"));
+  assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+  assert.equal(result.stdout.ok, true);
+});
+
+test("rejects Deep Intake artifacts when notes are not routed into T999", () => {
+  const root = mkdtempSync(join(tmpdir(), "deep-intake-test-"));
+  try {
+    mkdirSync(join(root, "notes"), { recursive: true });
+    writeFileSync(join(root, "goal.md"), `
+# Deep Intake Missing T999 Notes
+
+## Intake Summary
+
+- Completion proof: both checkers pass.
+- Likely misfire: the final audit ignores the user's decisions.
+- Deep Intake notes: notes/raw-input.md, notes/discussion.md, and notes/quality.md.
+
+## Goal Prep Compiler Source
+
+This board was compiled against the current sibling goal-prep/SKILL.md, Goal Prep templates, and Goal Prep checkers.
+
+## Deep Intake Source Bundle
+
+Before selecting, advancing, or auditing tasks, the /goal PM must read notes/raw-input.md, notes/discussion.md, and notes/quality.md.
+
+## Deep Intake Trace
+
+Resolved decision maps to board choice: final audit must preserve the user's wording and reject generic completion.
+
+## Anti-Patterns (do NOT do)
+
+- Do not drop the Deep Intake decisions.
+
+## Non-Goals
+
+- No implementation during intake.
+`);
+    writeFileSync(join(root, "notes", "raw-input.md"), "The user's real wording is preserved for the Deep Intake route.\n");
+    writeFileSync(join(root, "notes", "discussion.md"), "Resolved decision: route Deep Intake notes into execution and final audit.\nGrounding checked: normal GoalBuddy files only.\n");
+    writeFileSync(join(root, "notes", "quality.md"), "PASS. goal.md embeds decisions, Goal Prep Compiler Source, Deep Intake Source Bundle, and Deep Intake Trace; state.yaml routes notes; completion proof is observable; likely misfire is present.\n");
+    writeState(root, `
+version: 2
+goal:
+  title: "Missing T999 Notes"
+  slug: "missing-t999-notes"
+  kind: open_ended
+  tranche: "deep intake validation"
+  status: active
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T001
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Validate Deep Intake anchors."
+    inputs:
+      - "notes/raw-input.md"
+      - "notes/discussion.md"
+      - "notes/quality.md"
+    constraints:
+      - "Read-only."
+    expected_output:
+      - "Anchor map"
+    receipt: null
+  - id: T999
+    type: judge
+    assignee: Judge
+    status: queued
+    objective: "Final audit."
+    inputs:
+      - "All done task receipts"
+    constraints:
+      - "Reject completion if the likely misfire is present."
+    expected_output:
+      - "complete | not_complete"
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+
+    const result = runDeepIntakeChecker(root);
+    assert.equal(result.status, 1, result.stderr || JSON.stringify(result.stdout));
+    assert.match(result.stdout.errors.join("\n"), /T999 must list notes\/raw-input\.md/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -683,7 +799,7 @@ tasks:
     status: done
     objective: "Update agent contracts."
     allowed_files:
-      - goalbuddy/agents/**
+      - goal-prep/agents/**
       - plugins/goalbuddy/**
     verify:
       - npm test
@@ -692,7 +808,7 @@ tasks:
     receipt:
       result: done
       changed_files:
-        - goalbuddy/agents/goal_scout.toml
+        - goal-prep/agents/goal_scout.toml
         - plugins/goalbuddy/agents/goal-scout.md
       commands:
         - cmd: npm test
@@ -1002,6 +1118,234 @@ checks:
     const result = runChecker(root);
     assert.equal(result.status, 1);
     assert.match(result.stdout.errors.join("\n"), /missing input or credentials should block specific tasks/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// --- vision_anchor rules (v0.3.6) -------------------------------------------
+
+test("accepts a board with vision_anchor: null on every task (backward-compat)", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/objective: "Map the repo and identify improvement candidates."/, `objective: "Map the repo and identify improvement candidates."
+    vision_anchor: null`));
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor PRESENCE rule rejects when term is missing", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/    receipt: null\n  - id: T002/, `    vision_anchor:
+      check_condition:
+        bash: "grep -qF 'foo' notes/x.md"
+        judge_fallback: "If grep fails, Judge assesses semantic survival."
+    receipt: null
+  - id: T002`));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /vision_anchor missing term/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor PRESENCE rule rejects when check_condition.bash is missing", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/    receipt: null\n  - id: T002/, `    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        judge_fallback: "Semantic survival check."
+    receipt: null
+  - id: T002`));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /vision_anchor missing check_condition\.bash/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor PRESENCE rule rejects when check_condition.judge_fallback is missing", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/    receipt: null\n  - id: T002/, `    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        bash: "grep -qF 'natural' notes/x.md"
+    receipt: null
+  - id: T002`));
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /vision_anchor missing check_condition\.judge_fallback/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor PRESENCE rule accepts a fully populated anchor", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, validScoutBoard.replace(/    receipt: null\n  - id: T002/, `    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        bash: "grep -qF 'natural' notes/x.md"
+        judge_fallback: "Judge asserts semantic survival when grep fails."
+    receipt: null
+  - id: T002`));
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor SATISFACTION rule rejects done task missing receipt.vision_anchor_evidence", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+
+goal:
+  title: "Satisfaction rule test"
+  slug: "satisfaction-rule-test"
+  kind: open_ended
+  tranche: "anchor-evidence-required-on-done"
+  status: active
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+active_task: T002
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Map the repo and identify improvement candidates."
+    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        bash: "grep -qF 'natural' notes/d1.md"
+        judge_fallback: "Judge semantic survival."
+    inputs:
+      - README.md
+    receipt:
+      result: done
+      summary: "Mapped. Anchor candidates surfaced."
+      evidence:
+        - README.md
+  - id: T002
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Continue mapping the repo."
+    inputs:
+      - package.json
+    receipt: null
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout.errors.join("\n"), /vision_anchor.*receipt missing vision_anchor_evidence/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("vision_anchor SATISFACTION rule accepts done task with receipt.vision_anchor_evidence", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+
+goal:
+  title: "Satisfaction rule test"
+  slug: "satisfaction-rule-test-ok"
+  kind: open_ended
+  tranche: "anchor-evidence-present-on-done"
+  status: active
+
+rules:
+  pm_owns_state: true
+  one_active_task: true
+  max_write_workers: 1
+  no_implementation_without_worker_or_pm_task: true
+  no_completion_without_judge_or_pm_audit: true
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+active_task: T002
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Map the repo and identify improvement candidates."
+    vision_anchor:
+      term: "natural Rückvollziehung"
+      check_condition:
+        bash: "grep -qF 'natural' notes/d1.md"
+        judge_fallback: "Judge semantic survival."
+    inputs:
+      - README.md
+    receipt:
+      result: done
+      summary: "Mapped. Anchor candidates surfaced."
+      evidence:
+        - README.md
+      vision_anchor_evidence:
+        anchor_term: "natural Rückvollziehung"
+        bash_check: pass
+        bash_match_files:
+          - README.md
+        judge_decision: not_applicable
+  - id: T002
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Continue mapping the repo."
+    inputs:
+      - package.json
+    receipt: null
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

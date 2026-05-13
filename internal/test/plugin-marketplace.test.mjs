@@ -29,5 +29,6 @@ test("GoalBuddy plugin metadata tracks the package release", () => {
 test("GoalBuddy plugin delegates composer invocation to Goal Prep", () => {
   assert.deepEqual(plugin.interface.defaultPrompt, [
     "$goal-prep prepare a GoalBuddy board for this goal",
+    "$deep-intake sharpen this goal deeply before preparing the GoalBuddy board",
   ]);
 });

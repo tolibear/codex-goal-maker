@@ -1,0 +1,52 @@
+version: 2
+
+goal:
+  title: "T004 Board View Subgoal"
+  slug: "t004-board-view-subgoal"
+  kind: specific
+  tranche: "Render the child board inside the parent task detail."
+  status: active
+
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+
+active_task: T002
+
+tasks:
+  - id: T001
+    type: scout
+    assignee: Scout
+    status: done
+    objective: "Map the child board data needed by the modal."
+    receipt:
+      result: done
+      summary: "Child board payload needs normal columns and task details."
+      evidence:
+        - goal-prep/extend/local-goal-board/scripts/lib/goal-board.mjs
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Render the read-only embedded child board."
+    allowed_files:
+      - goal-prep/extend/local-goal-board/scripts/lib/goal-board.mjs
+    verify:
+      - node --test goal-prep/extend/local-goal-board/test/local-goal-board.test.mjs
+    stop_if:
+      - "Need files outside allowed_files."
+    receipt: null
+  - id: T003
+    type: judge
+    assignee: Judge
+    status: queued
+    objective: "Audit the embedded child board rendering."
+    receipt: null
+
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []

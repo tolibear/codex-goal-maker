@@ -37,7 +37,8 @@
     "privacyPolicyURL": "https://github.com/tolibear/goalbuddy#privacy",
     "termsOfServiceURL": "https://github.com/tolibear/goalbuddy#license",
     "defaultPrompt": [
-      "$goal-prep prepare a GoalBuddy board for this goal"
+      "$goal-prep prepare a GoalBuddy board for this goal",
+      "$deep-intake sharpen this goal deeply before preparing the GoalBuddy board"
     ],
     "brandColor": "#2563EB",
     "composerIcon": "./assets/goalbuddy-icon.svg",
