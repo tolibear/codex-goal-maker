@@ -50,12 +50,14 @@ For Codex, the canonical install is the native plugin plus bundled agents:
 
 ```text
 ~/.codex/plugins/cache/goalbuddy/goalbuddy/<version>/
+  skills/goal-prep/SKILL.md
+  skills/goalbuddy/SKILL.md      # legacy alias
 ~/.codex/agents/goal_judge.toml
 ~/.codex/agents/goal_scout.toml
 ~/.codex/agents/goal_worker.toml
 ```
 
-The Codex plugin bundles `$goal-prep`; a clean Codex install should not need personal `~/.codex/skills/goalbuddy` or `~/.codex/skills/goal-maker` folders. Native Codex `/goal` is a separate OpenAI-gated feature. GoalBuddy prepares local boards and handoff prompts for it, but it does not enable or replace native `/goal`.
+The Codex plugin bundles `$goal-prep` as the canonical command and `$goalbuddy` as a compatibility alias; a clean Codex install should not need personal `~/.codex/skills/goalbuddy` or `~/.codex/skills/goal-maker` folders. Native Codex `/goal` is a separate OpenAI-gated feature. GoalBuddy prepares local boards and handoff prompts for it, but it does not enable or replace native `/goal`.
 
 To verify a Codex install:
 

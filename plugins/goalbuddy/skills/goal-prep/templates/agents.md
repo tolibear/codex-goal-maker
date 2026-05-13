@@ -37,7 +37,7 @@ Install:
 
 ```bash
 mkdir -p .codex/agents
-cp .codex/skills/goalbuddy/agents/goal_*.toml .codex/agents/
+cp .codex/skills/goal-prep/agents/goal_*.toml .codex/agents/
 ```
 
 Rules:

@@ -24,16 +24,16 @@ tasks:
       result: done
       summary: "Child board payload needs normal columns and task details."
       evidence:
-        - goalbuddy/extend/local-goal-board/scripts/lib/goal-board.mjs
+        - goal-prep/extend/local-goal-board/scripts/lib/goal-board.mjs
   - id: T002
     type: worker
     assignee: Worker
     status: active
     objective: "Render the read-only embedded child board."
     allowed_files:
-      - goalbuddy/extend/local-goal-board/scripts/lib/goal-board.mjs
+      - goal-prep/extend/local-goal-board/scripts/lib/goal-board.mjs
     verify:
-      - node --test goalbuddy/extend/local-goal-board/test/local-goal-board.test.mjs
+      - node --test goal-prep/extend/local-goal-board/test/local-goal-board.test.mjs
     stop_if:
       - "Need files outside allowed_files."
     receipt: null
