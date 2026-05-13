@@ -5,8 +5,8 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const canonicalSkill = readFileSync("goalbuddy/SKILL.md", "utf8");
-const pluginSkill = readFileSync("plugins/goalbuddy/skills/goalbuddy/SKILL.md", "utf8");
+const canonicalSkill = readFileSync("goal-prep/SKILL.md", "utf8");
+const pluginSkill = readFileSync("plugins/goalbuddy/skills/goal-prep/SKILL.md", "utf8");
 
 function fakeCodexBin(root) {
   const bin = join(root, "bin");
@@ -64,10 +64,12 @@ test("Codex install keeps Goal Prep in the plugin and removes compatibility skil
     });
     assert.equal(install.status, 0, install.stderr);
     const report = JSON.parse(install.stdout);
-    const installedPluginSkill = readFileSync(join(report.cache_path, "skills", "goalbuddy", "SKILL.md"), "utf8");
+    const installedPluginSkill = readFileSync(join(report.cache_path, "skills", "goal-prep", "SKILL.md"), "utf8");
+    const installedAliasSkill = readFileSync(join(report.cache_path, "skills", "goalbuddy", "SKILL.md"), "utf8");
     assert.equal(existsSync(join(codexHome, "skills", "goal-maker", "SKILL.md")), false);
     assert.equal(existsSync(join(codexHome, "skills", "goalbuddy", "SKILL.md")), false);
     assert.match(installedPluginSkill, /During a `\$goal-prep` turn, do not perform the user's requested work/);
+    assert.match(installedAliasSkill, /compatibility alias/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

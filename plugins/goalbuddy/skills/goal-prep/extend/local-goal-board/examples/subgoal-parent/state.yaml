@@ -31,10 +31,10 @@ tasks:
     status: active
     objective: "Build the sub-goal board view."
     allowed_files:
-      - goalbuddy/extend/local-goal-board/scripts/lib/goal-board.mjs
-      - goalbuddy/extend/local-goal-board/test/local-goal-board.test.mjs
+      - goal-prep/extend/local-goal-board/scripts/lib/goal-board.mjs
+      - goal-prep/extend/local-goal-board/test/local-goal-board.test.mjs
     verify:
-      - node --test goalbuddy/extend/local-goal-board/test/local-goal-board.test.mjs
+      - node --test goal-prep/extend/local-goal-board/test/local-goal-board.test.mjs
     stop_if:
       - "Need files outside allowed_files."
     subgoal:

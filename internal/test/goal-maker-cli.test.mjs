@@ -225,9 +225,9 @@ test("doctor reports native goal runtime readiness and supports strict goal-read
 });
 
 test("bundled agent contracts stay strict and receipt-shaped", () => {
-  const scout = readFileSync("goalbuddy/agents/goal_scout.toml", "utf8");
-  const judge = readFileSync("goalbuddy/agents/goal_judge.toml", "utf8");
-  const worker = readFileSync("goalbuddy/agents/goal_worker.toml", "utf8");
+  const scout = readFileSync("goal-prep/agents/goal_scout.toml", "utf8");
+  const judge = readFileSync("goal-prep/agents/goal_judge.toml", "utf8");
+  const worker = readFileSync("goal-prep/agents/goal_worker.toml", "utf8");
   assert.match(scout, /model_reasoning_effort = "low"/);
   assert.match(scout, /Read only/);
   assert.match(scout, /goalbuddy_receipt_v1/);
@@ -236,9 +236,9 @@ test("bundled agent contracts stay strict and receipt-shaped", () => {
   assert.match(worker, /Edit only files matching allowed_files/);
   assert.match(worker, /verification_attempts/);
 
-  assert.equal(readFileSync("plugins/goalbuddy/skills/goalbuddy/agents/goal_scout.toml", "utf8"), scout);
-  assert.equal(readFileSync("plugins/goalbuddy/skills/goalbuddy/agents/goal_judge.toml", "utf8"), judge);
-  assert.equal(readFileSync("plugins/goalbuddy/skills/goalbuddy/agents/goal_worker.toml", "utf8"), worker);
+  assert.equal(readFileSync("plugins/goalbuddy/skills/goal-prep/agents/goal_scout.toml", "utf8"), scout);
+  assert.equal(readFileSync("plugins/goalbuddy/skills/goal-prep/agents/goal_judge.toml", "utf8"), judge);
+  assert.equal(readFileSync("plugins/goalbuddy/skills/goal-prep/agents/goal_worker.toml", "utf8"), worker);
 });
 
 test("install bundles core visual board backends into the skill", () => {
@@ -249,7 +249,7 @@ test("install bundles core visual board backends into the skill", () => {
     const install = runGoalMaker(["install", "--codex-home", codexHome, "--json"], { env });
     assert.equal(install.status, 0, install.stderr || install.stdout);
 
-    const skillRoot = join(JSON.parse(install.stdout).cache_path, "skills", "goalbuddy");
+    const skillRoot = join(JSON.parse(install.stdout).cache_path, "skills", "goal-prep");
     assert.equal(existsSync(join(skillRoot, "extend", "local-goal-board", "scripts", "local-goal-board.mjs")), true);
     assert.equal(existsSync(join(skillRoot, "extend", "github-projects", "scripts", "sync-github-project.mjs")), true);
   } finally {
@@ -311,7 +311,7 @@ tasks:
     status: active
     objective: "Patch the prompt renderer."
     allowed_files:
-      - goalbuddy/scripts/**
+      - goal-prep/scripts/**
     verify:
       - npm test
     stop_if:
@@ -332,7 +332,7 @@ checks:
     assert.equal(report.metadata.required_spawn_agent_type, "goal_worker");
     assert.equal(report.metadata.sandbox, "workspace-write");
     assert.equal(report.task.id, "T002");
-    assert.deepEqual(report.task.allowed_files, ["goalbuddy/scripts/**"]);
+    assert.deepEqual(report.task.allowed_files, ["goal-prep/scripts/**"]);
     assert.equal(result.stdout.includes("A previous finding that should not force a full state dump."), false);
 
     const human = runGoalMaker(["prompt", goal]);
@@ -616,8 +616,8 @@ test("plugin install adds marketplace, caches plugin, and enables config", () =>
     assert.equal(report.version, packageVersion);
     assert.match(report.cache_path, pathSuffixPattern("plugins", "cache", "goalbuddy", "goalbuddy", packageVersion));
     assert.match(report.config_path, /config\.toml$/);
-    assert.equal(existsSync(join(report.cache_path, "skills", "goalbuddy", "extend", "local-goal-board", "scripts", "local-goal-board.mjs")), true);
-    assert.equal(existsSync(join(report.cache_path, "skills", "goalbuddy", "extend", "github-projects", "scripts", "sync-github-project.mjs")), true);
+    assert.equal(existsSync(join(report.cache_path, "skills", "goal-prep", "extend", "local-goal-board", "scripts", "local-goal-board.mjs")), true);
+    assert.equal(existsSync(join(report.cache_path, "skills", "goal-prep", "extend", "github-projects", "scripts", "sync-github-project.mjs")), true);
 
     const config = readFileSync(join(codexHome, "config.toml"), "utf8");
     assert.match(config, /\[plugins\."goalbuddy@goalbuddy"\]/);
@@ -665,7 +665,7 @@ test("plugin install removes stale personal Codex GoalBuddy skills", () => {
     assert.match(report.removed_legacy_skill_paths[1], pathSuffixPattern("skills", "goal-maker"));
     assert.equal(existsSync(staleSkill), false);
     assert.equal(existsSync(staleAlias), false);
-    assert.equal(existsSync(join(report.cache_path, "skills", "goalbuddy", "extend", "legacy-only", "README.md")), true);
+    assert.equal(existsSync(join(report.cache_path, "skills", "goal-prep", "extend", "legacy-only", "README.md")), true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -797,6 +797,7 @@ test("default command installs Codex and Claude Code when both homes are provide
     assert.equal(report.codex.installed, true);
     assert.equal(report.claude.skill.status, "installed");
     assert.equal(existsSync(join(codexHome, "config.toml")), true);
+    assert.equal(existsSync(join(claudeHome, "skills", "goal-prep", "SKILL.md")), true);
     assert.equal(existsSync(join(claudeHome, "skills", "goalbuddy", "SKILL.md")), true);
     assert.equal(existsSync(join(claudeHome, "agents", "goal-worker.md")), true);
     assert.equal(existsSync(join(claudeHome, "commands", "goal-prep.md")), false);
@@ -978,7 +979,7 @@ test("extend installs into the plugin skill after default plugin install", () =>
 
     const report = JSON.parse(installExtensions.stdout);
     assert.equal(report.installed, true);
-    assert.match(report.extensions[0].target, new RegExp(`plugins[\\\\/]cache[\\\\/]goalbuddy[\\\\/]goalbuddy[\\\\/][^\\\\/]+[\\\\/]skills[\\\\/]goalbuddy[\\\\/]extend[\\\\/]publish-github-projects$`));
+    assert.match(report.extensions[0].target, new RegExp(`plugins[\\\\/]cache[\\\\/]goalbuddy[\\\\/]goalbuddy[\\\\/][^\\\\/]+[\\\\/]skills[\\\\/]goal-prep[\\\\/]extend[\\\\/]publish-github-projects$`));
 
     const details = runGoalMaker(["extend", "publish-github-projects", "--catalog-url", catalogPath, "--codex-home", codexHome, "--json"], { env });
     assert.equal(details.status, 0, details.stderr || details.stdout);

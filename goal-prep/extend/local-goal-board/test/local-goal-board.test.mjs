@@ -24,7 +24,7 @@ test("normalizes a dense goal into local board columns", () => {
 });
 
 test("loads depth-1 subgoal boards into parent task payloads", () => {
-  const payload = createBoardPayload(resolve("goalbuddy/extend/local-goal-board/examples/subgoal-parent"));
+  const payload = createBoardPayload(resolve("goal-prep/extend/local-goal-board/examples/subgoal-parent"));
   const parentTask = payload.tasks.find((task) => task.id === "T004");
 
   assert.equal(parentTask.subgoal.status, "active");

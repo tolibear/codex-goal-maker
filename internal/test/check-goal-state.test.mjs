@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const checker = resolve("goalbuddy/scripts/check-goal-state.mjs");
+const checker = resolve("goal-prep/scripts/check-goal-state.mjs");
 
 function makeRoot() {
   const root = mkdtempSync(join(tmpdir(), "goal-maker-test-"));
@@ -683,7 +683,7 @@ tasks:
     status: done
     objective: "Update agent contracts."
     allowed_files:
-      - goalbuddy/agents/**
+      - goal-prep/agents/**
       - plugins/goalbuddy/**
     verify:
       - npm test
@@ -692,7 +692,7 @@ tasks:
     receipt:
       result: done
       changed_files:
-        - goalbuddy/agents/goal_scout.toml
+        - goal-prep/agents/goal_scout.toml
         - plugins/goalbuddy/agents/goal-scout.md
       commands:
         - cmd: npm test
