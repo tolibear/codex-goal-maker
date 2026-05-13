@@ -317,10 +317,17 @@ checks:
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const report = JSON.parse(result.stdout);
     assert.equal(report.metadata.recommended_agent, "goal_worker");
+    assert.equal(report.metadata.required_spawn_agent_type, "goal_worker");
     assert.equal(report.metadata.sandbox, "workspace-write");
     assert.equal(report.task.id, "T002");
     assert.deepEqual(report.task.allowed_files, ["goalbuddy/scripts/**"]);
     assert.equal(result.stdout.includes("A previous finding that should not force a full state dump."), false);
+
+    const human = runGoalMaker(["prompt", goal]);
+    assert.equal(human.status, 0, human.stderr || human.stdout);
+    assert.match(human.stdout, /Codex spawn_agent agent_type: goal_worker/);
+    assert.match(human.stdout, /Do not substitute generic scout, worker, or judge agents/);
+    assert.match(human.stdout, /After one wait_agent timeout/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -39,6 +39,7 @@ export function renderTaskPrompt(options) {
     payload: {
       metadata: {
         recommended_agent: defaults.agent,
+        required_spawn_agent_type: defaults.agent === "PM" ? null : defaults.agent,
         recommended_reasoning: reasoning,
         sandbox: defaults.sandbox,
         fork_context_allowed: role !== "worker",
@@ -204,6 +205,7 @@ function formatPrompt(payload) {
     "",
     "Metadata:",
     `- recommended_agent: ${payload.metadata.recommended_agent}`,
+    `- required_spawn_agent_type: ${payload.metadata.required_spawn_agent_type || "PM fallback"}`,
     `- recommended_reasoning: ${payload.metadata.recommended_reasoning}`,
     `- sandbox: ${payload.metadata.sandbox}`,
     `- fork_context_allowed: ${payload.metadata.fork_context_allowed}`,
@@ -219,6 +221,12 @@ function formatPrompt(payload) {
   }
 
   lines.push(
+    "",
+    "Spawn contract:",
+    `- Codex spawn_agent agent_type: ${payload.metadata.required_spawn_agent_type || "do not spawn; run as PM"}`,
+    "- Do not substitute generic scout, worker, or judge agents for GoalBuddy agents.",
+    "- If the required GoalBuddy agent is unavailable, stop spawning and continue as PM fallback or install agents.",
+    "- After one wait_agent timeout with no visible allowed-file changes, stop waiting and recover deterministically.",
     "",
     "Task:",
     `- id: ${payload.task.id}`,

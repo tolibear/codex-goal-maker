@@ -92,7 +92,7 @@ Use subgoals for bounded child work that belongs to a parent task. Use multiple 
 
 GoalBuddy can prepare safe parallel work; it does not run a parallel org chart.
 
-Use `goalbuddy prompt docs/goals/<slug>` to render a compact prompt for the active task without dumping the whole state file. Use `goalbuddy parallel-plan docs/goals/<slug>` to inspect read-only or disjoint write-scope work that can be handed to native Codex or Claude Code agent flows. The command reports recommendations only; it does not mutate state or spawn agents.
+Use `goalbuddy prompt docs/goals/<slug>` to render a compact prompt for the active task without dumping the whole state file. The prompt includes a mandatory `required_spawn_agent_type`; Codex PMs should use that exact GoalBuddy agent (`goal_scout`, `goal_worker`, or `goal_judge`) instead of a generic role agent. Use `goalbuddy parallel-plan docs/goals/<slug>` to inspect read-only or disjoint write-scope work that can be handed to native Codex or Claude Code agent flows. The command reports recommendations only; it does not mutate state or spawn agents.
 
 ## Update
 
@@ -108,7 +108,7 @@ That updates both Codex and Claude Code.
 
 GoalBuddy can open a local board while the work is running, so you can see the plan, active task, receipts, subgoals, and verification status without digging through the chat.
 
-Multiple local boards reuse one readable `goalbuddy.localhost` hub with an in-header board switcher. The viewer also supports dark mode, compact mode, completed-task collapse, active-work motion, and reduced-motion handling.
+Multiple local boards reuse one readable `goalbuddy.localhost` hub with an in-header board switcher. When sharing a board in chat or docs, use a real Markdown link such as `[Open GoalBuddy board](http://goalbuddy.localhost:41737/<slug>/)` so the URL is clickable. The viewer also supports dark mode, compact mode, completed-task collapse, active-work motion, and reduced-motion handling.
 
 See [GoalBuddy 0.3.5: Subgoals, Parallel Agents, and Dark Mode](RELEASE-0.3.5.md) for the release notes.
 
