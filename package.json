@@ -16,8 +16,13 @@
     "plugins/goalbuddy",
     "internal/assets",
     "internal/cli",
-    "goal-prep",
-    "goalbuddy/SKILL.md"
+    "goal-prep/SKILL.md",
+    "goal-prep/agents",
+    "goal-prep/scripts",
+    "goal-prep/extend",
+    "goal-prep/templates",
+    "goalbuddy/SKILL.md",
+    "deep-intake/SKILL.md"
   ],
   "scripts": {
     "check": "node --check internal/cli/*.mjs goal-prep/scripts/*.mjs && node --test internal/test/*.test.mjs",

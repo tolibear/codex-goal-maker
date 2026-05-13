@@ -22,11 +22,14 @@ const canonicalCliName = "goalbuddy";
 const pluginName = "goalbuddy";
 const canonicalSkillName = "goal-prep";
 const canonicalSkillDirectory = "goal-prep";
+const companionSkillName = "deep-intake";
+const companionSkillDirectory = "deep-intake";
 const legacyAliasSkillName = "goalbuddy";
 const legacyAliasSkillDirectory = "goalbuddy";
 const legacyCliName = "goal-maker";
 const legacySkillName = "goal-maker";
 const skillSource = join(packageRoot, canonicalSkillDirectory);
+const companionSkillSource = join(packageRoot, companionSkillDirectory);
 const legacyAliasSkillSource = join(packageRoot, legacyAliasSkillDirectory);
 const claudePluginSource = join(packageRoot, "plugins", "goalbuddy");
 const packageInfo = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
@@ -228,8 +231,8 @@ Usage:
 Targets: by default, install/update prepares both Codex (~/.codex) and Claude Code (~/.claude). Use --target codex or --target claude to limit the command.
 
 Default:
-  ${canonicalCliName}                  Installs and enables Codex, then installs Claude Code skill + agents (/goal-prep).
-  ${canonicalCliName} --target claude  Installs ${canonicalProductName} for Claude Code (skill + agents; /goal-prep).
+  ${canonicalCliName}                  Installs and enables Codex, then installs Claude Code skills + agents (/goal-prep and /deep-intake).
+  ${canonicalCliName} --target claude  Installs ${canonicalProductName} for Claude Code (skills + agents; /goal-prep and /deep-intake).
   ${canonicalCliName} --target codex   Installs and enables the native Codex plugin.
 
 Compatibility:
@@ -382,6 +385,12 @@ async function buildClaudeInstallReport() {
     label: `${canonicalProductName} ${canonicalSkillName}`,
     preserveExtensionPayload: true,
   });
+  const deepIntakeSkill = installClaudeSkill({
+    quiet,
+    directory: companionSkillDirectory,
+    source: companionSkillSource,
+    label: `${canonicalProductName} ${companionSkillName}`,
+  });
   const legacyAliasSkill = installClaudeSkill({
     quiet,
     directory: legacyAliasSkillDirectory,
@@ -400,6 +409,7 @@ async function buildClaudeInstallReport() {
     skill: goalPrepSkill,
     skills: {
       goal_prep: goalPrepSkill,
+      deep_intake: deepIntakeSkill,
       goalbuddy_alias: legacyAliasSkill,
     },
     agents: installClaudeAgents({ quiet }),
@@ -463,9 +473,11 @@ async function installEverywhere() {
 
 function doctorClaude() {
   const skillPath = join(claudeSkillRoot(canonicalSkillDirectory), "SKILL.md");
+  const companionSkillPath = join(claudeSkillRoot(companionSkillDirectory), "SKILL.md");
   const aliasSkillPath = join(claudeSkillRoot(legacyAliasSkillDirectory), "SKILL.md");
   const agentsPath = claudeAgentsRoot();
   const installed = existsSync(skillPath);
+  const companionInstalled = existsSync(companionSkillPath);
   const aliasInstalled = existsSync(aliasSkillPath);
   const aliasOwnership = installedSkillOwnership(claudeSkillRoot(legacyAliasSkillDirectory));
   const agents = existsSync(agentsPath)
@@ -482,6 +494,7 @@ function doctorClaude() {
   const legacyCommandPresent = existsSync(legacyCommandPath);
   const errors = [];
   if (!installed) errors.push("Missing Claude Code /goal-prep skill; run `npx goalbuddy --target claude`.");
+  if (!companionInstalled) errors.push("Missing Claude Code /deep-intake skill; run `npx goalbuddy --target claude`.");
   if (aliasInstalled && aliasOwnership === "custom") {
     errors.push("Existing Claude Code /goalbuddy skill is custom or not GoalBuddy-owned; inspect it before replacing it with the GoalBuddy alias.");
   }
@@ -500,6 +513,8 @@ function doctorClaude() {
     claude_home: claudeHome(),
     skill_installed: installed,
     skill_path: skillPath,
+    companion_skill_installed: companionInstalled,
+    companion_skill_path: companionSkillPath,
     legacy_alias_installed: aliasInstalled,
     legacy_alias_path: aliasSkillPath,
     legacy_alias_ownership: aliasOwnership,
@@ -523,6 +538,7 @@ function printClaudeInstallReport(report) {
   console.log(`${verb} ${canonicalProductName} for Claude Code${previous}`);
   console.log("");
   console.log(`Goal Prep skill: ${report.skills.goal_prep.status} at ${report.skills.goal_prep.path}`);
+  console.log(`Deep Intake skill: ${report.skills.deep_intake.status} at ${report.skills.deep_intake.path}`);
   console.log(`Legacy alias: ${report.skills.goalbuddy_alias.status} at ${report.skills.goalbuddy_alias.path}`);
   console.log(`Agents: ${summarizeStatuses(report.agents)}`);
   if (report.legacy_commands_cleanup?.removed) {
@@ -557,6 +573,7 @@ function printClaudeInstallReport(report) {
   console.log("");
   console.log("Next:");
   console.log(`  Restart Claude Code, then run: /goal-prep`);
+  console.log(`  For deeper intake, run: /${companionSkillName}`);
   console.log(`  Or invoke the skill: ${canonicalSkillName}`);
   console.log("");
   console.log("Also available for Codex:");
@@ -720,6 +737,9 @@ function doctor() {
   if (plugin.skill_installed && !plugin.enabled) {
     errors.push("Codex GoalBuddy plugin cache exists but is not enabled in config.toml; run `npx goalbuddy --target codex`.");
   }
+  if (plugin.skill_installed && !plugin.companion_skill_installed) {
+    errors.push("Codex GoalBuddy plugin is missing $deep-intake; run `npx goalbuddy update --target codex`.");
+  }
   for (const file of missingAgents) {
     errors.push(`Missing GoalBuddy Codex agent: ${file}; run \`npx goalbuddy --target codex\`.`);
   }
@@ -736,6 +756,7 @@ function doctor() {
     expected_state: {
       plugin_cache: true,
       bundled_skill: "$goal-prep",
+      companion_skill: "$deep-intake",
       standalone_personal_skill: false,
       compatibility_skill: false,
       agents: requiredAgentFiles,
@@ -897,6 +918,7 @@ function installPlugin({ quiet = false } = {}) {
   console.log("");
   console.log("Restart Codex, then use:");
   console.log(`  $${canonicalSkillName}`);
+  console.log(`  $${companionSkillName}`);
   console.log("");
   console.log("Bundled visual boards:");
   console.log(`  npx ${canonicalCliName} board docs/goals/<slug>`);
@@ -1444,6 +1466,8 @@ function installedCodexPlugin() {
     manifest_path: "",
     skill_installed: false,
     skill_path: "",
+    companion_skill_installed: false,
+    companion_skill_path: "",
     legacy_alias_skill_installed: false,
     legacy_alias_skill_path: "",
     legacy_goalbuddy_payload_installed: false,
@@ -1460,6 +1484,7 @@ function installedCodexPlugin() {
   for (const version of versions) {
     const cachePath = join(root, version);
     const skillPath = join(cachePath, "skills", canonicalSkillDirectory);
+    const companionSkillPath = join(cachePath, "skills", companionSkillDirectory);
     const aliasSkillPath = join(cachePath, "skills", legacyAliasSkillDirectory);
     const manifestPath = join(cachePath, ".codex-plugin", "plugin.json");
     if (existsSync(join(skillPath, "SKILL.md"))) {
@@ -1471,6 +1496,8 @@ function installedCodexPlugin() {
         manifest_path: manifestPath,
         skill_installed: true,
         skill_path: skillPath,
+        companion_skill_installed: existsSync(join(companionSkillPath, "SKILL.md")),
+        companion_skill_path: companionSkillPath,
         legacy_alias_skill_installed: existsSync(join(aliasSkillPath, "SKILL.md")),
         legacy_alias_skill_path: aliasSkillPath,
       };
@@ -1729,7 +1756,7 @@ function installedSkillOwnership(target) {
   const skillPath = join(target, "SKILL.md");
   if (!existsSync(skillPath)) return "custom";
   const text = readFileSync(skillPath, "utf8");
-  if (/GoalBuddy/.test(text) && /name:\s*(goal-prep|goalbuddy|goal-maker)\b/.test(text)) {
+  if (/GoalBuddy/.test(text) && /name:\s*(goal-prep|goalbuddy|goal-maker|deep-intake)\b/.test(text)) {
     return "owned_untracked";
   }
   return "custom";
@@ -1850,6 +1877,7 @@ function printEverywhereInstallReport(report) {
     console.log(`Claude Code: not completed (${report.claude.error})`);
   } else if (report.claude) {
     console.log(`Claude Code: /goal-prep ${report.claude.skills.goal_prep.status} at ${report.claude.skills.goal_prep.path}`);
+    console.log(`Claude Code: /deep-intake ${report.claude.skills.deep_intake.status} at ${report.claude.skills.deep_intake.path}`);
     console.log(`Claude Code: /goalbuddy alias ${report.claude.skills.goalbuddy_alias.status} at ${report.claude.skills.goalbuddy_alias.path}`);
     console.log(`Claude Code agents: ${summarizeStatuses(report.claude.agents)}`);
     if (report.claude.legacy_commands_cleanup?.removed) {
@@ -1866,7 +1894,9 @@ function printEverywhereInstallReport(report) {
   console.log("");
   console.log("Next:");
   console.log(`  Restart Codex, then use: $${canonicalSkillName}`);
+  console.log(`  For deeper Codex intake, use: $${companionSkillName}`);
   console.log("  Restart Claude Code, then run: /goal-prep");
+  console.log(`  For deeper Claude Code intake, run: /${companionSkillName}`);
 }
 
 function summarizeStatuses(items) {

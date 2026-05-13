@@ -618,6 +618,8 @@ test("plugin install adds marketplace, caches plugin, and enables config", () =>
     assert.match(report.config_path, /config\.toml$/);
     assert.equal(existsSync(join(report.cache_path, "skills", "goal-prep", "extend", "local-goal-board", "scripts", "local-goal-board.mjs")), true);
     assert.equal(existsSync(join(report.cache_path, "skills", "goal-prep", "extend", "github-projects", "scripts", "sync-github-project.mjs")), true);
+    assert.equal(existsSync(join(report.cache_path, "skills", "deep-intake", "SKILL.md")), true);
+    assert.equal(existsSync(join(report.cache_path, "skills", "goalbuddy", "SKILL.md")), true);
 
     const config = readFileSync(join(codexHome, "config.toml"), "utf8");
     assert.match(config, /\[plugins\."goalbuddy@goalbuddy"\]/);
@@ -796,8 +798,12 @@ test("default command installs Codex and Claude Code when both homes are provide
     assert.equal(report.ok, true);
     assert.equal(report.codex.installed, true);
     assert.equal(report.claude.skill.status, "installed");
+    assert.equal(report.claude.skills.goal_prep.status, "installed");
+    assert.equal(report.claude.skills.deep_intake.status, "installed");
+    assert.equal(report.claude.skills.goalbuddy_alias.status, "installed");
     assert.equal(existsSync(join(codexHome, "config.toml")), true);
     assert.equal(existsSync(join(claudeHome, "skills", "goal-prep", "SKILL.md")), true);
+    assert.equal(existsSync(join(claudeHome, "skills", "deep-intake", "SKILL.md")), true);
     assert.equal(existsSync(join(claudeHome, "skills", "goalbuddy", "SKILL.md")), true);
     assert.equal(existsSync(join(claudeHome, "agents", "goal-worker.md")), true);
     assert.equal(existsSync(join(claudeHome, "commands", "goal-prep.md")), false);
@@ -820,6 +826,55 @@ test("install removes a pre-existing legacy ~/.claude/commands/goal-prep.md", ()
     const report = JSON.parse(install.stdout);
     assert.equal(report.legacy_commands_cleanup.removed, true);
     assert.equal(existsSync(legacyCommand), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("Claude doctor checks goal-prep and deep-intake command skills", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const claudeHome = join(root, "claude-home");
+
+    const install = runGoalMaker(["install", "--target", "claude", "--claude-home", claudeHome, "--json"]);
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+
+    const doctor = runGoalMaker(["doctor", "--target", "claude", "--claude-home", claudeHome]);
+    assert.equal(doctor.status, 0, doctor.stderr || doctor.stdout);
+    const report = JSON.parse(doctor.stdout);
+    assert.equal(report.skill_installed, true);
+    assert.match(report.skill_path, pathSuffixPattern("skills", "goal-prep", "SKILL.md"));
+    assert.equal(report.companion_skill_installed, true);
+    assert.match(report.companion_skill_path, pathSuffixPattern("skills", "deep-intake", "SKILL.md"));
+    assert.equal(report.legacy_alias_installed, true);
+    assert.deepEqual(report.errors, []);
+
+    rmSync(join(claudeHome, "skills", "deep-intake"), { recursive: true, force: true });
+    const missing = runGoalMaker(["doctor", "--target", "claude", "--claude-home", claudeHome]);
+    assert.equal(missing.status, 1, missing.stderr || missing.stdout);
+    assert.match(JSON.parse(missing.stdout).errors.join("\n"), /Missing Claude Code \/deep-intake skill/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("Claude install does not overwrite custom goalbuddy skill alias", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const claudeHome = join(root, "claude-home");
+    const customAlias = join(claudeHome, "skills", "goalbuddy");
+    mkdirSync(customAlias, { recursive: true });
+    writeFileSync(join(customAlias, "SKILL.md"), "---\nname: goalbuddy\ndescription: Custom unrelated skill.\n---\n# Custom\n");
+
+    const install = runGoalMaker(["install", "--target", "claude", "--claude-home", claudeHome, "--json"]);
+    assert.equal(install.status, 0, install.stderr || install.stdout);
+    const report = JSON.parse(install.stdout);
+    assert.equal(report.skills.goalbuddy_alias.status, "skipped_custom");
+    assert.match(readFileSync(join(customAlias, "SKILL.md"), "utf8"), /Custom unrelated skill/);
+
+    const doctor = runGoalMaker(["doctor", "--target", "claude", "--claude-home", claudeHome]);
+    assert.equal(doctor.status, 1, doctor.stderr || doctor.stdout);
+    assert.match(JSON.parse(doctor.stdout).errors.join("\n"), /custom or not GoalBuddy-owned/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
