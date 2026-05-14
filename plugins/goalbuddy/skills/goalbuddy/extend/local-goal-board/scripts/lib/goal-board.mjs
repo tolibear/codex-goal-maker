@@ -110,7 +110,7 @@ export function normalizeTask(task, index) {
   }
 
   const id = cleanText(task.id);
-  const status = cleanText(task.status);
+  const status = normalizeTaskStatus(task.status);
   if (!id) throw new GoalBoardError(`Task ${index + 1} is missing id.`);
   if (!VALID_STATUSES.has(status)) {
     throw new GoalBoardError(`Task ${id} has unsupported status "${status}".`);
@@ -332,14 +332,222 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function normalizeTaskStatus(value) {
+  const status = cleanText(value);
+  if (status === "complete" || status === "completed") return "done";
+  return status;
+}
+
 export function parseGoalStateText(text) {
-  const lines = tokenizeYaml(text);
-  if (!lines.length) throw new GoalBoardError("Goal state is empty.");
-  const [value, nextIndex] = parseBlock(lines, 0, lines[0].indent);
-  if (nextIndex < lines.length) {
-    throw new GoalBoardError(`Could not parse line ${lines[nextIndex].number}.`);
+  try {
+    const lines = tokenizeYaml(text);
+    if (!lines.length) throw new GoalBoardError("Goal state is empty.");
+    const [value, nextIndex] = parseBlock(lines, 0, lines[0].indent);
+    if (nextIndex < lines.length) {
+      throw new GoalBoardError(`Could not parse line ${lines[nextIndex].number}.`);
+    }
+    return value;
+  } catch (error) {
+    if (error instanceof GoalBoardError && canRecoverBoardSubset(error)) {
+      return parseGoalBoardSubset(text);
+    }
+    throw error;
   }
-  return value;
+}
+
+function canRecoverBoardSubset(error) {
+  return /Could not parse line|Expected key\/value pair|Expected mapping|Block scalar YAML/.test(error.message);
+}
+
+function parseGoalBoardSubset(text) {
+  const tasks = parseTaskSubsets(text);
+  if (!tasks.length) throw new GoalBoardError("Missing non-empty tasks list.");
+  return {
+    version: parseYamlScalar(findTopLevelScalar(text, "version") || "2"),
+    goal: {
+      title: parseYamlScalar(findNestedScalar(text, "goal", "title") || "Untitled goal"),
+      slug: parseYamlScalar(findNestedScalar(text, "goal", "slug") || "untitled-goal"),
+      kind: parseYamlScalar(findNestedScalar(text, "goal", "kind") || "open_ended"),
+      tranche: parseYamlScalar(findNestedScalar(text, "goal", "tranche") || ""),
+      status: parseYamlScalar(findNestedScalar(text, "goal", "status") || "active"),
+    },
+    active_task: parseYamlScalar(findTopLevelScalar(text, "active_task") || ""),
+    tasks,
+  };
+}
+
+function parseTaskSubsets(text) {
+  const tasksText = findTopLevelSection(text, "tasks");
+  if (!tasksText) return [];
+  const taskBlocks = [];
+  let current = [];
+  for (const line of tasksText.split("\n")) {
+    if (/^  - id:/.test(line)) {
+      if (current.length) taskBlocks.push(current.join("\n"));
+      current = [line];
+    } else if (current.length) {
+      current.push(line);
+    }
+  }
+  if (current.length) taskBlocks.push(current.join("\n"));
+  return taskBlocks.map((block) => ({
+    id: parseYamlScalar(findTaskScalar(block, "id") || ""),
+    type: parseYamlScalar(findTaskScalar(block, "type") || "pm"),
+    assignee: parseYamlScalar(findTaskScalar(block, "assignee") || ""),
+    status: parseYamlScalar(findTaskScalar(block, "status") || "queued"),
+    title: parseYamlScalar(findTaskScalar(block, "title") || ""),
+    objective: parseYamlScalar(findTaskScalar(block, "objective") || ""),
+    inputs: findTaskList(block, "inputs"),
+    constraints: findTaskList(block, "constraints"),
+    expected_output: findTaskList(block, "expected_output"),
+    allowed_files: findTaskList(block, "allowed_files"),
+    verify: findTaskList(block, "verify"),
+    stop_if: findTaskList(block, "stop_if"),
+    subgoal: findTaskSubgoal(block),
+    receipt: findTaskReceipt(block),
+  }));
+}
+
+function findTopLevelScalar(text, key) {
+  return findScalar(text, new RegExp(`^${escapeRegExp(key)}:\\s*(.*?)\\s*$`, "m"));
+}
+
+function findNestedScalar(text, section, key) {
+  return findScalar(findTopLevelSection(text, section), new RegExp(`^  ${escapeRegExp(key)}:\\s*(.*?)\\s*$`, "m"));
+}
+
+function findTaskScalar(text, key) {
+  if (key === "id") return findScalar(text, /^  - id:\s*(.*?)\s*$/m);
+  return findScalar(text, new RegExp(`^    ${escapeRegExp(key)}:\\s*(.*?)\\s*$`, "m"));
+}
+
+function findScalar(text, pattern) {
+  const match = String(text || "").match(pattern);
+  return match ? match[1] : "";
+}
+
+function findTopLevelSection(text, key) {
+  const lines = String(text || "").replace(/\r\n/g, "\n").split("\n");
+  const start = lines.findIndex((line) => line.trim() === `${key}:`);
+  if (start === -1) return "";
+  const section = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (/^\S/.test(line)) break;
+    section.push(line);
+  }
+  return section.join("\n");
+}
+
+function findIndentedSection(text, key, indent) {
+  const lines = String(text || "").replace(/\r\n/g, "\n").split("\n");
+  const prefix = " ".repeat(indent);
+  const start = lines.findIndex((line) => line.trim() === `${key}:` && line.startsWith(prefix));
+  if (start === -1) return "";
+  const section = [];
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim() && !line.startsWith(`${prefix}  `)) break;
+    section.push(line);
+  }
+  return section.join("\n");
+}
+
+function findTaskList(text, key) {
+  const inline = findTaskScalar(text, key);
+  if (inline) {
+    const parsed = parseYamlScalar(inline);
+    if (Array.isArray(parsed)) return parsed.map(cleanText).filter(Boolean);
+    return cleanText(parsed) ? [cleanText(parsed)] : [];
+  }
+  const section = findIndentedSection(text, key, 4);
+  return section
+    .split("\n")
+    .map((line) => line.match(/^      -\s*(.*?)\s*$/)?.[1] || "")
+    .map(parseYamlScalar)
+    .map(cleanText)
+    .filter(Boolean);
+}
+
+function findTaskSubgoal(text) {
+  const inline = findTaskScalar(text, "subgoal");
+  if (inline && parseYamlScalar(inline) === null) return null;
+  const section = findIndentedSection(text, "subgoal", 4);
+  if (!section) return null;
+  return {
+    status: parseYamlScalar(findScalar(section, /^      status:\s*(.*?)\s*$/m) || "active"),
+    path: parseYamlScalar(findScalar(section, /^      path:\s*(.*?)\s*$/m) || ""),
+    owner: parseYamlScalar(findScalar(section, /^      owner:\s*(.*?)\s*$/m) || ""),
+    created_from: parseYamlScalar(findScalar(section, /^      created_from:\s*(.*?)\s*$/m) || ""),
+    depth: parseYamlScalar(findScalar(section, /^      depth:\s*(.*?)\s*$/m) || "1"),
+    rollup_receipt: parseYamlScalar(findScalar(section, /^      rollup_receipt:\s*(.*?)\s*$/m) || "null"),
+  };
+}
+
+function findTaskReceipt(text) {
+  const inline = findTaskScalar(text, "receipt");
+  if (inline && parseYamlScalar(inline) === null) return null;
+  const section = findIndentedSection(text, "receipt", 4);
+  if (!section) return null;
+  return {
+    result: parseYamlScalar(findScalar(section, /^      result:\s*(.*?)\s*$/m) || ""),
+    summary: parseYamlScalar(findScalar(section, /^      summary:\s*(.*?)\s*$/m) || ""),
+    decision: parseYamlScalar(findScalar(section, /^      decision:\s*(.*?)\s*$/m) || ""),
+    note: parseYamlScalar(findScalar(section, /^      note:\s*(.*?)\s*$/m) || ""),
+    changed_files: findReceiptList(section, "changed_files"),
+    commands: findReceiptCommands(section),
+    evidence: [],
+  };
+}
+
+function findReceiptList(text, key) {
+  const section = findIndentedSection(text, key, 6);
+  return section
+    .split("\n")
+    .map((line) => line.match(/^        -\s*(.*?)\s*$/)?.[1] || "")
+    .map(parseYamlScalar)
+    .map(cleanText)
+    .filter(Boolean);
+}
+
+function findReceiptCommands(text) {
+  const section = findIndentedSection(text, "commands", 6);
+  const blocks = [];
+  let current = [];
+  for (const line of section.split("\n")) {
+    if (/^        - cmd:/.test(line)) {
+      if (current.length) blocks.push(current.join("\n"));
+      current = [line];
+    } else if (current.length) {
+      current.push(line);
+    }
+  }
+  if (current.length) blocks.push(current.join("\n"));
+  return blocks.map((block) => ({
+    cmd: parseYamlScalar(findScalar(block, /^        - cmd:\s*(.*?)\s*$/m) || ""),
+    status: parseYamlScalar(findScalar(block, /^          status:\s*(.*?)\s*$/m) || ""),
+    note: parseYamlScalar(findScalar(block, /^          note:\s*(.*?)\s*$/m) || ""),
+  }));
+}
+
+function parseYamlScalar(value) {
+  const text = stripComment(String(value ?? "")).trim();
+  if (!text) return "";
+  try {
+    return parseScalar(text);
+  } catch {
+    if (
+      (text.startsWith("\"") && text.endsWith("\"")) ||
+      (text.startsWith("'") && text.endsWith("'"))
+    ) {
+      return text.slice(1, -1);
+    }
+    return text;
+  }
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function tokenizeYaml(text) {
@@ -1326,6 +1534,25 @@ h1 {
   font-size: 14px;
 }
 
+.board-error {
+  grid-column: 1 / -1;
+  padding: 18px;
+  border: 1px solid var(--red-border);
+  border-radius: 8px;
+  background: var(--red-bg);
+  color: var(--text);
+}
+
+.board-error h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.board-error p {
+  margin: 0;
+  color: var(--muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .github-stars,
   .settings-button,
@@ -1825,11 +2052,25 @@ function renderBoard(board) {
   document.getElementById("goal-active").textContent = board.goal.activeTask || "None";
   document.getElementById("goal-updated").textContent = new Date(board.generatedAt).toLocaleTimeString();
 
+  if (board.error) {
+    boardEl.replaceChildren(renderBoardError(board.error));
+    return;
+  }
+
   const delay = movingTaskIds.size ? 260 : 0;
   window.setTimeout(() => {
     boardEl.replaceChildren(...board.columns.map(renderColumn));
     animateCardMoves(previousPositions, movingTaskIds);
   }, delay);
+}
+
+function renderBoardError(message) {
+  const node = el("section", "board-error");
+  node.append(
+    el("h2", "", "GoalBuddy could not parse this board"),
+    el("p", "", message),
+  );
+  return node;
 }
 
 function renderBoardSwitcher(boards) {

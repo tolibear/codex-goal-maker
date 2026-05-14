@@ -82,6 +82,62 @@ tasks:
   }
 });
 
+test("keeps board rendering when deep receipt YAML is malformed", () => {
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-board-subset-parser-"));
+  try {
+    const goalDir = join(root, "subset-parser");
+    mkdirSync(join(goalDir, "notes"), { recursive: true });
+    writeFileSync(join(goalDir, "state.yaml"), `version: 2
+goal:
+  title: "Subset parser"
+  slug: "subset-parser"
+  kind: specific
+  tranche: "Recover shallow board fields."
+  status: active
+active_task: T003
+checks:
+  last_verification:
+    status: pass
+    raw:
+      malformed nested checker output
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: completed
+    objective: "Ship a completed worker slice."
+    receipt:
+      result: done
+      summary: "Worker finished."
+      raw:
+        malformed nested receipt output
+  - id: T002
+    type: judge
+    assignee: Judge
+    status: complete
+    objective: "Approve the result."
+    receipt: null
+  - id: T003
+    type: scout
+    assignee: Scout
+    status: active
+    objective: "Inspect what is left."
+    receipt: null
+`);
+
+    const payload = createBoardPayload(goalDir);
+    assert.equal(payload.goal.title, "Subset parser");
+    assert.equal(payload.goal.activeTask, "T003");
+    assert.equal(payload.counts.completed, 2);
+    assert.equal(payload.counts.inProgress, 1);
+    assert.equal(payload.tasks.find((task) => task.id === "T001").status, "done");
+    assert.equal(payload.tasks.find((task) => task.id === "T002").status, "done");
+    assert.equal(payload.tasks.find((task) => task.id === "T001").receipt.summary, "Worker finished.");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("fails loudly when a linked subgoal state file is missing", () => {
   const root = mkdtempSync(join(tmpdir(), "goalbuddy-missing-subgoal-"));
   try {
@@ -194,6 +250,7 @@ test("writes a minimal GoalBuddy web app into the goal directory", () => {
   assert.match(css, /:root\[data-density="compact"\] \.task-card/);
   assert.match(css, /:root\[data-completed-visibility="collapse"\]/);
   assert.match(css, /\.subgoal-board/);
+  assert.match(css, /\.board-error/);
   assert.match(js, /new EventSource\("\.\/events"\)/);
   assert.match(js, /fetch\("\.\.\/api\/boards"/);
   assert.match(js, /fetch\("\.\.\/api\/settings"/);
@@ -206,6 +263,7 @@ test("writes a minimal GoalBuddy web app into the goal directory", () => {
   assert.match(js, /card\.animate/);
   assert.match(js, /highlightMovingCards/);
   assert.match(js, /renderSubgoal/);
+  assert.match(js, /renderBoardError/);
   assert.match(js, /boardOptionLabel/);
   assert.match(js, /duration: changedColumn \? 980 : 520/);
   assert.equal(logo.subarray(1, 4).toString("ascii"), "PNG");
@@ -333,7 +391,7 @@ test("advertises goalbuddy.localhost while binding to loopback", async () => {
 });
 
 test("runs when installed under a symlinked temp path", () => {
-  const root = mkdtempSync("/tmp/goalbuddy-local-board-direct-");
+  const root = mkdtempSync(join(tmpdir(), "goalbuddy-local-board-direct-"));
   try {
     cpSync("extend/local-goal-board/scripts", join(root, "scripts"), { recursive: true });
     cpSync("extend/local-goal-board/assets", join(root, "assets"), { recursive: true });
