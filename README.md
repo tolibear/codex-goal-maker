@@ -89,11 +89,17 @@ rough idea -> goal prep -> /goal -> scout -> judge -> worker -> receipt -> verif
 
 Scout maps the repo.
 
-Judge chooses the next bounded slice.
+Judge chooses the largest safe useful slice.
 
-Worker changes code and leaves a receipt.
+Worker completes the whole assigned slice and leaves a receipt.
 
 `/goal` keeps the loop honest until the original goal is actually done.
+
+## Slice Sizing
+
+Safe does not mean small. Safe means bounded, explicit, verified, and reversible.
+
+GoalBuddy should not optimize for tiny safe tasks. It should optimize for the largest safe useful slice: a working screen, working API path, data pipeline step, backend vertical slice, real bug fix, or milestone review. The board warns when it sees safe-looking work that keeps adding helpers, contracts, proof files, or doc notes without moving the outcome.
 
 ## Subgoals, Parallel Agents, and Dark Mode
 

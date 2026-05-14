@@ -195,6 +195,95 @@ checks:
   }
 });
 
+test("warns on active micro Worker/Judge loops without breaking old boards", () => {
+  const root = makeRoot();
+  try {
+    writeState(root, `
+version: 2
+goal:
+  title: "Projection helper churn"
+  slug: "projection-helper-churn"
+  kind: existing_plan
+  tranche: "backend foundation"
+  status: active
+  full_outcome_complete: false
+rules:
+  continuous_until_full_outcome: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T004
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Create one narrow pure caller-input user_roles projection helper."
+    allowed_files:
+      - lib/db/user-role-projection.ts
+    verify:
+      - npm test
+    stop_if:
+      - "Need files outside allowed_files."
+    receipt:
+      result: done
+      changed_files:
+        - lib/db/user-role-projection.ts
+      commands:
+        - cmd: npm test
+          status: pass
+      summary: "Added one helper."
+  - id: T002
+    type: judge
+    assignee: Judge
+    status: done
+    objective: "Audit T001's pure caller-input user_roles projection helper."
+    receipt:
+      result: done
+      decision: approved
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Create one narrow pure caller-input connector_runs projection helper."
+    allowed_files:
+      - lib/db/connector-run-projection.ts
+    verify:
+      - npm test
+    stop_if:
+      - "Need files outside allowed_files."
+    receipt:
+      result: done
+      changed_files:
+        - lib/db/connector-run-projection.ts
+      commands:
+        - cmd: npm test
+          status: pass
+      summary: "Added one helper."
+  - id: T004
+    type: judge
+    assignee: Judge
+    status: active
+    objective: "Audit T003's pure caller-input connector_runs projection helper."
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+    const result = runChecker(root);
+    assert.equal(result.status, 0, result.stderr || JSON.stringify(result.stdout));
+    assert.equal(result.stdout.ok, true);
+    assert.match(result.stdout.warnings.join("\n"), /Board may be micro-slicing\. Prefer the largest safe useful slice/i);
+    assert.match(result.stdout.warnings.join("\n"), /Micro Worker\/Judge loop detected/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("rejects invalid goal status and absent agent states", () => {
   const root = makeRoot();
   try {

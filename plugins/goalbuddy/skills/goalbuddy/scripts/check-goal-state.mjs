@@ -369,6 +369,9 @@ for (const task of tasks) {
         errors.push(`Worker receipt for ${task.id} has non-passing command status: ${status}`);
       }
     }
+    if (task.receipt.scalar("needs_judge") === true) {
+      warnings.push(`Worker receipt for ${task.id} requests legacy needs_judge; GoalBuddy now lets the PM continue by default and reviews only at phase, risk, ambiguity, rejected-verification, or final-completion boundaries`);
+    }
   }
   if (task.type === "scout" && task.status === "done" && hasReceipt) {
     if (!task.receipt.has("summary")) errors.push(`Scout receipt for ${task.id} missing summary`);
@@ -380,6 +383,8 @@ for (const task of tasks) {
     errors.push(`Judge receipt for ${task.id} missing decision`);
   }
 }
+
+warnings.push(...microSliceWarnings(tasks, activeTask, goalStatus));
 
 function validateSubgoal(task) {
   if (isChildCheck) {
@@ -428,6 +433,77 @@ function validateSubgoal(task) {
       errors.push(`task ${task.id} subgoal invalid: ${childError}`);
     }
   }
+}
+
+function microSliceWarnings(tasks, activeTaskId, goalStatus) {
+  const found = [];
+  const guidance = "Board may be micro-slicing. Prefer the largest safe useful slice.";
+  const doneTasks = tasks.filter((task) => task.status === "done");
+  const workerTasks = tasks.filter((task) => task.type === "worker");
+  const recentTinyWorkers = workerTasks.slice(-5).filter((task) => isTinyTask(task));
+  const firstMilestoneComplete = nestedScalar("goal", "first_milestone_complete") === true;
+
+  if (recentTinyWorkers.length >= 3) {
+    found.push(`${guidance} Three recent Worker tasks look tiny.`);
+  }
+
+  for (const task of tasks) {
+    if (task.type === "judge" && /pick small reviewable work|select one narrow next task/i.test(task.raw)) {
+      found.push(`${guidance} Judge instructions still ask for small or narrow work.`);
+      break;
+    }
+  }
+
+  if (goalStatus !== "active" || !activeTaskId) return [...new Set(found)];
+  const activeIndex = tasks.findIndex((task) => task.id === activeTaskId);
+  if (activeIndex === -1) return [...new Set(found)];
+  const active = tasks[activeIndex];
+  if (active.type === "worker") {
+    if (doneTasks.length >= 10 && active.allowedFiles.length > 0 && active.allowedFiles.length <= 2) {
+      found.push(`${guidance} Active Worker ${active.id} has only ${active.allowedFiles.length} allowed_files after ${doneTasks.length} completed tasks.`);
+    }
+    if (firstMilestoneComplete && isTinyTask(active)) {
+      found.push(`${guidance} The first milestone is complete, so the active Worker should move toward the next real milestone.`);
+    }
+    if (isMicroWorkerTask(active)) {
+      found.push(`${guidance} Active Worker ${active.id} looks like another helper-sized slice.`);
+    }
+  }
+  if (active.type !== "judge") return [...new Set(found)];
+
+  let pairs = 0;
+  for (let index = activeIndex; index > 0; index -= 2) {
+    const judge = tasks[index];
+    const worker = tasks[index - 1];
+    if (!isMicroJudgeForWorker(judge, worker)) break;
+    pairs += 1;
+  }
+  if (pairs >= 2) {
+    found.push(`${guidance} Micro Worker/Judge loop detected ending at ${active.id}.`);
+  }
+  return [...new Set(found)];
+}
+
+function isMicroJudgeForWorker(judge, worker) {
+  if (!judge || !worker) return false;
+  if (judge.type !== "judge" || worker.type !== "worker") return false;
+  if (!["active", "queued", "done"].includes(judge.status) || worker.status !== "done") return false;
+  const objective = String(judge.objective || "").toLowerCase();
+  return objective.includes(worker.id.toLowerCase()) && /audit|review|approve/.test(objective) && isMicroWorkerTask(worker);
+}
+
+function isMicroWorkerTask(task) {
+  if (!task || task.type !== "worker") return false;
+  const objective = String(task.objective || "").toLowerCase();
+  if (/collapsed|batch|package|tranche/.test(objective)) return false;
+  return /one narrow|single helper|one helper|per[- ]helper|per[- ]table|projection helper/.test(objective);
+}
+
+function isTinyTask(task) {
+  if (!task) return false;
+  const text = [task.objective, task.raw, task.receipt?.raw].join(" ").toLowerCase();
+  if (/collapsed|batch|package|tranche|vertical slice|milestone/.test(text)) return false;
+  return /\b(tiny|narrow|single helper|one helper|projection helper|projection function|contract file|read-only proof|doc note|validator|validation wrapper|pure helper|caller-input)\b/.test(text);
 }
 
 function matchesAllowedFile(file, allowedFiles) {

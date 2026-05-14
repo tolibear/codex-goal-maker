@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Prefer the largest safe useful slice.** GoalBuddy now teaches Judge to pick whole useful slices, Worker to complete the assigned slice, and PM to reorient boards when tasks are safe-looking but outcome-light. `goalbuddy prompt` and the state checker emit non-fatal micro-slicing warnings without breaking old boards.
 - **Hardened Codex plugin-only installs.** Codex install/update now use the native plugin path, refresh the bundled Scout/Judge/Worker agents, and leave stale personal `~/.codex/skills/goalbuddy` / `goal-maker` folders out of the expected clean state.
 - **Fixed Codex doctor for plugin-only installs.** `goalbuddy doctor --target codex --goal-ready` now validates the plugin cache, bundled `$goal-prep` skill, enabled plugin config, and GoalBuddy agents instead of failing only because standalone personal skill folders are absent. The report also distinguishes native OpenAI-gated Codex `/goal` from GoalBuddy `$goal-prep` and local boards.
 - **Made mutating command help safe.** `goalbuddy plugin install --help` and `goalbuddy update --help` print help without installing, updating, or touching global Codex/Claude files.

@@ -7,7 +7,7 @@ import { parseGoalStateText } from "../extend/local-goal-board/scripts/lib/goal-
 const ROLE_DEFAULTS = {
   scout: { agent: "goal_scout", reasoning: "low", sandbox: "read-only" },
   judge: { agent: "goal_judge", reasoning: "high", sandbox: "read-only" },
-  worker: { agent: "goal_worker", reasoning: "low", sandbox: "workspace-write" },
+  worker: { agent: "goal_worker", reasoning: "medium", sandbox: "workspace-write" },
   pm: { agent: "PM", reasoning: "medium", sandbox: "workspace-write" },
 };
 
@@ -45,6 +45,7 @@ export function renderTaskPrompt(options) {
         fork_context_allowed: role !== "worker",
         board_path: board.path,
         child_board_paths: childBoardPaths(board),
+        slice_policy: board.document.rules?.slice_policy || null,
         warnings,
       },
       task: {
@@ -144,13 +145,51 @@ function promptWarnings(board, task) {
     if (stringList(task.allowed_files).length === 0) warnings.push(`Worker task ${task.id} has no allowed_files.`);
     if (stringList(task.verify).length === 0) warnings.push(`Worker task ${task.id} has no verify commands.`);
     if (stringList(task.stop_if).length === 0) warnings.push(`Worker task ${task.id} has no stop_if conditions.`);
+    if (isFalse(board.goal.full_outcome_complete)) {
+      warnings.push(`full_outcome_complete is false and ${task.id} is an active Worker; do not stop after rendering or repairing the board. Execute the Worker unless a stop_if condition applies.`);
+    }
   }
   for (const candidate of board.tasks) {
     if (candidate?.subgoal && Number(candidate.subgoal.depth) !== 1) {
       warnings.push(`Task ${candidate.id} has subgoal.depth ${candidate.subgoal.depth || "<missing>"}; only depth 1 is supported.`);
     }
   }
+  warnings.push(...microSliceWarnings(board, task));
   return warnings;
+}
+
+function microSliceWarnings(board, task) {
+  const warnings = [];
+  const doneTasks = board.tasks.filter((candidate) => candidate?.status === "done");
+  const recentWorkers = board.tasks
+    .filter((candidate) => normalizeRole(candidate?.type) === "worker")
+    .slice(-5);
+  const recentTinyWorkers = recentWorkers.filter((candidate) => isTinyTask(candidate));
+  const activeRole = normalizeRole(task.type);
+  const activeAllowedFiles = stringList(task.allowed_files);
+  const firstMilestoneComplete = isTrue(board.goal.first_milestone_complete);
+  const microWarning = "Board may be micro-slicing. Prefer the largest safe useful slice.";
+
+  if (recentTinyWorkers.length >= 3) warnings.push(microWarning);
+  if (doneTasks.length >= 10 && activeRole === "worker" && activeAllowedFiles.length > 0 && activeAllowedFiles.length <= 2) {
+    warnings.push(`${microWarning} Active Worker ${task.id} has only ${activeAllowedFiles.length} allowed_files after ${doneTasks.length} completed tasks.`);
+  }
+  if (firstMilestoneComplete && activeRole === "worker" && isTinyTask(task)) {
+    warnings.push(`${microWarning} The first milestone is complete, so the active Worker should move toward the next real milestone.`);
+  }
+  if (activeRole === "judge" && /pick small reviewable work|select one narrow next task/i.test(String(task.objective || "") + "\n" + stringList(task.constraints).join("\n"))) {
+    warnings.push(`${microWarning} Judge instructions still ask for small or narrow work.`);
+  }
+  return [...new Set(warnings)];
+}
+
+function isTinyTask(task) {
+  const text = [
+    task?.objective,
+    stringList(task?.constraints).join(" "),
+    task?.receipt?.summary,
+  ].join(" ").toLowerCase();
+  return /\b(tiny|narrow|single helper|one helper|projection helper|projection function|contract file|read-only proof|doc note|validator|validation wrapper|pure helper|caller-input)\b/.test(text);
 }
 
 function normalizeRole(value) {
@@ -162,6 +201,14 @@ function normalizeReasoning(value, fallback) {
   const hint = String(value || "").toLowerCase();
   if (["low", "medium", "high", "xhigh"].includes(hint)) return hint;
   return fallback;
+}
+
+function isFalse(value) {
+  return value === false || String(value).toLowerCase() === "false";
+}
+
+function isTrue(value) {
+  return value === true || String(value).toLowerCase() === "true";
 }
 
 function stringList(value) {
@@ -176,15 +223,14 @@ function receiptSchema(role) {
       commands: [{ cmd: "<command>", status: "pass | fail | not_run" }],
       summary: "<=120 words",
       remaining_blockers: [],
-      needs_judge: false,
     };
   }
   if (role === "judge") {
     return {
       result: "done | blocked",
-      decision: "approve_next | reject_next | approve_subgoal | reject_subgoal | not_complete | complete",
+      decision: "approved | rejected | approve_subgoal | reject_subgoal | not_complete | complete",
+      full_outcome_complete: false,
       evidence: [],
-      next_allowed_task: null,
       blocked_tasks: [],
       required_board_updates: [],
     };
@@ -214,6 +260,9 @@ function formatPrompt(payload) {
   if (payload.metadata.child_board_paths.length) {
     lines.push("- child_board_paths:");
     for (const path of payload.metadata.child_board_paths) lines.push(`  - ${path}`);
+  }
+  if (payload.metadata.slice_policy) {
+    lines.push(`- slice_policy: ${JSON.stringify(payload.metadata.slice_policy)}`);
   }
   if (payload.metadata.warnings.length) {
     lines.push("- warnings:");

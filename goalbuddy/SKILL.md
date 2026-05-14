@@ -203,14 +203,30 @@ Planning, Scout findings, Judge decisions, and a queued Worker task are not term
 For execution goals, the default run is continuous:
 
 ```text
-Discover enough evidence, choose a safe implementation slice, implement it, verify it, audit it, then immediately choose and execute the next safe slice until the full original outcome is complete.
+Discover enough evidence, choose the largest reversible local work package, implement it, verify it, review only at risk or phase boundaries, then immediately choose and execute the next work package until the full original outcome is complete.
 ```
 
 If the first `/goal` run reaches a Judge decision that names a safe Worker task with `allowed_files`, `verify`, and `stop_if`, the PM should activate that Worker and continue in the same run unless a stop condition applies.
 
-After a verified Worker slice and audit, do not mark the thread goal complete merely because that slice passed. A slice audit is a checkpoint. For broad automation or product goals, continue by reopening or advancing the board to the next safe Worker task until the full owner outcome is complete.
+After a verified Worker package, do not mark the thread goal complete merely because that package passed. For broad automation or product goals, continue by reopening or advancing the board to the next safe Worker package until the full owner outcome is complete.
 
 Missing owner input, credentials, production access, destructive-operation permission, or policy decisions are blockers for specific tasks, not stopping conditions for the whole goal. When a slice hits one of those blockers, mark that exact task blocked with a receipt, create a safe follow-up or workaround task, and keep doing local, non-destructive work that advances the full outcome.
+
+## Slice Sizing Policy
+
+A good task is the largest safe useful slice.
+
+Small is not the goal. Useful is the goal.
+
+Safe does not mean small. Safe means bounded, explicit, verified, and reversible.
+
+A good Worker task usually produces a working screen, a working API path, a working data pipeline step, a working backend vertical slice, a real bug fix, or a milestone review. A bad Worker task is one more tiny helper, projection function, contract file, read-only proof, or doc note unless that tiny task is truly blocking progress.
+
+Judge picks the largest safe useful next slice. Worker completes the whole assigned slice. Judge reviews the whole slice.
+
+After two tiny tasks in a row, PM or Judge should reorient the board. If a demo milestone is complete, the next task should move toward the next real milestone.
+
+Tiny tasks are allowed when the failure is isolated, the risk is high, the scope is unknown, or the tiny task unlocks a larger slice. Tiny tasks are bad when they keep happening, do not change behavior, only add wrappers/contracts/proof files, or avoid the real milestone.
 
 ## When To Use
 
@@ -267,7 +283,7 @@ What counts as enough for the current tranche?
 Avoid forever goals. A broad goal should define an execution tranche, for example:
 
 ```text
-Discover the highest-leverage local improvements, complete successive safe verified implementation slices, audit each slice against the original user outcome, and keep advancing until the full outcome is complete.
+Discover the highest-leverage local improvements, complete successive safe verified work packages, review only at risk or phase boundaries, and keep advancing until the full outcome is complete.
 ```
 
 ## Board
@@ -390,8 +406,9 @@ Judge receipt:
 ```yaml
 receipt:
   result: done
-  decision: "Do router coverage first; defer auth flake because it is not reproducible locally."
-  next_allowed_task: T004
+  decision: "approved"
+  full_outcome_complete: false
+  rationale: "Router coverage is verified; continue with the next PM-selected work package."
   blocked_tasks:
     - T005
 ```
@@ -440,7 +457,7 @@ Blocked tasks do not necessarily block the goal. The PM should keep doing safe l
 
 - create a Scout task to improve evidence;
 - create a Judge task to resolve ambiguity;
-- create a Worker task for a smaller safe slice;
+- create a Worker task for the largest reversible local work package that can proceed;
 - write or update a note for handoff;
 - update receipts and verification freshness.
 
@@ -471,9 +488,11 @@ After a task completes, immediately write its receipt and select the next active
 
 - a final audit proves the full original owner outcome is complete.
 
-Do not stop at "ready for implementation" when a safe Worker task exists. Activate the Worker, execute it, verify it, and then run the audit task.
+Do not stop at "ready for implementation" when a safe Worker task exists. Activate the Worker, execute it, verify it, and keep going.
 
-Do not stop after one verified implementation slice when the broader owner outcome still has safe local follow-up slices. Treat a slice audit as permission to advance the board, not as permission to finish, unless the audit explicitly proves the full original outcome is complete.
+Do not stop after one verified work package when the broader owner outcome still has safe local follow-up work. Advance the board to the next work package unless a risk boundary or final audit is due.
+
+Do not create a Judge task after every Worker by default. Use Judge only for phase boundaries, high-risk changes, unclear scope, rejected verification, or final completion. Repeated same-shape work belongs in one Worker package.
 
 Do not stop because the current slice needs owner input, credentials, production access, destructive operations, or policy decisions. Mark that slice blocked, spawn or activate the smallest safe local task that can proceed around the blocker, and continue.
 
@@ -507,8 +526,8 @@ Non-`installed` states are warnings, not false failures, because the main `/goal
 | Agent | Thinking level | Write access | Use for |
 |---|---:|---:|---|
 | Scout | low | no | targeted source/spec/repo evidence mapping |
-| Worker | low | yes, bounded | one exact implementation or recovery task |
-| Judge | high | no | strategic review, ambiguity, scope, completion skepticism |
+| Worker | medium | yes, bounded | one coherent bounded useful slice |
+| Judge | high | no | phase/risk/final review, ambiguity, scope, completion skepticism |
 
 A task's `assignee` determines the agent. The task card is the order. The receipt is the return format.
 
@@ -540,7 +559,7 @@ Treat `reasoning_hint` as PM guidance. It does not override task scope, write pe
 
 ## Execution Quality Commands
 
-Use `goalbuddy prompt docs/goals/<slug>` to render a compact prompt for the active task. The prompt includes only task-specific material, safe agent metadata, and the expected receipt shape. It should not include broad chat history or dump the whole state file.
+Use `goalbuddy prompt docs/goals/<slug>` to render a compact prompt for the active task. The prompt includes only task-specific material, safe agent metadata, continuation warnings, and the expected receipt shape. It should not include broad chat history or dump the whole state file.
 
 When dispatching Codex subagents from a GoalBuddy prompt, the `required_spawn_agent_type` is mandatory. Use that exact `spawn_agent` `agent_type` (`goal_scout`, `goal_worker`, or `goal_judge`). Do not substitute generic `scout`, `worker`, or `judge` agents; if the required GoalBuddy agent is unavailable, stop spawning and continue as PM fallback or run `npx goalbuddy agents`/`npx goalbuddy install`. After one `wait_agent` timeout with no visible allowed-file changes, stop waiting, record the timeout, and recover deterministically instead of waiting forever.
 
@@ -554,7 +573,7 @@ Completion is a Judge or PM audit task. The goal is done only when a final done 
 
 For execution goals, completion also requires implementation evidence. A final audit cannot call the goal done if the only completed work is planning, discovery, or task selection.
 
-For continuous execution goals, the final audit receipt must include `full_outcome_complete: true`. If the receipt only proves that the current slice or tranche is complete, keep the goal active and queue or activate the next safe Worker/Judge/PM task.
+For continuous execution goals, the final audit receipt must include `full_outcome_complete: true`. If the receipt only proves that the current work package or tranche is complete, keep the goal active and queue or activate the next safe Worker/PM task. Add a Judge only when the next decision is a phase, risk, ambiguity, rejected verification, or final completion review.
 
 Queued or active Worker tasks block `goal.status: done`. If a Worker is no longer required, mark it blocked with a receipt explaining why, remove it during PM board maintenance, or replace it with the actual required Worker task before completion.
 

@@ -13,7 +13,7 @@ This directory contains skill metadata and bundled agent definitions for Codex a
 | Agent | Codex file | Claude Code file | Reasoning effort | Write scope |
 |---|---|---|---:|---|
 | Scout | `goal_scout.toml` | `goal-scout.md` | medium | read-only |
-| Worker | `goal_worker.toml` | `goal-worker.md` | low | workspace-write |
+| Worker | `goal_worker.toml` | `goal-worker.md` | medium | workspace-write |
 | Judge | `goal_judge.toml` | `goal-judge.md` | high | read-only |
 
 ## Recommended Codex Config

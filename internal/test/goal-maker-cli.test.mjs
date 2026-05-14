@@ -232,8 +232,11 @@ test("bundled agent contracts stay strict and receipt-shaped", () => {
   assert.match(scout, /Read only/);
   assert.match(scout, /goalbuddy_receipt_v1/);
   assert.match(judge, /Parallel Worker work is safe only with provably disjoint allowed_files/);
+  assert.match(judge, /Choose the largest safe useful slice/);
   assert.match(judge, /Routine checks belong to the checker/);
+  assert.match(worker, /model_reasoning_effort = "medium"/);
   assert.match(worker, /Edit only files matching allowed_files/);
+  assert.match(worker, /Complete the whole assigned slice/);
   assert.match(worker, /verification_attempts/);
 
   assert.equal(readFileSync("plugins/goalbuddy/skills/goalbuddy/agents/goal_scout.toml", "utf8"), scout);
@@ -289,6 +292,12 @@ goal:
   kind: specific
   tranche: "Render a prompt."
   status: active
+rules:
+  slice_policy:
+    max_consecutive_tiny_tasks: 2
+    prefer_vertical_slices: true
+    judge_picks_largest_safe_slice: true
+    worker_completes_whole_slice: true
 agents:
   scout: installed
   worker: installed
@@ -331,8 +340,16 @@ checks:
     assert.equal(report.metadata.recommended_agent, "goal_worker");
     assert.equal(report.metadata.required_spawn_agent_type, "goal_worker");
     assert.equal(report.metadata.sandbox, "workspace-write");
+    assert.deepEqual(report.metadata.slice_policy, {
+      max_consecutive_tiny_tasks: 2,
+      prefer_vertical_slices: true,
+      judge_picks_largest_safe_slice: true,
+      worker_completes_whole_slice: true,
+    });
     assert.equal(report.task.id, "T002");
     assert.deepEqual(report.task.allowed_files, ["goalbuddy/scripts/**"]);
+    assert.equal(Object.hasOwn(report.receipt_schema, "needs_judge"), false);
+    assert.equal(Object.hasOwn(report.receipt_schema, "next_allowed_task"), false);
     assert.equal(result.stdout.includes("A previous finding that should not force a full state dump."), false);
 
     const human = runGoalMaker(["prompt", goal]);
@@ -340,6 +357,79 @@ checks:
     assert.match(human.stdout, /Codex spawn_agent agent_type: goal_worker/);
     assert.match(human.stdout, /Do not substitute generic scout, worker, or judge agents/);
     assert.match(human.stdout, /After one wait_agent timeout/);
+    assert.match(human.stdout, /slice_policy/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("prompt warns when the board may be micro-slicing", () => {
+  const root = mkdtempSync(join(tmpdir(), "goal-maker-cli-test-"));
+  try {
+    const goal = join(root, "goal");
+    mkdirSync(goal, { recursive: true });
+    writeFileSync(join(goal, "state.yaml"), `version: 2
+goal:
+  title: "Prompt warning test"
+  slug: "prompt-warning-test"
+  kind: existing_plan
+  tranche: "Backend milestone."
+  status: active
+  first_milestone_complete: true
+agents:
+  scout: installed
+  worker: installed
+  judge: installed
+active_task: T004
+tasks:
+  - id: T001
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Add one narrow projection helper."
+    receipt:
+      result: done
+      summary: "Added one helper."
+  - id: T002
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Add one narrow contract file."
+    receipt:
+      result: done
+      summary: "Added one contract."
+  - id: T003
+    type: worker
+    assignee: Worker
+    status: done
+    objective: "Add one narrow validation wrapper."
+    receipt:
+      result: done
+      summary: "Added one wrapper."
+  - id: T004
+    type: worker
+    assignee: Worker
+    status: active
+    objective: "Add one more projection helper."
+    allowed_files:
+      - lib/helper.ts
+    verify:
+      - npm test
+    stop_if:
+      - "Need files outside allowed_files."
+    receipt: null
+checks:
+  dirty_fingerprint: unknown
+  last_verification:
+    result: unknown
+    task: null
+    commands: []
+`);
+
+    const result = runGoalMaker(["prompt", goal, "--json"]);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const report = JSON.parse(result.stdout);
+    assert.match(report.metadata.warnings.join("\n"), /Board may be micro-slicing\. Prefer the largest safe useful slice/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

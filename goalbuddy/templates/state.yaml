@@ -33,6 +33,11 @@ rules:
   missing_input_or_credentials_do_not_stop_goal: true
   preserve_and_validate_existing_plan: true
   intake_misfire_must_be_audited: true
+  slice_policy:
+    max_consecutive_tiny_tasks: 2
+    prefer_vertical_slices: true
+    judge_picks_largest_safe_slice: true
+    worker_completes_whole_slice: true
 
 agents:
   # installed | bundled_not_installed | missing | unknown
@@ -88,7 +93,7 @@ tasks:
       - "T001 receipt"
     constraints:
       - "Do not implement."
-      - "Pick small reviewable work."
+      - "Pick the largest safe useful slice with clear allowed_files, verify commands, and stop conditions."
     expected_output:
       - "Decision"
       - "Exact Worker objective"

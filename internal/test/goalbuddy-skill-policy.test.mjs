@@ -41,7 +41,28 @@ test("Goal Prep invocation boundary keeps $goal-prep prepare-only", () => {
     assert.match(text, /Operator Escalation/);
     assert.match(text, /ask the operator one concise question before creating the external artifact/);
     assert.match(text, /This section applies after the user starts `\/goal Follow docs\/goals\/<slug>\/goal\.md\.`/);
+    assert.match(text, /A good task is the largest safe useful slice/);
+    assert.match(text, /Safe does not mean small/);
   }
+});
+
+test("slice policy is simple and mirrored across templates and agent payloads", () => {
+  const canonicalState = readFileSync("goalbuddy/templates/state.yaml", "utf8");
+  const pluginState = readFileSync("plugins/goalbuddy/skills/goalbuddy/templates/state.yaml", "utf8");
+  const canonicalWorker = readFileSync("goalbuddy/agents/goal_worker.toml", "utf8");
+  const pluginWorker = readFileSync("plugins/goalbuddy/skills/goalbuddy/agents/goal_worker.toml", "utf8");
+  const canonicalJudge = readFileSync("goalbuddy/agents/goal_judge.toml", "utf8");
+  const pluginJudge = readFileSync("plugins/goalbuddy/skills/goalbuddy/agents/goal_judge.toml", "utf8");
+
+  assert.equal(pluginState, canonicalState);
+  assert.equal(pluginWorker, canonicalWorker);
+  assert.equal(pluginJudge, canonicalJudge);
+  assert.doesNotMatch(canonicalState, /Pick small reviewable work/);
+  assert.match(canonicalState, /Pick the largest safe useful slice with clear allowed_files, verify commands, and stop conditions/);
+  assert.match(canonicalState, /max_consecutive_tiny_tasks: 2/);
+  assert.match(canonicalWorker, /model_reasoning_effort = "medium"/);
+  assert.match(canonicalWorker, /complete the whole assigned slice/i);
+  assert.match(canonicalJudge, /largest safe useful slice/i);
 });
 
 test("Codex install keeps Goal Prep in the plugin and removes compatibility skill folders", () => {
